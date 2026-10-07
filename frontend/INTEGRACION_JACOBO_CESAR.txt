@@ -1,0 +1,42 @@
+CyberShield - Integración frontend actual + entrega de Jacobo + backend de César
+Fecha: 2026-10-06
+
+Cambios integrados:
+- Se conserva la estructura y estilo del frontend actual de César.
+- Rutas correctas: /dashboard/summary y /events/simulate.
+- Login MVP usa mvp-session y no envía un Bearer falso al backend.
+- POST /events/simulate envía el body compatible con SecurityEventRequest.
+- GET /incidents consume event_type, source_ip, recommendation,
+  investigation_steps y resolution_criteria del backend.
+- PATCH /incidents/{id}/status conectado a Investigar y Marcar resuelto.
+- Estados visuales: Pendiente, Investigando y Resuelto.
+- Se agregó confirmación antes de resolver y avisos toast de éxito/error.
+- Se agregó la guía de investigación de Danniel dentro del detalle del incidente.
+- Se agregó vista Servidores conectada a GET /servers.
+- El dashboard usa el número de servidores online devuelto por GET /servers.
+- La gráfica Eventos por minuto usa created_at reales de GET /events.
+- Se eliminó la actualización aleatoria de la gráfica.
+- Eventos recientes se ordenan por created_at.
+
+Archivos principales modificados/agregados:
+- src/api/client.ts
+- src/types/index.ts
+- src/utils/format.ts
+- src/data/mock.ts
+- src/layout/Console.tsx
+- src/pages/IncidentsView.tsx
+- src/pages/ServersView.tsx (nuevo)
+- src/components/Toast.tsx (nuevo)
+- src/styles/styles.css
+
+Validación:
+- TypeScript: OK (tsc --noEmit).
+- El build Vite no se ejecutó en el entorno Linux de revisión porque los
+  node_modules originales provienen de Windows y Rollup requiere un binario
+  opcional distinto. En la PC Windows del proyecto deben usarse los
+  node_modules actuales o ejecutar npm install si fuese necesario.
+
+IMPORTANTE:
+- Este paquete no incluye .env ni node_modules.
+- Mantener frontend/.env actual con:
+  VITE_API_URL=http://localhost:8000

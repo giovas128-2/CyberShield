@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS public.servers (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    ip_address INET NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'offline',
+    agent VARCHAR(50),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_seen TIMESTAMPTZ
+);

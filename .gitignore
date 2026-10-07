@@ -1,0 +1,63 @@
+# =========================
+# CyberShield
+# =========================
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+venv/
+.venv/
+env/
+
+# Variables y secretos
+.env
+.env.*
+!.env.example
+
+# Node / React
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+
+# Vite
+.vite/
+
+# IDE
+.vscode/
+.idea/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Bases locales
+*.db
+*.sqlite
+*.sqlite3
+
+# Backups
+*_BACKUP*/
+backup/
+backups/
+
+# Archivos comprimidos
+*.zip
+*.rar
+*.7z
+
+# WSL / máquinas virtuales
+*.tar
+*.vhd
+*.vhdx
+*.ova
+*.ovf
+
+# Temporales
+*.tmp
+*.temp

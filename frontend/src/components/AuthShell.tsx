@@ -1,0 +1,6 @@
+import type { ReactNode } from "react";
+import { Activity, ShieldAlert, Lock } from "lucide-react";
+import { Brand } from "./Brand";
+export function AuthShell({ children }: { children: ReactNode }) {
+  return <div className="auth"><div className="auth-l"><Brand /><div className="eyebrow" style={{ marginTop: 28 }}>Visibilidad. Control. Protección.</div><h1>Tu infraestructura,<br />bajo control.</h1><p className="mu" style={{ maxWidth: 380 }}>Detecta eventos, prioriza incidentes y supervisa la seguridad desde una sola consola.</p><ul><li><Activity size={18} /><div><b>Eventos en tiempo real</b><div className="mu">Actividad relevante, sin perder el contexto.</div></div></li><li><ShieldAlert size={18} /><div><b>Incidentes priorizados</b><div className="mu">Una vista clara para tomar decisiones.</div></div></li></ul><div className="mono mu" style={{ fontSize: 11, display: "flex", justifyContent: "space-between" }}><span>CyberShield © 2026</span><span>MVP / v0.1.0</span></div></div><div className="auth-r"><span className="chip">● Consola de seguridad</span>{children}<div className="mu" style={{ position: "absolute", bottom: 24, fontSize: 12, display: "flex", gap: 6, alignItems: "center" }}><Lock size={12} />Acceso seguro a tu espacio de trabajo</div></div></div>;
+}

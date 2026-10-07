@@ -1,0 +1,28 @@
+{
+  "event_type": "unusual_outbound_connection_burst",
+  "source": "Wazuh",
+  "source_ip": "{{source_ip}}",
+  "description": "Detecta un aumento de conexiones salientes repetitivas desde el mismo equipo hacia un destino externo no habitual dentro de una ventana corta, para iniciar una investigación defensiva.",
+  "details": {
+    "rule_id": 100210,
+    "severity": "medium",
+    "confidence": "medium",
+    "condition": {
+      "event_type": "network_connection",
+      "direction": "outbound",
+      "destination_scope": "external",
+      "repeated_connections": 10,
+      "timeframe_seconds": 120,
+      "same_source_field": "source_ip",
+      "destination_not_usual": true
+    },
+    "investigation_action": "Revisar destino, puerto, protocolo, proceso o aplicación asociada y confirmar si la comunicación pertenece a una función autorizada.",
+    "resolution_criteria": "Actividad validada como legítima o mitigación autorizada aplicada, sin nuevas conexiones anómalas asociadas durante la ventana de observación.",
+    "wazuh_compatibility": {
+      "type": "custom_rule_logic",
+      "native_mapping": "Use a custom Wazuh rule with frequency/timeframe and a shared source_ip field; keep the normalized JSON as the application-facing event format.",
+      "recommended_rule_level": 8,
+      "note": "The JSON is a normalized CyberShield representation, not a drop-in replacement for Wazuh's native XML rule files. Wazuh custom rules use XML and support frequency, timeframe and same_field conditions."
+    }
+  }
+}

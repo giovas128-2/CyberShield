@@ -1,0 +1,17 @@
+import { useState } from "react";
+import { ArrowRight, Loader2 } from "lucide-react";
+import { register, isNet } from "../api/client";
+import { emailOk } from "../utils/format";
+import { PasswordInput } from "../components/PasswordInput";
+import { AuthShell } from "../components/AuthShell";
+
+export function Register({ onDone, goLogin }: { onDone: () => void; goLogin: () => void }) {
+  const [f,setF]=useState({name:"",email:"",password:"",confirm:""}); const [touched,setTouched]=useState<Record<string,boolean>>({}); const [error,setError]=useState(""); const [loading,setLoading]=useState(false);
+  const checks=[f.password.length>=8,/[A-Z]/.test(f.password),/\d/.test(f.password)];
+  const errs={name:f.name.trim().length<2?"Introduce tu nombre completo.":"",email:emailOk(f.email)?"":"Introduce un correo electrónico válido.",password:checks.every(Boolean)?"":"Mínimo 8 caracteres, una mayúscula y un número.",confirm:f.confirm&&f.confirm===f.password?"":"Las contraseñas no coinciden."};
+  const st=(k:string)=>(!touched[k]?"":errs[k as keyof typeof errs]?"bad":"good");
+  const bind=(k:keyof typeof f)=>({value:f[k],onChange:(e:any)=>setF({...f,[k]:e.target.value}),onBlur:()=>setTouched({...touched,[k]:true})});
+  const msg=(k:keyof typeof errs)=>touched[k]&&errs[k]&&<div className="hint er">{errs[k]}</div>;
+  const submit=async(e:any)=>{e.preventDefault(); setTouched({name:true,email:true,password:true,confirm:true}); if(Object.values(errs).some(Boolean)||loading)return; setLoading(true); setError(""); const body={name:f.name,email:f.email,password:f.password}; try { try{await register(body);}catch(err){if(!isNet(err))throw err; const users=JSON.parse(localStorage.getItem("cs_users")||"[]"); if(users.some((u:any)=>u.email===f.email))throw new Error("Ese correo ya está registrado."); localStorage.setItem("cs_users",JSON.stringify([...users,body]));} onDone(); }catch(err:any){setError(err.message);}finally{setLoading(false);}};
+  return <AuthShell><form className="form" onSubmit={submit} noValidate><div className="eyebrow">Empieza con CyberShield</div><h2>Crear cuenta</h2><p className="mu">Configura tu acceso a la consola de seguridad.</p><label>Nombre completo</label><div className={`inp ${st("name")}`}><input placeholder="Tu nombre y apellidos" {...bind("name")}/></div>{msg("name")}<label>Correo electrónico</label><div className={`inp ${st("email")}`}><input type="email" placeholder="nombre@empresa.com" {...bind("email")}/></div>{msg("email")}<label>Contraseña</label><PasswordInput placeholder="Crea una contraseña segura" state={st("password")} {...bind("password")}/><div className="bars">{[0,1,2,3].map((i)=><i key={i} className={i<checks.filter(Boolean).length+(checks.every(Boolean)?1:0)?"on":""}/>)}</div><div className="hint">Mínimo 8 caracteres, una mayúscula y un número.</div><label>Confirmar contraseña</label><PasswordInput placeholder="Repite tu contraseña" state={st("confirm")} {...bind("confirm")}/>{msg("confirm")}{error&&<div className="errbox">{error}</div>}<button className="btn" disabled={loading}>{loading?<><Loader2 size={16} className="spin"/>Creando...</>:<><ArrowRight size={16}/>Crear cuenta</>}</button><div className="hint" style={{marginTop:10}}>Tu cuenta te permitirá acceder al entorno de monitorización de CyberShield.</div><div className="foot mu">¿Ya te registraste? <button type="button" className="lnk" onClick={goLogin}>Ya tengo cuenta</button></div></form></AuthShell>;
+}

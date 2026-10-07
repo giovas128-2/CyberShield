@@ -1,0 +1,6 @@
+import { AlertTriangle, X } from "lucide-react";
+import type { Incidente } from "../types";
+import { hhmm } from "../utils/format";
+export function AlertModal({ inc, onClose, onView }: { inc: Incidente; onClose: () => void; onView: () => void }) {
+  return <div className="ov" onClick={onClose}><div className="modal" onClick={(e)=>e.stopPropagation()}><h3><AlertTriangle color="#f58b97" />🚨 INCIDENTE DETECTADO<button className="lnk" style={{ marginLeft:"auto",color:"var(--mu)" }} onClick={onClose}><X size={16}/></button></h3><div className="row"><span>Tipo:</span><span>{inc.titulo}</span></div><div className="row"><span>Severidad:</span><span className="sv er">{String(inc.severidad).toUpperCase()}</span></div><div className="row"><span>Origen:</span><span className="mono">{inc.origen}</span></div><div className="row"><span>Hora:</span><span className="mono">{hhmm()}</span></div><div className="row"><span>Estado:</span><span className="sv wn">{inc.estado}</span></div><div className="row"><span>Acción sugerida:</span><span>{inc.reco}</span></div><div style={{ display:"flex",gap:10,marginTop:18 }}><button className="btn sm" onClick={onView}>Ver incidente</button><button className="btn sm gh" onClick={onClose}>Cerrar</button></div></div></div>;
+}
