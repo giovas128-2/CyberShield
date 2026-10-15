@@ -10,6 +10,15 @@ __pycache__/
 venv/
 .venv/
 env/
+ENV/
+
+# Python tooling / cache
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
 
 # Variables y secretos
 .env
@@ -25,6 +34,9 @@ frontend/dist/
 # Vite
 .vite/
 
+# TypeScript
+*.tsbuildinfo
+
 # IDE
 .vscode/
 .idea/
@@ -32,9 +44,11 @@ frontend/dist/
 # Sistema operativo
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # Logs
 *.log
+logs/
 
 # Bases locales
 *.db
@@ -61,3 +75,19 @@ backups/
 # Temporales
 *.tmp
 *.temp
+*.swp
+*.swo
+~$*
+
+# Python packaging
+build/
+*.egg-info/
+
+# Frontend cache
+.eslintcache
+
+# Test / coverage JS
+coverage/
+
+# Opcional: archivos locales de configuración
+*.local
