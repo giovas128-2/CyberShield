@@ -80,3 +80,12 @@ td{padding:12px 14px;border-top:1px solid var(--bd)}.tw{overflow-x:auto;border-r
 .toast.ok{background:#12332a;border-color:#28684f;color:#dffbef}
 .toast.err{background:#3a1820;border-color:#7a3340;color:#ffdce1}
 .toast button{display:grid;margin-left:auto;background:none;border:0;color:inherit;cursor:pointer}
+
+/* OLA 2: stats, scope y notificaciones conservando el diseño original de César */
+.scope-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
+.scope-item{background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:12px;display:grid;gap:5px}
+.scope-item b{font-size:24px}.scope-item small{font-size:11px}
+.mini-list{display:grid;gap:8px;margin-top:14px}.mini-row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--bd)}.mini-row:first-child{border-top:0}
+.notification-list{display:grid;gap:8px;margin-top:14px}.notification-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--bd)}.notification-row:first-child{border-top:0}.notification-message{display:grid;gap:2px;flex:1}.notification-message small{font-size:11px}
+code{font-family:'IBM Plex Mono',monospace;color:var(--ac)}
+@media(max-width:680px){.scope-grid{grid-template-columns:1fr}.notification-row{align-items:flex-start;flex-wrap:wrap}}

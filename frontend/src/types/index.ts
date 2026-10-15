@@ -1,4 +1,5 @@
-export type Severidad = "BAJA" | "MEDIA" | "ALTA" | "CRITICA";
+export type Severidad = "NORMAL" | "WARNING" | "HIGH" | "CRITICAL";
+export type Scope = "BLOCKED" | "REACHED" | "IMPACT";
 export type IncidentStatus = "open" | "investigating" | "resolved";
 export type ServerStatus = "online" | "offline" | "registered";
 
@@ -10,6 +11,9 @@ export interface Evento {
   origen: string;
   severidad: Severidad;
   estado: string;
+  scope: Scope | null;
+  serverId: number | null;
+  serverName?: string | null;
 }
 
 export interface Incidente {
@@ -46,9 +50,33 @@ export interface ServerItem {
 export interface Stats {
   estado: string;
   servidores: number;
+  servidoresOnline: number;
+  servidoresOffline: number;
   eventos: number;
   incidentes: number;
-  riesgo: number;
+  criticos: number;
+}
+
+export interface EventStats {
+  window: "1s" | "60s";
+  window_seconds: number;
+  total_events: number;
+  by_source: { source_ip: string | null; count: number }[];
+  by_type: { event_type: string; count: number }[];
+  by_scope: Record<Scope, number>;
+  by_server: { server_id: number | null; count: number }[];
+}
+
+export interface NotificationItem {
+  id: number;
+  incident_id: number;
+  severity: Severidad;
+  recipient: string;
+  channel: string;
+  message: string;
+  status: string;
+  created_at: string;
+  sent_at: string | null;
 }
 
 export interface User {

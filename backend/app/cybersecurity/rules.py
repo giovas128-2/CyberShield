@@ -1,36 +1,87 @@
 def analyze_security_event(event):
     event_type = event.event_type
-    details = event.details
+    details = event.details or {}
 
     severity = "normal"
     create_incident = False
+    scope = getattr(event, "scope", None)
 
-    if event_type == "multiple_login_attempts":
-        attempts = details.get("attempts", 0)
-        time_window = details.get("time_window_seconds", 0)
+    # ==========================================================
+    # 1. AUTENTICACIÓN
+    # ==========================================================
+    if event_type in (
+        "authentication_failure",
+        "multiple_login_attempts",
+        "authentication_burst",
+    ):
+        attempts = details.get("attempts", 1)
+        time_window = details.get("time_window_seconds", 60)
+        distinct_users = details.get("distinct_users", 1)
 
-        if time_window <= 30:
-            if attempts >= 10:
-                severity = "critical"
-                create_incident = True
+        successful_login = details.get("successful_login", False)
+        unauthorized_access = details.get("unauthorized_access", False)
+        privilege_escalation = details.get("privilege_escalation", False)
 
-            elif attempts >= 7:
-                severity = "high"
-                create_incident = True
+        # Fallo aislado o pocos errores:
+        # se guarda, pero NO se considera ataque automáticamente.
+        if attempts <= 3:
+            severity = "normal"
+            create_incident = False
 
-            elif attempts >= 4:
-                severity = "warning"
+        # Actividad anormal que merece observación.
+        elif attempts > 3:
+            severity = "warning"
+            create_incident = False
 
-            else:
-                severity = "normal"
+        # Patrón más fuerte:
+        # mismo origen atacando múltiples cuentas en poco tiempo.
+        if (
+            attempts >= 10
+            and time_window <= 60
+            and distinct_users >= 3
+        ):
+            severity = "high"
+            create_incident = True
 
+        # No basta con volumen para declarar CRITICAL.
+        # Debe existir evidencia adicional de impacto.
+        if (
+            successful_login
+            and (
+                unauthorized_access
+                or privilege_escalation
+            )
+        ):
+            severity = "critical"
+            create_incident = True
+            scope = "IMPACT"
+
+        # Si no vino scope desde el sensor/simulador,
+        # proponemos uno únicamente cuando hay evidencia suficiente.
+        if scope is None:
+            if severity == "normal":
+                scope = "BLOCKED"
+            elif severity in ("warning", "high"):
+                scope = "REACHED"
+
+    # ==========================================================
+    # 2. CAMBIO EN ARCHIVO CRÍTICO
+    # ==========================================================
     elif event_type == "suspicious_file_change":
         authorized = details.get("authorized", True)
         criticality = details.get("file_criticality", "common")
+        change_applied = details.get("change_applied", False)
 
-        if not authorized:
+        if authorized:
+            severity = "normal"
+            create_incident = False
+
+            if change_applied and scope is None:
+                scope = "IMPACT"
+
+        else:
             if criticality == "critical":
-                severity = "critical"
+                severity = "high"
                 create_incident = True
 
             elif criticality == "important":
@@ -40,27 +91,78 @@ def analyze_security_event(event):
             else:
                 severity = "warning"
 
-    elif event_type == "suspicious_network_traffic":
+            if change_applied:
+                scope = "IMPACT"
+
+                # Si además hay evidencia de compromiso,
+                # entonces sí sube a CRITICAL.
+                if details.get("compromise_confirmed", False):
+                    severity = "critical"
+                    create_incident = True
+
+            elif scope is None:
+                scope = "BLOCKED"
+
+    # ==========================================================
+    # 3. TRÁFICO / CONEXIÓN SOSPECHOSA
+    # ==========================================================
+    elif event_type in (
+        "suspicious_network_traffic",
+        "unusual_external_connection",
+    ):
         requests = details.get("requests", 0)
-        time_window = details.get("time_window_seconds", 0)
+        time_window = details.get("time_window_seconds", 60)
 
-        if time_window <= 30:
-            if requests >= 500:
-                severity = "critical"
-                create_incident = True
+        destination_allowed = details.get(
+            "destination_allowed",
+            True,
+        )
 
-            elif requests >= 200:
-                severity = "high"
-                create_incident = True
+        impact_confirmed = details.get(
+            "impact_confirmed",
+            False,
+        )
 
-            elif requests >= 100:
-                severity = "warning"
+        # Una conexión externa o volumen aislado
+        # no es automáticamente un ataque.
+        if destination_allowed:
+            severity = "normal"
 
+        else:
+            severity = "warning"
+
+        # Patrón anormal sostenido.
+        # Estos valores son PROVISIONALES para laboratorio.
+        if (
+            not destination_allowed
+            and requests >= 100
+            and time_window <= 60
+        ):
+            severity = "high"
+            create_incident = True
+
+        # CRITICAL requiere evidencia de impacto.
+        if impact_confirmed:
+            severity = "critical"
+            create_incident = True
+            scope = "IMPACT"
+
+        elif scope is None:
+            if details.get("blocked", False):
+                scope = "BLOCKED"
             else:
-                severity = "normal"
+                scope = "REACHED"
+
+    # ==========================================================
+    # EVENTOS AÚN SIN REGLA ESPECÍFICA
+    # ==========================================================
+    else:
+        severity = "normal"
+        create_incident = False
 
     return {
         "detected": severity != "normal",
         "create_incident": create_incident,
-        "risk_level": severity
+        "risk_level": severity,
+        "scope": scope,
     }
