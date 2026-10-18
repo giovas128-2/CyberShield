@@ -143,10 +143,14 @@ def process_security_event(db: Session, data):
     }
 
 
-def get_events(db: Session):
+def get_events(
+    db: Session,
+    limit: int = 100,
+):
     events = (
         db.query(Event)
         .order_by(Event.id.desc())
+        .limit(limit)
         .all()
     )
 

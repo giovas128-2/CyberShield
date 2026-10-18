@@ -15,7 +15,7 @@ import { hhmm, stamp, toSeverity } from "../utils/format";
 
 export const http = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? "http://localhost:8000",
-});
+})
 
 http.interceptors.request.use((cfg) => {
   const token = localStorage.getItem("cs_token");
@@ -114,9 +114,54 @@ export async function register(body: { name: string; email: string; password: st
   return res.data.user as User;
 }
 
-export async function login(body: { email: string; password: string }) {
-  const res = await http.post(ROUTES.login, body);
-  return { token: "mvp-session", user: res.data.user as User };
+export async function login(
+  body: {
+    email: string;
+    password: string;
+  }
+) {
+  try {
+    const res = await http.post(
+      ROUTES.login,
+      body
+    );
+
+    return {
+      token: "mvp-session",
+      user: res.data.user as User,
+    };
+
+  } catch (error: any) {
+    const status =
+      error?.response?.status;
+
+    const detail =
+      error?.response?.data?.detail;
+
+    if (status === 403) {
+      throw new Error(
+        detail ||
+          "Acceso bloqueado: origen no autorizado."
+      );
+    }
+
+    if (status === 401) {
+      throw new Error(
+        "Correo o contraseña incorrectos."
+      );
+    }
+
+    if (!error?.response) {
+      throw new Error(
+        "No se pudo conectar con el servidor CyberShield."
+      );
+    }
+
+    throw new Error(
+      detail ||
+        "No fue posible iniciar sesión."
+    );
+  }
 }
 
 export async function getDashboard(): Promise<Stats> {

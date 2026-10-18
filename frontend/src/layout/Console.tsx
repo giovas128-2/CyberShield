@@ -49,14 +49,49 @@ export function Console({ user, onLogout }: { user: User; onLogout: () => void }
 
   const load = useCallback(async () => {
     try {
-      const [summary, events, incidents, servers, s1, s60, notifs] = await Promise.all([
-        getDashboard(), getEvents(), getIncidents(), getServers(), getEventStats("1s"), getEventStats("60s"), getNotifications(),
+    // Primero cargamos eventos.
+    // Así, aunque otro endpoint falle,
+    // la actividad reciente sí aparece.
+      const events = await getEvents();
+
+      setLista(events);
+      hasRealData.current = true;
+      setDemo(false);
+      setStale(false);
+      setUpdatedAt(new Date());
+
+    // Después cargamos el resto del dashboard.
+      const [
+        summary,
+        incidents,
+        servers,
+        s1,
+        s60,
+        notifs,
+      ] = await Promise.all([
+        getDashboard(),
+        getIncidents(),
+        getServers(),
+        getEventStats("1s"),
+        getEventStats("60s"),
+        getNotifications(),
       ]);
 
-      const open = incidents.filter((i) => i.status !== "resolved");
-      const online = servers.filter((s) => s.status === "online").length;
-      const offline = servers.filter((s) => s.status === "offline").length;
-      const critical = open.filter((i) => i.severidad === "CRITICAL").length;
+      const open = incidents.filter(
+        (i) => i.status !== "resolved"
+      );
+
+      const online = servers.filter(
+        (s) => s.status === "online"
+      ).length;
+
+      const offline = servers.filter(
+        (s) => s.status === "offline"
+      ).length;
+
+      const critical = open.filter(
+        (i) => i.severidad === "CRITICAL"
+      ).length;
 
       setStats({
         ...summary,
@@ -66,24 +101,40 @@ export function Console({ user, onLogout }: { user: User; onLogout: () => void }
         eventos: events.length,
         incidentes: open.length,
         criticos: critical,
-        estado: critical > 0 ? "Hay incidentes críticos abiertos que requieren revisión." : "Monitoreo activo sin incidentes críticos abiertos.",
+        estado:
+          critical > 0
+            ? "Hay incidentes críticos abiertos que requieren revisión."
+            : "Monitoreo activo sin incidentes críticos abiertos.",
       });
-      setLista(events);
+
       setIncs(incidents);
       setStats1s(s1);
       setStats60s(s60);
       setNotifications(notifs);
+
       hasRealData.current = true;
       setDemo(false);
       setStale(false);
       setUpdatedAt(new Date());
+
     } catch (err) {
       if (isNet(err)) {
-        if (hasRealData.current) setStale(true);
-        else setDemo(true);
+        if (hasRealData.current) {
+          setStale(true);
+        } else {
+          setDemo(true);
+        }
       } else {
-        console.error("No se pudo actualizar CyberShield:", err);
-        setToast({ kind: "err", text: "No se pudo actualizar uno de los endpoints del dashboard." });
+        console.error(
+          "No se pudo actualizar CyberShield:",
+          err
+        );
+
+        setToast({
+          kind: "err",
+          text:
+            "No se pudo actualizar uno de los endpoints del dashboard.",
+        });
       }
     }
   }, []);

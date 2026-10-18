@@ -6,6 +6,7 @@ from fastapi import (
     HTTPException,
     Query,
 )
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
@@ -16,6 +17,8 @@ from app.services.response_action_service import (
     create_response_action,
     get_response_action_by_id,
     get_response_actions,
+    register_execution_result,
+    register_rollback_result,
 )
 
 
@@ -23,6 +26,11 @@ router = APIRouter(
     prefix="/response-actions",
     tags=["Response Actions"],
 )
+
+
+class ActionResultRequest(BaseModel):
+    success: bool
+    result: str
 
 
 @router.get("")
@@ -52,14 +60,12 @@ def list_response_actions(
 
     db: Session = Depends(get_db),
 ):
-    actions = get_response_actions(
+    return get_response_actions(
         db=db,
         incident_id=incident_id,
         status=status,
         action_type=action_type,
     )
-
-    return actions
 
 
 @router.get("/{action_id}")
@@ -87,7 +93,7 @@ def create_action(
     db: Session = Depends(get_db),
 ):
     try:
-        action = create_response_action(
+        return create_response_action(
             db=db,
             incident_id=data.incident_id,
             action_type=data.action_type,
@@ -97,10 +103,50 @@ def create_action(
             reason=data.reason,
         )
 
-        return action
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail=str(exc),
+        )
+
+
+@router.patch("/{action_id}/execution-result")
+def execution_result(
+    action_id: int,
+    data: ActionResultRequest,
+    db: Session = Depends(get_db),
+):
+    try:
+        return register_execution_result(
+            db=db,
+            action_id=action_id,
+            success=data.success,
+            result=data.result,
+        )
 
     except ValueError as exc:
         raise HTTPException(
             status_code=404,
+            detail=str(exc),
+        )
+
+
+@router.patch("/{action_id}/rollback-result")
+def rollback_result(
+    action_id: int,
+    data: ActionResultRequest,
+    db: Session = Depends(get_db),
+):
+    try:
+        return register_rollback_result(
+            db=db,
+            action_id=action_id,
+            success=data.success,
+            result=data.result,
+        )
+
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
             detail=str(exc),
         )

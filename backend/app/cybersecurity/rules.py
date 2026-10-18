@@ -102,7 +102,52 @@ def analyze_security_event(event):
 
             elif scope is None:
                 scope = "BLOCKED"
+    # ==========================================================
+    # 2. ACCESO ADMINISTRATIVO DESDE ORIGEN NO AUTORIZADO
+    # ==========================================================
+    elif event_type == "unauthorized_admin_login":
+        attempts = details.get("attempts", 1)
+        time_window = details.get(
+            "time_window_seconds",
+            60,
+        )
 
+        credentials_valid = details.get(
+            "credentials_valid",
+            False,
+        )
+
+        origin_authorized = details.get(
+            "origin_authorized",
+            True,
+        )
+
+        admin_protected = details.get(
+            "admin_protected",
+            False,
+        )
+
+        # Credenciales válidas, pero la política de origen
+        # impidió el acceso administrativo.
+        if (
+            credentials_valid
+            and not origin_authorized
+            and admin_protected
+        ):
+            severity = "warning"
+            create_incident = False
+            scope = "BLOCKED"
+
+        # Repetición del mismo comportamiento en poco tiempo.
+        # El acceso continúa bloqueado, pero el patrón
+        # ya merece abrir un incidente.
+        if (
+            attempts >= 5
+            and time_window <= 60
+        ):
+            severity = "high"
+            create_incident = True
+            scope = "BLOCKED"
     # ==========================================================
     # 3. TRÁFICO / CONEXIÓN SOSPECHOSA
     # ==========================================================

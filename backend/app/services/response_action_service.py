@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from sqlalchemy.orm import Session
 
 from app.models.incident import Incident
@@ -82,6 +84,85 @@ def get_response_action_by_id(
         .filter(ResponseAction.id == action_id)
         .first()
     )
+
+
+def register_execution_result(
+    db: Session,
+    action_id: int,
+    success: bool,
+    result: str,
+):
+    action = get_response_action_by_id(
+        db,
+        action_id,
+    )
+
+    if not action:
+        raise ValueError(
+            f"No existe la acción {action_id}"
+        )
+
+    if success:
+        action.status = "executed"
+        action.executed_at = datetime.now(
+            timezone.utc
+        )
+    else:
+        action.status = "failed"
+
+    action.result = result
+
+    db.commit()
+    db.refresh(action)
+
+    return action
+
+
+def register_rollback_result(
+    db: Session,
+    action_id: int,
+    success: bool,
+    result: str,
+):
+    action = get_response_action_by_id(
+        db,
+        action_id,
+    )
+
+    if not action:
+        raise ValueError(
+            f"No existe la acción {action_id}"
+        )
+
+    if not action.reversible:
+        raise ValueError(
+            "La acción no está marcada como reversible"
+        )
+
+    if success:
+        action.status = "rolled_back"
+        action.rolled_back_at = datetime.now(
+            timezone.utc
+        )
+    else:
+        action.status = "failed"
+
+    previous_result = action.result or ""
+
+    if previous_result:
+        action.result = (
+            f"{previous_result}\n"
+            f"ROLLBACK: {result}"
+        )
+    else:
+        action.result = f"ROLLBACK: {result}"
+
+    db.commit()
+    db.refresh(action)
+
+    return action
+
+
 def create_automatic_response_action(
     db: Session,
     incident_id: int,
@@ -102,17 +183,12 @@ def create_automatic_response_action(
 
     details = details or {}
 
-    # Solo proponemos respuesta automática para
-    # incidentes realmente críticos y con impacto comprobado.
     if severity.lower() != "critical":
         return None
 
     if scope != "IMPACT":
         return None
 
-    # Protección básica:
-    # no preparar bloqueo contra orígenes marcados como
-    # administrativos o permitidos.
     if details.get("admin_protected", False):
         return None
 
@@ -124,10 +200,6 @@ def create_automatic_response_action(
     duration_seconds = None
     reason = None
 
-    # ---------------------------------------------------------
-    # Política 1:
-    # credenciales comprometidas / acceso no autorizado
-    # ---------------------------------------------------------
     if event_type in (
         "authentication_burst",
         "authentication_failure",
@@ -146,26 +218,9 @@ def create_automatic_response_action(
             "autenticación confirmado"
         )
 
-    # ---------------------------------------------------------
-    # Más políticas se agregarán después:
-    #
-    # privilege_escalation
-    # -> TEMPORARY_ACCOUNT_LOCK / REVOKE_SESSION
-    #
-    # data_exfiltration
-    # -> BLOCK_EGRESS
-    #
-    # ransomware
-    # -> ISOLATE_HOST
-    #
-    # movimiento lateral
-    # -> REVOKE_SESSION / ISOLATE_HOST
-    # ---------------------------------------------------------
-
     if action_type is None:
         return None
 
-    # Evitar crear la misma acción dos veces
     existing = (
         db.query(ResponseAction)
         .filter(
