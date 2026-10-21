@@ -1,0 +1,7 @@
+
+Wazuh agent_control. List of available agents:
+   ID: 000, Name: srv-cyber-01 (server), IP: 127.0.0.1, Active/Local
+   ID: 001, Name: srv-yahir-01, IP: any, Active
+
+List of agentless devices:
+

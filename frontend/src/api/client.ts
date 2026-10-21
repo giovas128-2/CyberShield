@@ -4,6 +4,7 @@ import type {
   Evento,
   IncidentStatus,
   Incidente,
+  MitreTechnique,
   NotificationItem,
   Scope,
   ServerItem,
@@ -37,7 +38,55 @@ export const ROUTES = {
 
 export const isNet = (e: unknown) => axios.isAxiosError(e) && !e.response;
 
-const incidentCode = (id: number) => `INC-${String(id).padStart(3, "0")}`;
+export class ApiError extends Error {
+  constructor(message: string, public status: number) { super(message); }
+}
+
+export async function api<T = any>(path: string, method: "GET" | "POST" = "GET", body?: unknown, signal?: AbortSignal): Promise<T> {
+  try {
+    const res = await http.request<T>({ url: path, method, data: body, signal });
+    return res.data;
+  } catch (e) {
+    if (axios.isAxiosError(e) && e.response) {
+      const d = (e.response.data as any)?.detail;
+      const msg = typeof d === "string" ? d : Array.isArray(d) ? d.map((x: any) => x.msg).join(", ") : "Error del servidor";
+      throw new ApiError(msg, e.response.status);
+    }
+    throw e;
+  }
+}
+
+export const isMissing = (e: unknown) => e instanceof ApiError && [404, 405, 501].includes(e.status);
+
+export function normalizeMitre(v: any): MitreTechnique[] {
+  const raw = Array.isArray(v) ? v : v ? [v] : [];
+
+  return raw
+    .map((x: any) => ({
+      technique_id: String(
+        x?.technique_id ?? x?.id ?? ""
+      ),
+      technique_name: String(
+        x?.technique_name ?? x?.name ?? ""
+      ),
+      tactic: x?.tactic ?? null,
+      url:
+        x?.reference_url ??
+        x?.url ??
+        null,
+      is_primary: Boolean(
+        x?.is_primary ?? true
+      ),
+      rationale:
+        x?.notes ??
+        x?.rationale ??
+        x?.justification ??
+        null,
+    }))
+    .filter((t) => t.technique_id);
+}
+
+export const incidentCode = (id: number) => `INC-${String(id).padStart(3, "0")}`;
 
 const eventTitle = (eventType: string) => {
   const titles: Record<string, string> = {
@@ -226,6 +275,37 @@ export async function getIncidents(): Promise<Incidente[]> {
         ? i.investigation_steps
         : ["Revisar el evento asociado.", "Validar el origen y el servidor.", "Buscar actividad relacionada."],
       resolutionCriteria: i.resolution_criteria ?? "El evento fue investigado y existe evidencia suficiente para considerarlo legítimo, contenido o resuelto.",
+      mitre: normalizeMitre(i.mitre_techniques ?? i.mitre ?? i.techniques),
+      responseAction: i.response_action
+  ? {
+      id: Number(i.response_action.id),
+      action_type: String(
+        i.response_action.action_type ?? ""
+      ),
+      target:
+        i.response_action.target ?? null,
+      status:
+        i.response_action.status ?? "pending",
+      reversible:
+        Boolean(i.response_action.reversible),
+      duration_seconds:
+        i.response_action.duration_seconds != null
+          ? Number(
+              i.response_action.duration_seconds
+            )
+          : null,
+      reason:
+        i.response_action.reason ?? null,
+      result:
+        i.response_action.result ?? null,
+      created_at:
+        i.response_action.created_at ?? null,
+      executed_at:
+        i.response_action.executed_at ?? null,
+      rolled_back_at:
+        i.response_action.rolled_back_at ?? null,
+    }
+  : null,
     };
   });
 }

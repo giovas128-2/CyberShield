@@ -1,0 +1,6 @@
+2026-10-20T17:10:41.697156-06:00 srv-cyber-01 sshd-session[2706]: Accepted password for yahir from 100.125.119.56 port 34586 ssh2
+2026-10-20T17:49:13.535746-06:00 srv-cyber-01 sshd-session[3077]: Accepted password for yahir from 100.125.119.56 port 42114 ssh2
+2026-10-20T17:53:47.656797-06:00 srv-cyber-01 sshd-session[3300]: Accepted password for yahir from 100.125.119.56 port 33734 ssh2
+2026-10-20T17:59:44.534490-06:00 srv-cyber-01 sshd-session[3521]: Accepted password for yahir from 100.77.51.7 port 33488 ssh2
+2026-10-20T18:00:03.111789-06:00 srv-cyber-01 sshd-session[3597]: pam_unix(sshd:auth): authentication failure; logname= uid=0 euid=0 tty=ssh ruser= rhost=100.77.51.7  user=yahir
+2026-10-20T18:00:05.478481-06:00 srv-cyber-01 sshd-session[3597]: Failed password for yahir from 100.77.51.7 port 56342 ssh2

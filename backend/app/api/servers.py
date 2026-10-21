@@ -1,9 +1,11 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
 from app.models.server import Server
-from app.schemas.server import ServerCreate
+from app.schemas.server import ServerCreate, HeartbeatRequest
 
 
 router = APIRouter(
@@ -80,6 +82,58 @@ def create_server(
             "status": server.status,
             "agent": server.agent,
             "created_at": server.created_at,
+            "last_seen": server.last_seen
+        }
+    }
+
+
+@router.post("/heartbeat")
+def heartbeat(
+    data: HeartbeatRequest,
+    db: Session = Depends(get_db)
+):
+    server = (
+        db.query(Server)
+        .filter(Server.ip_address == data.ip_address)
+        .first()
+    )
+
+    now = datetime.now(timezone.utc)
+
+    if server is None:
+        server = Server(
+            name=data.name,
+            ip_address=data.ip_address,
+            status="online",
+            agent=data.agent,
+            last_seen=now
+        )
+
+        db.add(server)
+
+    else:
+        server.name = data.name
+        server.status = "online"
+        server.agent = data.agent
+        server.last_seen = now
+
+    try:
+        db.commit()
+        db.refresh(server)
+
+    except Exception:
+        db.rollback()
+        raise
+
+    return {
+        "success": True,
+        "message": "Heartbeat recibido",
+        "server": {
+            "id": server.id,
+            "name": server.name,
+            "ip_address": str(server.ip_address),
+            "status": server.status,
+            "agent": server.agent,
             "last_seen": server.last_seen
         }
     }

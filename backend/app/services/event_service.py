@@ -12,7 +12,9 @@ from app.services.notification_service import (
 from app.services.response_action_service import (
     create_automatic_response_action,
 )
-
+from app.services.incident_mitre_service import (
+    create_automatic_incident_mitre,
+)
 
 def process_security_event(db: Session, data):
     analysis = analyze_security_event(data)
@@ -45,6 +47,7 @@ def process_security_event(db: Session, data):
     incident = None
     notification = None
     response_action = None
+    mitre = None
 
     if analysis["create_incident"]:
         incident = Incident(
@@ -56,6 +59,12 @@ def process_security_event(db: Session, data):
         db.add(incident)
         db.commit()
         db.refresh(incident)
+
+        mitre = create_automatic_incident_mitre(
+            db=db,
+            incident_id=incident.id,
+            event_type=event.event_type,
+        )
 
         # HIGH y CRITICAL generan una notificación
         notification = create_incident_notification(
@@ -140,6 +149,18 @@ def process_security_event(db: Session, data):
         }
         if response_action
         else None,
+    "mitre": {
+            "id": mitre.id,
+            "incident_id": mitre.incident_id,
+            "technique_id": mitre.technique_id,
+            "technique_name": mitre.technique_name,
+            "tactic": mitre.tactic,
+            "reference_url": mitre.reference_url,
+            "is_primary": mitre.is_primary,
+            "notes": mitre.notes,
+    }
+    if mitre
+    else None,
     }
 
 

@@ -19,6 +19,7 @@ export const MOCK_INC: Incidente[] = [
     detectado: "14 oct 2026 · 12:03", asignado: "César", regla: "AUTH-CORRELATION",
     reco: "Validar el origen, las cuentas afectadas y si hubo acceso exitoso posterior.",
     investigationSteps: ["Revisar origen y cuentas afectadas.", "Correlacionar fallos y accesos exitosos.", "Buscar actividad privilegiada posterior."],
+    mitre: [],
     resolutionCriteria: "La actividad quedó explicada o contenida con evidencia suficiente.",
   },
 ];

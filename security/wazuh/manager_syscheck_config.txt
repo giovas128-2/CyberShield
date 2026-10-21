@@ -1,0 +1,31 @@
+128-      <key>/etc/filebeat/certs/filebeat-key.pem</key>
+129-    </ssl>
+130-  </indexer>
+131-
+132-  <!-- File integrity monitoring -->
+133:  <syscheck>
+134-    <disabled>no</disabled>
+135-
+136-    <!-- Frequency that syscheck is executed default every 12 hours -->
+137-    <frequency>43200</frequency>
+138-
+139-    <scan_on_start>yes</scan_on_start>
+140-
+141-    <!-- Generate alert when new file detected -->
+142-    <alert_new_files>yes</alert_new_files>
+143-
+144-    <!-- Don't ignore files that change more than 'frequency' times -->
+145-    <auto_ignore frequency="10" timeframe="3600">no</auto_ignore>
+146-
+147-    <!-- Directories to check  (perform all possible verifications) -->
+148-    <directories>/etc,/usr/bin,/usr/sbin</directories>
+149-    <directories>/bin,/sbin,/boot</directories>
+150-    <directories realtime="yes" check_all="yes">/opt/cybershield/lab</directories>
+151-
+152-    <!-- Files/directories to ignore -->
+153-    <ignore>/etc/mtab</ignore>
+154-    <ignore>/etc/hosts.deny</ignore>
+155-    <ignore>/etc/mail/statistics</ignore>
+156-    <ignore>/etc/random-seed</ignore>
+157-    <ignore>/etc/random.seed</ignore>
+158-    <ignore>/etc/adjtime</ignore>

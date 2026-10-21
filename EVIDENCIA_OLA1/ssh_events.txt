@@ -1,0 +1,16 @@
+Oct 20 23:10:41 srv-cyber-01 sshd-session[2706]: Accepted password for yahir from 100.125.119.56 port 34586 ssh2
+Oct 20 23:49:13 srv-cyber-01 sshd-session[3077]: Accepted password for yahir from 100.125.119.56 port 42114 ssh2
+Oct 20 23:53:47 srv-cyber-01 sshd-session[3300]: Accepted password for yahir from 100.125.119.56 port 33734 ssh2
+Oct 20 23:59:44 srv-cyber-01 sshd-session[3521]: Accepted password for yahir from 100.77.51.7 port 33488 ssh2
+Oct 21 00:00:03 srv-cyber-01 sshd-session[3597]: pam_unix(sshd:auth): authentication failure; logname= uid=0 euid=0 tty=ssh ruser= rhost=100.77.51.7  user=yahir
+Oct 21 00:00:05 srv-cyber-01 sshd-session[3597]: Failed password for yahir from 100.77.51.7 port 56342 ssh2
+Oct 21 01:39:54 srv-yahir-01 sshd-session[4361]: Accepted password for yahir from 127.0.0.1 port 54054 ssh2
+Oct 21 01:40:13 srv-yahir-01 sshd-session[4427]: pam_unix(sshd:auth): authentication failure; logname= uid=0 euid=0 tty=ssh ruser= rhost=127.0.0.1  user=yahir
+Oct 21 01:40:15 srv-yahir-01 sshd-session[4427]: Failed password for yahir from 127.0.0.1 port 53024 ssh2
+Oct 21 01:40:25 srv-yahir-01 sshd-session[4427]: Failed password for yahir from 127.0.0.1 port 53024 ssh2
+Oct 21 01:41:11 srv-yahir-01 sudo[4462]: yahir : TTY=/dev/pts/3 ; PWD=/home/yahir ; USER=root ; COMMAND=/usr/bin/grep -iE Failed password|authentication failure|Invalid user /var/log/auth.log
+command: /usr/bin/grep -iE Failed password|authentication failure|Invalid user /var/log/auth.log
+Oct 21 01:42:05 srv-cyber-01 sudo[10916]: yahir : TTY=/dev/pts/3 ; PWD=/mnt/c/Users/Giovas128/downloads/CyberShield ; USER=root ; COMMAND=/usr/bin/grep -iE Failed password|authentication failure|Accepted password /var/log/auth.log
+command: /usr/bin/grep -iE Failed password|authentication failure|Accepted password /var/log/auth.log
+Oct 21 01:44:38 srv-yahir-01 sudo[4624]: yahir : TTY=/dev/pts/2 ; PWD=/mnt/c/Users/yahir ; USER=root ; COMMAND=/usr/bin/grep -iE Failed password|authentication failure|Accepted password /var/log/auth.log
+command: /usr/bin/grep -iE Failed password|authentication failure|Accepted password /var/log/auth.log

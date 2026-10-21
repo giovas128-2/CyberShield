@@ -1,0 +1,7 @@
+** Alert 1792540398.155577: - ossec,syscheck,syscheck_entry_modified,syscheck_file,pci_dss_11.5,gpg13_4.11,gdpr_II_5.1.f,hipaa_164.312.c.1,hipaa_164.312.c.2,nist_800_53_SI.7,tsc_PI1.4,tsc_PI1.5,tsc_CC6.1,tsc_CC6.8,tsc_CC7.2,tsc_CC7.3,
+** Alert 1792545764.361364: - ossec,syscheck,syscheck_entry_modified,syscheck_file,pci_dss_11.5,gpg13_4.11,gdpr_II_5.1.f,hipaa_164.312.c.1,hipaa_164.312.c.2,nist_800_53_SI.7,tsc_PI1.4,tsc_PI1.5,tsc_CC6.1,tsc_CC6.8,tsc_CC7.2,tsc_CC7.3,
+File '/company-demo/config/demo.conf' modified
+** Alert 1792545768.363969: - ossec,syscheck,syscheck_entry_modified,syscheck_file,pci_dss_11.5,gpg13_4.11,gdpr_II_5.1.f,hipaa_164.312.c.1,hipaa_164.312.c.2,nist_800_53_SI.7,tsc_PI1.4,tsc_PI1.5,tsc_CC6.1,tsc_CC6.8,tsc_CC7.2,tsc_CC7.3,
+File '/company-demo/config/demo.conf' modified
+Oct 21 01:25:26 srv-cyber-01 sudo[10568]: yahir : TTY=/dev/pts/3 ; PWD=/mnt/c/Users/Giovas128/downloads/CyberShield/backend ; USER=root ; COMMAND=/usr/bin/grep -iE syscheck_entry_modified|File \'/company-demo/config/demo.conf\' modified /var/ossec/logs/alerts/alerts.log
+command: /usr/bin/grep -iE syscheck_entry_modified|File \'/company-demo/config/demo.conf\' modified /var/ossec/logs/alerts/alerts.log

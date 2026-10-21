@@ -1,0 +1,33 @@
+● wazuh-manager.service - Wazuh manager
+     Loaded: loaded (/usr/lib/systemd/system/wazuh-manager.service; enabled; preset: enabled)
+     Active: active (running) since Tue 2026-10-20 17:05:42 CST; 3h 7min ago
+ Invocation: cb3befea0bc448e0b743324a1894b017
+      Tasks: 285 (limit: 19042)
+     Memory: 519.5M (peak: 5.5G)
+        CPU: 6min 12.804s
+     CGroup: /system.slice/wazuh-manager.service
+             ├─ 699 /var/ossec/framework/python/bin/python3 /var/ossec/api/scripts/wazuh_apid.py
+             ├─ 701 /var/ossec/framework/python/bin/python3 /var/ossec/api/scripts/wazuh_apid.py
+             ├─ 702 /var/ossec/framework/python/bin/python3 /var/ossec/api/scripts/wazuh_apid.py
+             ├─ 705 /var/ossec/framework/python/bin/python3 /var/ossec/api/scripts/wazuh_apid.py
+             ├─ 708 /var/ossec/framework/python/bin/python3 /var/ossec/api/scripts/wazuh_apid.py
+             ├─ 763 /var/ossec/bin/wazuh-authd
+             ├─ 775 /var/ossec/bin/wazuh-db
+             ├─ 810 /var/ossec/bin/wazuh-execd
+             ├─ 825 /var/ossec/bin/wazuh-analysisd
+             ├─ 837 /var/ossec/bin/wazuh-syscheckd
+             ├─ 851 /var/ossec/bin/wazuh-remoted
+             ├─ 977 /var/ossec/bin/wazuh-logcollector
+             ├─ 997 /var/ossec/bin/wazuh-monitord
+             └─1015 /var/ossec/bin/wazuh-modulesd
+
+Oct 20 17:05:36 srv-cyber-01 env[160]: Started wazuh-syscheckd...
+Oct 20 17:05:37 srv-cyber-01 env[160]: Started wazuh-remoted...
+Oct 20 17:05:37 srv-cyber-01 env[160]: Started wazuh-logcollector...
+Oct 20 17:05:39 srv-cyber-01 env[160]: Started wazuh-monitord...
+Oct 20 17:05:39 srv-cyber-01 env[1013]: 2026/10/20 17:05:39 wazuh-modulesd:router: INFO: Loaded router module.
+Oct 20 17:05:39 srv-cyber-01 env[1013]: 2026/10/20 17:05:39 wazuh-modulesd:content_manager: INFO: Loaded content_manager module.
+Oct 20 17:05:39 srv-cyber-01 env[1013]: 2026/10/20 17:05:39 wazuh-modulesd:inventory-harvester: INFO: Loaded Inventory harvester module.
+Oct 20 17:05:40 srv-cyber-01 env[160]: Started wazuh-modulesd...
+Oct 20 17:05:42 srv-cyber-01 env[160]: Completed.
+Oct 20 17:05:42 srv-cyber-01 systemd[1]: Started wazuh-manager.service - Wazuh manager.

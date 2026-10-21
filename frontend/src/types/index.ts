@@ -35,6 +35,8 @@ export interface Incidente {
   reco: string;
   investigationSteps: string[];
   resolutionCriteria: string;
+  mitre: MitreTechnique[];
+  responseAction?: IncidentResponseAction | null;
 }
 
 export interface ServerItem {
@@ -84,3 +86,39 @@ export interface User {
   name: string;
   email?: string;
 }
+
+
+export interface MitreTechnique {
+  technique_id: string;
+  technique_name: string;
+  tactic: string | null;
+  url: string | null;
+  is_primary: boolean;
+  rationale: string | null;
+}
+export interface IncidentResponseAction {
+  id: number;
+  action_type: string;
+  target: string | null;
+  status:
+    | "pending"
+    | "approved"
+    | "executed"
+    | "failed"
+    | "rolled_back"
+    | "cancelled";
+  reversible: boolean;
+  duration_seconds: number | null;
+  reason: string | null;
+  result: string | null;
+  created_at: string | null;
+  executed_at: string | null;
+  rolled_back_at: string | null;
+}
+
+export type SourceMode = "integrated" | "simulated";
+export interface Device { id: string; name: string; user: string | null; os: string | null; status: "trusted" | "unauthorized" | "unknown"; last_seen: string | null; mode: SourceMode }
+export interface SessionItem { id: string; user: string; device: string | null; ip: string | null; started_at: string | null; status: "active" | "revoked" | "expired"; mode: SourceMode }
+export interface ActionItem { id: string; type: string; target: string | null; status: "pending" | "executed" | "reverted" | "failed"; incident_id: number | null; created_at: string | null; reversible: boolean; mode: SourceMode }
+export interface Protection { id: string; name: string; sensor: string; description: string | null; mode: SourceMode; mitre: MitreTechnique[] }
+export interface LabScenario { id: string; name: string; control: string; description: string | null; event_source: string | null; mode: SourceMode; mitre: MitreTechnique[] }

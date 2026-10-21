@@ -89,3 +89,26 @@ td{padding:12px 14px;border-top:1px solid var(--bd)}.tw{overflow-x:auto;border-r
 .notification-list{display:grid;gap:8px;margin-top:14px}.notification-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--bd)}.notification-row:first-child{border-top:0}.notification-message{display:grid;gap:2px;flex:1}.notification-message small{font-size:11px}
 code{font-family:'IBM Plex Mono',monospace;color:var(--ac)}
 @media(max-width:680px){.scope-grid{grid-template-columns:1fr}.notification-row{align-items:flex-start;flex-wrap:wrap}}
+
+/* OLA 1 Jacobo: navegación por rutas, MITRE y módulos de gestión (sin sustituir estilos existentes) */
+.sec{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.1em;color:var(--mu);padding:14px 12px 6px}
+.crumb{color:var(--mu);font-size:13px}.crumb span{margin:0 6px}.crumb b{color:var(--tx);font-weight:500}
+.acts{display:flex;gap:10px;flex-wrap:wrap}
+.sel{height:36px;border-radius:8px;border:1px solid var(--bd);background:var(--sf);color:var(--tx);padding:0 10px;font:inherit}
+.st{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:600;border:1px solid}
+.t-ok{color:#4ADE80;background:#4ade8020;border-color:#4ade8066}.t-wn{color:#FBBF24;background:#fbbf2420;border-color:#fbbf2466}
+.t-er{color:#DCA3A3;background:#dca3a322;border-color:#dca3a366}.t-info{color:#22D3EE;background:#22d3ee22;border-color:#22d3ee66}.t-vio{color:#a78bfa;background:#a78bfa1f;border-color:#a78bfa66}
+.empty{display:grid;place-items:center;gap:14px;padding:56px 16px}.empty svg{color:var(--ac)}
+.ab{height:34px;padding:0 14px;border-radius:6px;border:1px solid var(--ac);background:transparent;color:var(--ac);font:600 13px Inter,sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.ab:disabled{border-color:#303A44;background:#232c36;color:#A5B0BD;cursor:not-allowed}
+.kv3{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;margin:16px 0;border:1px solid var(--bd);border-radius:10px;overflow:hidden;background:var(--bd)}
+.kv3>div{background:var(--sf);padding:12px 14px}.kv3 small{display:block;color:var(--mu);font:500 10px 'IBM Plex Mono',monospace;text-transform:uppercase;margin-bottom:4px}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}.pcard{display:flex;flex-direction:column}
+.pmeta{display:grid;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid var(--bd)}.pmeta small{display:block;font:500 10px 'IBM Plex Mono',monospace}
+.labb{display:flex;gap:12px;align-items:center;padding:12px 16px;border:1px solid #3b3a6e;background:#17173a;border-radius:10px;color:#a78bfa}.labb div{flex:1}.labb small{display:block;color:var(--mu)}
+.mcs{display:grid;gap:10px;margin:14px 0}.mc{display:flex;gap:12px;align-items:center;padding:12px 14px;border:1px solid #3b3a6e;background:#17173a;border-radius:10px}
+.mc small{display:block;font-size:12px}.mc b{display:block}.mc .eb{color:#a78bfa}
+.mlogo{width:36px;height:36px;border-radius:8px;border:1px solid #5b57b8;color:#a78bfa;display:grid;place-items:center;font-weight:700;flex:none}
+.mb{font:600 11px 'IBM Plex Mono',monospace;color:#a78bfa;border:1px solid #5b57b8;background:#17173a;padding:2px 8px;border-radius:6px;text-decoration:none}
+.eb{font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--mu)}
+@media(max-width:860px){.crumb{display:none}.top{padding:0 18px}}

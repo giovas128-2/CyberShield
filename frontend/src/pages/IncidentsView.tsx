@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Check, ChevronDown, ChevronUp, Loader2, Search, X } from "lucide-react";
 import type { Incidente } from "../types";
 import { SeverityBadge } from "../components/SeverityBadge";
+import { MitreTechniqueCard } from "../components/mitre/MitreTechniqueCard";
 
 const statusClass = (estado: string) => {
   if (estado === "Resuelto") return "ok";
@@ -126,6 +127,66 @@ export function IncidentsView({
               ))}
             </div>
 
+            <MitreTechniqueCard techniques={sel.mitre ?? []} />
+              {sel.responseAction ? (
+  <div className="reco">
+    <b>Respuesta de CyberShield</b>
+
+    <div className="kv" style={{ marginTop: 10 }}>
+      <div>
+        <small>Acción</small>
+        <span className="mono">
+          {sel.responseAction.action_type}
+        </span>
+      </div>
+
+      <div>
+        <small>Objetivo</small>
+        <span className="mono">
+          {sel.responseAction.target ?? "—"}
+        </span>
+      </div>
+
+      <div>
+        <small>Estado</small>
+        <span className="mono">
+          {sel.responseAction.status}
+        </span>
+      </div>
+
+      <div>
+        <small>Reversible</small>
+        <span>
+          {sel.responseAction.reversible
+            ? "Sí"
+            : "No"}
+        </span>
+      </div>
+
+      <div>
+        <small>Duración</small>
+        <span className="mono">
+          {sel.responseAction.duration_seconds
+            ? `${sel.responseAction.duration_seconds} s`
+            : "—"}
+        </span>
+      </div>
+    </div>
+
+    {sel.responseAction.reason && (
+      <small className="mu">
+        {sel.responseAction.reason}
+      </small>
+    )}
+  </div>
+) : (
+  <div className="reco">
+    <b>Respuesta de CyberShield</b>
+    <span className="mu">
+      Sin acción de respuesta registrada.
+    </span>
+  </div>
+)}
             <div className="reco">
               <b>Recomendación</b>
               {sel.reco}

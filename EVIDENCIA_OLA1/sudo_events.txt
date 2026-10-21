@@ -1,0 +1,13 @@
+Oct 21 01:17:28 srv-yahir-01 sudo[3033]: yahir : TTY=/dev/pts/2 ; PWD=/mnt/c/Users/yahir ; USER=root ; COMMAND=/usr/bin/mkdir -p /company-demo/config
+Oct 21 01:17:28 srv-yahir-01 sudo[3042]: yahir : TTY=/dev/pts/2 ; PWD=/mnt/c/Users/yahir ; USER=root ; COMMAND=/usr/bin/touch /company-demo/config/demo.conf
+Oct 21 01:17:28 srv-yahir-01 sudo[3051]: yahir : TTY=/dev/pts/2 ; PWD=/mnt/c/Users/yahir ; USER=root ; COMMAND=/usr/bin/chmod 644 /company-demo/config/demo.conf
+Oct 21 01:17:33 srv-yahir-01 sudo[3065]: yahir : TTY=/dev/pts/2 ; PWD=/mnt/c/Users/yahir ; USER=root ; COMMAND=/usr/bin/tee /company-demo/config/demo.conf
+Oct 21 01:19:40 srv-yahir-01 sudo[3132]: yahir : TTY=/dev/pts/2 ; PWD=/mnt/c/Users/yahir ; USER=root ; COMMAND=/usr/bin/tee /company-demo/config/demo.conf
+Oct 21 01:19:54 srv-yahir-01 sudo[3161]: yahir : TTY=/dev/pts/2 ; PWD=/mnt/c/Users/yahir ; USER=root ; COMMAND=/usr/bin/grep -n company-demo /var/ossec/etc/ossec.conf
+Oct 21 01:20:05 srv-yahir-01 sudo[3185]: yahir : TTY=/dev/pts/2 ; PWD=/mnt/c/Users/yahir ; USER=root ; COMMAND=/usr/bin/tee /company-demo/config/demo.conf
+Oct 21 01:22:45 srv-yahir-01 sudo[3539]: yahir : TTY=/dev/pts/2 ; PWD=/mnt/c/Users/yahir ; USER=root ; COMMAND=/usr/bin/tee /company-demo/config/demo.conf
+Oct 21 01:22:49 srv-yahir-01 sudo[3555]: yahir : TTY=/dev/pts/2 ; PWD=/mnt/c/Users/yahir ; USER=root ; COMMAND=/usr/bin/tee -a /company-demo/config/demo.conf
+Oct 21 01:22:54 srv-yahir-01 sudo[3627]: yahir : TTY=/dev/pts/2 ; PWD=/mnt/c/Users/yahir ; USER=root ; COMMAND=/usr/bin/grep -iE company-demo|demo.conf /var/ossec/logs/alerts/alerts.log
+Oct 21 01:25:29 srv-cyber-01 sudo[10582]: yahir : TTY=/dev/pts/3 ; PWD=/mnt/c/Users/Giovas128/downloads/CyberShield/backend ; USER=root ; COMMAND=/usr/bin/grep -iE srv-yahir-01.*sudo.*demo.conf /var/ossec/logs/alerts/alerts.log
+command: /usr/bin/grep -iE srv-yahir-01.*sudo.*demo.conf /var/ossec/logs/alerts/alerts.log
+Oct 21 01:44:15 srv-yahir-01 sudo[4601]: yahir : TTY=/dev/pts/2 ; PWD=/mnt/c/Users/yahir ; USER=root ; COMMAND=/usr/bin/grep -iE syscheck_entry_modified|File \'/company-demo/config/demo.conf\' modified /var/ossec/logs/ossec.log

@@ -1,0 +1,20 @@
+Oct 21 01:49:45 srv-cyber-01 sudo[11285]: yahir : TTY=/dev/pts/3 ; PWD=/mnt/c/Users/Giovas128/downloads/CyberShield ; USER=root ; COMMAND=/usr/bin/grep -iE srv-yahir-01.*sudo.*(demo.conf|company-demo) /var/ossec/logs/alerts/alerts.log
+command: /usr/bin/grep -iE srv-yahir-01.*sudo.*(demo.conf|company-demo) /var/ossec/logs/alerts/alerts.log
+Oct 21 02:18:44 srv-yahir-01 sudo[5630]: yahir : TTY=/dev/pts/2 ; PWD=/mnt/c/Users/yahir ; USER=root ; COMMAND=/usr/bin/grep -iE syscheck_entry_modified|demo.conf /var/ossec/logs/ossec.log
+command: /usr/bin/grep -iE syscheck_entry_modified|demo.conf /var/ossec/logs/ossec.log
+Oct 21 02:19:40 srv-yahir-01 sudo[5689]: yahir : TTY=/dev/pts/2 ; PWD=/mnt/c/Users/yahir ; USER=root ; COMMAND=/usr/bin/grep -iE syscheck_entry_modified|demo.conf /var/ossec/logs/ossec.log
+command: /usr/bin/grep -iE syscheck_entry_modified|demo.conf /var/ossec/logs/ossec.log
+** Alert 1792549248.460609: - ossec,syscheck,syscheck_entry_modified,syscheck_file,pci_dss_11.5,gpg13_4.11,gdpr_II_5.1.f,hipaa_164.312.c.1,hipaa_164.312.c.2,nist_800_53_SI.7,tsc_PI1.4,tsc_PI1.5,tsc_CC6.1,tsc_CC6.8,tsc_CC7.2,tsc_CC7.3,
+File '/company-demo/config/demo.conf' modified
+Oct 21 02:20:49 srv-yahir-01 sudo[5784]: yahir : TTY=/dev/pts/2 ; PWD=/mnt/c/Users/yahir ; USER=root ; COMMAND=/usr/bin/tee -a /company-demo/config/demo.conf
+command: /usr/bin/tee -a /company-demo/config/demo.conf
+Oct 21 02:20:52 srv-yahir-01 sudo[5799]: yahir : TTY=/dev/pts/2 ; PWD=/mnt/c/Users/yahir ; USER=root ; COMMAND=/usr/bin/grep -iE syscheck_entry_modified|demo.conf /var/ossec/logs/ossec.log
+command: /usr/bin/grep -iE syscheck_entry_modified|demo.conf /var/ossec/logs/ossec.log
+Oct 21 02:20:58 srv-yahir-01 sudo[5813]: yahir : TTY=/dev/pts/2 ; PWD=/mnt/c/Users/yahir ; USER=root ; COMMAND=/usr/bin/grep -iE syscheck_entry_modified|demo.conf /var/ossec/logs/ossec.log
+command: /usr/bin/grep -iE syscheck_entry_modified|demo.conf /var/ossec/logs/ossec.log
+Oct 21 02:21:57 srv-cyber-01 sudo[12632]: yahir : TTY=/dev/pts/3 ; PWD=/mnt/c/Users/Giovas128/downloads/CyberShield ; USER=root ; COMMAND=/usr/bin/grep -iE syscheck_entry_modified|demo.conf /var/ossec/logs/alerts/alerts.log
+command: /usr/bin/grep -iE syscheck_entry_modified|demo.conf /var/ossec/logs/alerts/alerts.log
+Oct 21 02:22:01 srv-cyber-01 sudo[12646]: yahir : TTY=/dev/pts/3 ; PWD=/mnt/c/Users/Giovas128/downloads/CyberShield ; USER=root ; COMMAND=/usr/bin/grep -iE syscheck_entry_modified|demo.conf /var/ossec/logs/alerts/alerts.log
+command: /usr/bin/grep -iE syscheck_entry_modified|demo.conf /var/ossec/logs/alerts/alerts.log
+Oct 21 02:22:30 srv-cyber-01 sudo[12695]: yahir : TTY=/dev/pts/3 ; PWD=/mnt/c/Users/Giovas128/downloads/CyberShield ; USER=root ; COMMAND=/usr/bin/grep -iE syscheck_entry_modified|demo.conf /var/ossec/logs/alerts/alerts.log
+command: /usr/bin/grep -iE syscheck_entry_modified|demo.conf /var/ossec/logs/alerts/alerts.log
