@@ -73,7 +73,27 @@ DEFAULT_GUIDE = {
     "resolution_criteria": (
         "El evento fue investigado y existe evidencia suficiente para "
         "considerarlo legítimo o mitigado."
-    )
+    ),
+    "privilege_escalation": {
+        "recommendation": (
+            "Validar quién ejecutó sudo, qué comando se solicitó "
+            "y si la elevación estaba autorizada. Revisar eventos "
+            "anteriores y posteriores de la misma cuenta."
+        ),
+        "investigation_steps": [
+            "Identificar el usuario que solicitó privilegios.",
+            "Revisar el usuario objetivo de la elevación.",
+            "Identificar el comando ejecutado.",
+            "Confirmar si el uso de sudo estaba autorizado.",
+            "Comprobar si la operación tuvo éxito.",
+            "Revisar logs de sudo y autenticación relacionados.",
+        ],
+        "resolution_criteria": (
+            "La elevación fue validada como autorizada o la actividad "
+            "no autorizada fue contenida y no existen nuevos eventos "
+            "relacionados."
+        ),
+    },
 }
 
 

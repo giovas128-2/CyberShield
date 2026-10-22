@@ -34,6 +34,30 @@ MITRE_MAPPING = {
             "de intentos de autenticación."
         ),
     },
+    "privilege_escalation": {
+        "technique_id": "T1548.003",
+        "technique_name": "Sudo and Sudo Caching",
+        "tactic": "Privilege Escalation",
+        "reference_url": (
+            "https://attack.mitre.org/"
+            "techniques/T1548/003/"
+        ),
+        "notes": (
+            "Clasificación MITRE aplicada cuando "
+            "la evidencia confirma uso de sudo."
+        ),
+    },
+    "suspicious_file_change": {
+        "technique_id": "T1565.001",
+        "technique_name": "Stored Data Manipulation",
+        "tactic": "Impact",
+        "reference_url": "https://attack.mitre.org/techniques/T1565/001/",
+        "notes": (
+            "Clasificación MITRE asociada a una modificación "
+            "de archivo detectada por Wazuh FIM. En el laboratorio "
+            "OLA1 se confirmó sobre un archivo señuelo monitoreado."
+        ),
+    },
 }
 
 
@@ -41,7 +65,19 @@ def create_automatic_incident_mitre(
     db: Session,
     incident_id: int,
     event_type: str,
+    details: dict | None = None,
 ):
+    details = details or {}
+    if event_type == "privilege_escalation":
+        sudo_used = bool(
+            details.get(
+                "sudo_used",
+                details.get("sudo", False),
+            )
+        )
+
+        if not sudo_used:
+            return None
     mapping = MITRE_MAPPING.get(event_type)
 
     if not mapping:

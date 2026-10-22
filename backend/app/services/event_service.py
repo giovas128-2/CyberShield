@@ -64,6 +64,7 @@ def process_security_event(db: Session, data):
             db=db,
             incident_id=incident.id,
             event_type=event.event_type,
+            details=event.details,
         )
 
         # HIGH y CRITICAL generan una notificación

@@ -197,7 +197,69 @@ def analyze_security_event(event):
                 scope = "BLOCKED"
             else:
                 scope = "REACHED"
+    # ==========================================================
+    # 3. ELEVACIÓN / ABUSO DE PRIVILEGIOS
+    # ==========================================================
+    elif event_type == "privilege_escalation":
+        sudo_used = bool(
+            details.get(
+                "sudo_used",
+                details.get("sudo", False),
+            )
+        )
 
+        authorized = details.get(
+            "authorized",
+            True,
+        )
+
+        success = details.get(
+            "success",
+            False,
+        )
+
+        compromise_confirmed = details.get(
+            "compromise_confirmed",
+            False,
+        )
+
+        # Un evento genérico sin evidencia suficiente
+        # queda para observación, sin declarar incidente.
+        if not sudo_used:
+            severity = "warning"
+            create_incident = False
+
+            if scope is None:
+                scope = "REACHED"
+
+        # sudo legítimo/autorizado.
+        elif authorized:
+            severity = "normal"
+            create_incident = False
+
+            if scope is None:
+                scope = (
+                    "IMPACT"
+                    if success
+                    else "BLOCKED"
+                )
+
+        # Intento de sudo no autorizado que no tuvo éxito.
+        elif not success:
+            severity = "warning"
+            create_incident = False
+            scope = "BLOCKED"
+
+        # sudo no autorizado y exitoso.
+        else:
+            severity = "high"
+            create_incident = True
+            scope = "IMPACT"
+
+            # CRITICAL exige evidencia adicional
+            # de compromiso confirmado.
+            if compromise_confirmed:
+                severity = "critical"
     # ==========================================================
     # EVENTOS AÚN SIN REGLA ESPECÍFICA
     # ==========================================================
