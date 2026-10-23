@@ -11,8 +11,15 @@ export const ErrorState = ({ message, onRetry }: { message: string; onRetry?: ()
 );
 export const EmptyState = ({ text }: { text: string }) => <div className="card empty"><Inbox size={40} strokeWidth={1.5} /><div>{text}</div></div>;
 
-// INTEGRADA = viene de un sensor/servicio real; SIMULACIÓN CONTROLADA = escenario de laboratorio
-export const ModeBadge = ({ mode }: { mode: SourceMode }) => <span className={`st ${mode === "integrated" ? "t-info" : "t-vio"}`}>{mode === "integrated" ? "INTEGRADA" : "SIMULACIÓN CONTROLADA"}</span>;
+// INTEGRADA = flujo real confirmado; SIMULACIÓN CONTROLADA = demo/laboratorio; PENDIENTE = todavía no validado E2E.
+export const ModeBadge = ({ mode }: { mode: SourceMode }) => {
+  const cfg = mode === "integrated"
+    ? { cls: "t-info", text: "INTEGRADA", title: "Integración confirmada con el flujo real disponible." }
+    : mode === "pending"
+      ? { cls: "t-wn", text: "PENDIENTE", title: "Control preparado, pero todavía no validado de extremo a extremo." }
+      : { cls: "t-vio", text: "SIMULACIÓN CONTROLADA", title: "Escenario benigno de laboratorio o datos de demostración." };
+  return <span className={`st ${cfg.cls}`} title={cfg.title}>{cfg.text}</span>;
+};
 export const Pill = ({ tone, children }: { tone: "ok" | "wn" | "er" | "info" | "vio"; children: ReactNode }) => <span className={`st t-${tone}`}>{children}</span>;
 
 export const PageHeader = ({ title, subtitle, children }: { title: string; subtitle?: string; children?: ReactNode }) => (

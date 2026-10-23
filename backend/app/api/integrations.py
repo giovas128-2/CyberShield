@@ -62,7 +62,7 @@ def receive_wazuh_event(
         description=(
             "Servidor CyberShield que generó "
             "la alerta. En el laboratorio actual "
-            "srv-cyber-01 corresponde al ID 2."
+            "srv-yahir-01 corresponde al ID 1."
         ),
     ),
 

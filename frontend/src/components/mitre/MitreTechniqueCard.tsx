@@ -18,18 +18,18 @@ export function MitreTechniqueCard({ techniques, showNote = true }: { techniques
   return (
     <div className="mcs">
       {sorted.map((t, i) => (
-        <div className="mc" key={`${t.technique_id}-${i}`}>
+        <div className={`mc ${t.is_primary ? "mc-primary" : ""}`} key={`${t.technique_id}-${i}`}>
           <span className="mlogo">M</span>
           <div style={{ flex: 1 }}>
             <div className="eb">MITRE ATT&amp;CK · {t.is_primary ? "Técnica primaria" : "Técnica relacionada"}</div>
             <b>{t.technique_id} · {t.technique_name}</b>
-            {t.tactic && <small className="mu">Táctica: {t.tactic}</small>}
+            {t.tactic && <small className="mitre-tactic">Táctica · {t.tactic}</small>}
             {t.rationale && <small className="mu">{t.rationale}</small>}
           </div>
           {t.url && <a href={t.url} target="_blank" rel="noreferrer" aria-label={`Abrir ${t.technique_id} en MITRE`} className="lnk"><ExternalLink size={16} /></a>}
         </div>
       ))}
-      {showNote && <small className="mu">El mapeo se basa en la señal disponible; una técnica no confirma por sí sola un ataque.</small>}
+      {showNote && <small className="mitre-note">Clasificación contextual: MITRE ATT&amp;CK describe comportamiento observado; no confirma por sí solo un ataque.</small>}
     </div>
   );
 }

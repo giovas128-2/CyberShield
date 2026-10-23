@@ -29,10 +29,12 @@ export function DashboardView({ d, simulate }: { d: any; simulate: () => void })
           <h1>Dashboard</h1>
           <div className="mu">Monitoreo de eventos, incidentes, alcance y notificaciones de CyberShield.</div>
         </div>
-        <button className="btn sm" onClick={simulate}><Crosshair size={16} />Simular evento HIGH</button>
+        <button className="btn sm" onClick={simulate}><Crosshair size={16} />Simular escenario HIGH</button>
       </div>
 
       <SimBanner demo={Boolean(d.demo)} stale={Boolean(d.stale)} />
+
+      <div className="interpretation-note"><ShieldAlert size={16} /><span><b>Lectura operativa:</b> una alerta o técnica MITRE representa evidencia para investigar; no equivale automáticamente a un ataque confirmado.</span></div>
 
       <div className="g4">
         <div className="card kpi">

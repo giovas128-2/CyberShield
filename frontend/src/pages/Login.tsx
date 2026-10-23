@@ -17,10 +17,12 @@ export function Login({
   onLogin,
   goRegister,
   notice,
+  goPortals,
 }: {
   onLogin: (u: User) => void;
   goRegister: () => void;
   notice?: string;
+  goPortals?: () => void;
 }) {
   const [form, setForm] = useState({
     email: "",
@@ -169,6 +171,12 @@ export function Login({
             </>
           )}
         </button>
+
+        {goPortals && (
+          <div className="foot mu">
+            <button type="button" className="lnk" onClick={goPortals}>← Cambiar tipo de acceso</button>
+          </div>
+        )}
 
         <div className="foot mu">
           ¿Aún no tienes una cuenta?{" "}

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { Login } from "./pages/Login";
+import PortalChoicePage from "./pages/PortalChoicePage";
 import { Register } from "./pages/Register";
 import { AppLayout } from "./layout/AppLayout";
 import DashboardPage from "./pages/DashboardPage";
@@ -15,6 +16,14 @@ import ActionsPage from "./pages/ActionsPage";
 import ProtectionsPage from "./pages/ProtectionsPage";
 import LabPage from "./pages/LabPage";
 import PlaceholderPage from "./pages/PlaceholderPage";
+import { EmpresaDemoLayout } from "./empresademo/EmpresaDemoLayout";
+import EDLogin from "./pages/empresademo/EDLogin";
+import EDInicio from "./pages/empresademo/EDInicio";
+import EDClientes from "./pages/empresademo/EDClientes";
+import EDDocumentos from "./pages/empresademo/EDDocumentos";
+import EDReportes from "./pages/empresademo/EDReportes";
+import EDPerfil from "./pages/empresademo/EDPerfil";
+import EDRestringido from "./pages/empresademo/EDRestringido";
 import type { User } from "./types";
 
 const readUser = (): User | null => {
@@ -23,13 +32,13 @@ const readUser = (): User | null => {
 
 function RegisterRoute() {
   const nav = useNavigate();
-  return <Register goLogin={() => nav("/login")} onDone={() => nav("/login", { state: { notice: "Cuenta creada. Inicia sesión para continuar." } })} />;
+  return <Register goLogin={() => nav("/login/cybershield")} onDone={() => nav("/login/cybershield", { state: { notice: "Cuenta creada. Inicia sesión para continuar." } })} />;
 }
 
 function LoginRoute({ onUser }: { onUser: (u: User) => void }) {
   const nav = useNavigate();
   const { state } = useLocation();
-  return <Login notice={(state as any)?.notice} goRegister={() => nav("/register")} onLogin={(u) => { onUser(u); nav("/dashboard"); }} />;
+  return <Login notice={(state as any)?.notice} goRegister={() => nav("/register")} goPortals={() => nav("/login")} onLogin={(u) => { onUser(u); nav("/dashboard"); }} />;
 }
 
 export default function App() {
@@ -42,8 +51,19 @@ export default function App() {
     <div className="cs">
       <HashRouter>
         <Routes>
+          <Route path="/login" element={<PortalChoicePage />} />
+          <Route path="/login/cybershield" element={<LoginRoute onUser={saveUser} />} />
           <Route path="/register" element={<RegisterRoute />} />
-          <Route path="/login" element={<LoginRoute onUser={saveUser} />} />
+
+          <Route path="/empresa-demo/login" element={<EDLogin />} />
+          <Route element={<EmpresaDemoLayout />}>
+            <Route path="/empresa-demo/inicio" element={<EDInicio />} />
+            <Route path="/empresa-demo/clientes" element={<EDClientes />} />
+            <Route path="/empresa-demo/documentos" element={<EDDocumentos />} />
+            <Route path="/empresa-demo/reportes" element={<EDReportes />} />
+            <Route path="/empresa-demo/perfil" element={<EDPerfil />} />
+            <Route path="/empresa-demo/acceso-restringido" element={<EDRestringido />} />
+          </Route>
           <Route element={guard(<AppLayout user={user!} onLogout={logout} />)}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/servers" element={<ServersView />} />
@@ -59,7 +79,7 @@ export default function App() {
             <Route path="/security" element={<PlaceholderPage title="Seguridad" />} />
             <Route path="/config" element={<PlaceholderPage title="Configuración" />} />
           </Route>
-          <Route path="*" element={<Navigate to={user ? "/dashboard" : "/register"} replace />} />
+          <Route path="*" element={<Navigate to={user ? "/dashboard" : "/login"} replace />} />
         </Routes>
       </HashRouter>
     </div>

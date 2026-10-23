@@ -58,6 +58,47 @@ MITRE_MAPPING = {
             "OLA1 se confirmó sobre un archivo señuelo monitoreado."
         ),
     },
+    "possible_data_exfiltration": {
+        "technique_id": "T1041",
+        "technique_name": "Exfiltration Over C2 Channel",
+        "tactic": "Exfiltration",
+        "reference_url": (
+            "https://attack.mitre.org/techniques/T1041/"
+        ),
+        "notes": (
+            "Asociación candidata de laboratorio para una "
+            "posible exfiltración de datos. No confirma por "
+            "sí sola una exfiltración real."
+        ),
+    },
+
+    "possible_ransomware_behavior": {
+        "technique_id": "T1486",
+        "technique_name": "Data Encrypted for Impact",
+        "tactic": "Impact",
+        "reference_url": (
+            "https://attack.mitre.org/techniques/T1486/"
+        ),
+        "notes": (
+            "Asociación candidata de laboratorio para "
+            "comportamiento compatible con impacto sobre "
+            "archivos. CyberShield no ejecuta ransomware "
+            "ni cifrado malicioso real."
+        ),
+    },
+
+    "possible_lateral_movement": {
+        "technique_id": "T1021.004",
+        "technique_name": "SSH",
+        "tactic": "Lateral Movement",
+        "reference_url": (
+            "https://attack.mitre.org/techniques/T1021/004/"
+        ),
+        "notes": (
+            "Asociación candidata cuando existe SSH exitoso "
+            "entre un par no autorizado o no habitual."
+        ),
+    },
 }
 
 
@@ -77,6 +118,37 @@ def create_automatic_incident_mitre(
         )
 
         if not sudo_used:
+            return None
+    # T1486 solo cuando el escenario representa cambios
+    # compatibles sobre archivos. No implica cifrado real.
+    if event_type == "possible_ransomware_behavior":
+        renamed_files = int(
+            details.get("renamed_files", 0)
+        )
+
+        if renamed_files <= 0:
+            return None
+
+    # T1021.004 solo para SSH exitoso entre un par
+    # no autorizado/no habitual.
+    if event_type == "possible_lateral_movement":
+        protocol = str(
+            details.get("protocol", "")
+        ).lower()
+
+        login_successful = bool(
+            details.get("login_successful", False)
+        )
+
+        pair_authorized = bool(
+            details.get("pair_authorized", False)
+        )
+
+        if (
+            protocol != "ssh"
+            or not login_successful
+            or pair_authorized
+        ):
             return None
     mapping = MITRE_MAPPING.get(event_type)
 

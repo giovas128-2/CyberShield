@@ -116,7 +116,7 @@ export interface IncidentResponseAction {
   rolled_back_at: string | null;
 }
 
-export type SourceMode = "integrated" | "simulated";
+export type SourceMode = "integrated" | "simulated" | "pending";
 export interface Device { id: string; name: string; user: string | null; os: string | null; status: "trusted" | "unauthorized" | "unknown"; last_seen: string | null; mode: SourceMode }
 export interface SessionItem { id: string; user: string; device: string | null; ip: string | null; started_at: string | null; status: "active" | "revoked" | "expired"; mode: SourceMode }
 export interface ActionItem { id: string; type: string; target: string | null; status: "pending" | "executed" | "reverted" | "failed"; incident_id: number | null; created_at: string | null; reversible: boolean; mode: SourceMode }

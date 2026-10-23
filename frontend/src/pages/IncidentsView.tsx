@@ -127,9 +127,9 @@ export function IncidentsView({
               ))}
             </div>
 
-            <MitreTechniqueCard techniques={sel.mitre ?? []} />
+            <div className="detail-section"><div className="section-label">Clasificación técnica</div><MitreTechniqueCard techniques={sel.mitre ?? []} /></div>
               {sel.responseAction ? (
-  <div className="reco">
+  <div className="reco response-panel">
     <b>Respuesta de CyberShield</b>
 
     <div className="kv" style={{ marginTop: 10 }}>
@@ -180,14 +180,14 @@ export function IncidentsView({
     )}
   </div>
 ) : (
-  <div className="reco">
+  <div className="reco response-panel">
     <b>Respuesta de CyberShield</b>
     <span className="mu">
       Sin acción de respuesta registrada.
     </span>
   </div>
 )}
-            <div className="reco">
+            <div className="reco recommendation-panel">
               <b>Recomendación</b>
               {sel.reco}
             </div>

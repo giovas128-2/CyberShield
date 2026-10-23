@@ -25,15 +25,15 @@ export const MOCK_ACTIONS: ActionItem[] = [
 ];
 export const MOCK_PROTECTIONS: Protection[] = [
   { id: "c1", name: "Fuerza bruta", sensor: "Wazuh", description: "Monitoreo con respuesta segura y reversible en el laboratorio.", mode: "integrated", mitre: [mt("T1110", "Brute Force", "Credential Access")] },
-  { id: "c2", name: "Dispositivo no autorizado", sensor: "Aplicación", description: null, mode: "integrated", mitre: [mt("T1078", "Valid Accounts", "Defense Evasion")] },
+  { id: "c2", name: "Dispositivo no autorizado", sensor: "Aplicación", description: "Device Trust preparado; validación E2E con backend/BD pendiente.", mode: "pending", mitre: [mt("T1078", "Valid Accounts", "Defense Evasion")] },
   { id: "c3", name: "Cambio de archivo crítico", sensor: "Wazuh FIM", description: null, mode: "integrated", mitre: [mt("T1565.001", "Stored Data Manipulation", "Impact")] },
-  { id: "c4", name: "Abuso de privilegios", sensor: "Wazuh", description: null, mode: "integrated", mitre: [mt("T1548.003", "Sudo and Sudo Caching", "Privilege Escalation")] },
-  { id: "c5", name: "Conexión externa sospechosa", sensor: "Suricata", description: null, mode: "integrated", mitre: [mt("T1041", "Exfiltration Over C2 Channel", "Exfiltration")] },
-  { id: "c6", name: "Exfiltración de datos", sensor: "Suricata + App", description: null, mode: "integrated", mitre: [mt("T1041", "Exfiltration Over C2 Channel", "Exfiltration")] },
-  { id: "c7", name: "Ransomware behavior", sensor: "Wazuh", description: null, mode: "simulated", mitre: [mt("T1486", "Data Encrypted for Impact", "Impact")] },
-  { id: "c8", name: "Movimiento lateral", sensor: "Wazuh + Suricata", description: null, mode: "simulated", mitre: [mt("T1021.004", "Remote Services: SSH", "Lateral Movement")] },
+  { id: "c4", name: "Abuso de privilegios", sensor: "Wazuh", description: "Señal Wazuh disponible; cierre E2E real pendiente de adaptación del evento sudo.", mode: "pending", mitre: [mt("T1548.003", "Sudo and Sudo Caching", "Privilege Escalation")] },
+  { id: "c5", name: "Conexión externa sospechosa", sensor: "Suricata", description: "Telemetría de red disponible; integración de la regla al backend pendiente.", mode: "pending", mitre: [mt("T1041", "Exfiltration Over C2 Channel", "Exfiltration")] },
+  { id: "c6", name: "Posible exfiltración de datos", sensor: "Suricata + App", description: "Escenario defensivo con datos ficticios; no implica exfiltración confirmada.", mode: "simulated", mitre: [mt("T1041", "Exfiltration Over C2 Channel", "Exfiltration")] },
+  { id: "c7", name: "Comportamiento tipo ransomware", sensor: "Wazuh", description: "Patrón benigno de modificaciones masivas; no utiliza malware ni cifrado real.", mode: "simulated", mitre: [mt("T1486", "Data Encrypted for Impact", "Impact")] },
+  { id: "c8", name: "Posible movimiento lateral", sensor: "Wazuh + Suricata", description: "Conexión SSH autorizada entre hosts del laboratorio; clasificación contextual.", mode: "simulated", mitre: [mt("T1021.004", "Remote Services: SSH", "Lateral Movement")] },
 ];
 export const MOCK_SCENARIOS: LabScenario[] = MOCK_PROTECTIONS.map((p, i) => ({
   id: `sc${i + 1}`, name: p.name, control: p.name, description: "Genera telemetría defensiva de prueba para validar detección, clasificación y respuesta.",
-  event_source: p.sensor, mode: p.mode, mitre: p.mitre,
+  event_source: p.sensor, mode: p.mode === "integrated" ? "integrated" : "simulated", mitre: p.mitre,
 }));

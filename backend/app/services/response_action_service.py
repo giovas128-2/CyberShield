@@ -217,7 +217,20 @@ def create_automatic_response_action(
             "acceso no autorizado o compromiso de "
             "autenticación confirmado"
         )
+    elif event_type == "possible_ransomware_behavior":
+        if not source_ip:
+            return None
 
+        action_type = "CONTAIN_HOST"
+        target = source_ip
+        duration_seconds = 900
+
+        reason = (
+            "Propuesta de contención reversible por "
+            "comportamiento tipo ransomware en laboratorio. "
+            "La acción queda PENDIENTE y no ejecuta "
+            "aislamiento real automáticamente."
+        )
     if action_type is None:
         return None
 

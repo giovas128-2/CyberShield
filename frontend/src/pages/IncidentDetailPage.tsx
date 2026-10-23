@@ -15,8 +15,8 @@ export default function IncidentDetailPage() {
         <div className="row" style={{ padding: 0 }}><span className="eyebrow">{inc.id} / Detalle</span><SeverityBadge value={inc.severidad} /></div>
         <h1 style={{ marginBottom: 6 }}>{inc.titulo}</h1><p className="mu">{inc.resumen}</p>
         <div className="kv3"><div><small>Estado</small><b>{inc.estado}</b></div><div><small>Origen</small><b className="mono">{inc.origen}</b></div><div><small>Servidor</small><b>{inc.servidor}</b></div><div><small>Detectado</small><b>{inc.detectado}</b></div></div>
-        <MitreTechniqueCard techniques={inc.mitre ?? []} />
-        <div className="reco">
+        <div className="detail-section"><div className="section-label">Clasificación técnica</div><MitreTechniqueCard techniques={inc.mitre ?? []} /></div>
+        <div className="reco response-panel">
   <b>Respuesta de CyberShield</b>
 
   {inc.responseAction ? (
@@ -60,8 +60,8 @@ export default function IncidentDetailPage() {
     </span>
   )}
 </div>
-        <div className="reco"><b>Recomendación</b>{inc.reco}</div>
-        <div className="investigation-guide"><div className="guide-content" style={{ display: "block" }}><b>Qué revisar</b><ol>{inc.investigationSteps.map((s, idx) => <li key={idx}>{s}</li>)}</ol><b>Criterio de resolución</b><p className="mu">{inc.resolutionCriteria}</p></div></div>
+        <div className="reco recommendation-panel"><b>Recomendación</b><span>{inc.reco}</span></div>
+        <div className="investigation-guide detail-section"><div className="guide-content" style={{ display: "block" }}><b>Qué revisar</b><ol>{inc.investigationSteps.map((s, idx) => <li key={idx}>{s}</li>)}</ol><b>Criterio de resolución</b><p className="mu">{inc.resolutionCriteria}</p></div></div>
       </div>
     </>
   );
