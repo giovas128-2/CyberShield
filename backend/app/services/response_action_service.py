@@ -183,10 +183,19 @@ def create_automatic_response_action(
 
     details = details or {}
 
-    if severity.lower() != "critical":
+    if (
+        severity.lower() != "critical"
+        and event_type != "possible_lateral_movement"
+    ):
         return None
 
-    if scope != "IMPACT":
+    if (
+        event_type not in (
+            "possible_data_exfiltration",
+            "possible_lateral_movement",
+        )
+        and scope != "IMPACT"
+    ):
         return None
 
     if details.get("admin_protected", False):
@@ -230,6 +239,34 @@ def create_automatic_response_action(
             "comportamiento tipo ransomware en laboratorio. "
             "La acción queda PENDIENTE y no ejecuta "
             "aislamiento real automáticamente."
+        )
+    elif event_type == "possible_data_exfiltration":
+        if not source_ip:
+            return None
+
+        action_type = "RESTRICT_DATA_FLOW"
+        target = source_ip
+        duration_seconds = 900
+
+        reason = (
+            "Propuesta de restricción reversible del flujo de datos "
+            "por posible exfiltración en laboratorio. "
+            "La acción queda PENDIENTE y no ejecuta "
+            "bloqueo real automáticamente."
+        )
+    elif event_type == "possible_lateral_movement":
+        if not source_ip:
+            return None
+
+        action_type = "RESTRICT_LATERAL_COMMUNICATION"
+        target = source_ip
+        duration_seconds = 900
+
+        reason = (
+            "Propuesta de restricción reversible de comunicación "
+            "por posible movimiento lateral mediante SSH en laboratorio. "
+            "La acción queda PENDIENTE y no ejecuta "
+            "bloqueo real automáticamente."
         )
     if action_type is None:
         return None
