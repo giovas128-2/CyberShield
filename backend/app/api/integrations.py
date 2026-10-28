@@ -26,13 +26,30 @@ from app.cybersecurity.suricata_adapter import (
 )
 
 from app.models.server import Server
+from typing import Literal
 
+from pydantic import BaseModel
+from app.services.response_action_service import (
+    get_latest_response_action_for_target,
+    register_execution_result,
+    register_rollback_result,
+)
 
 router = APIRouter(
     prefix="/integrations",
     tags=["Integrations"],
 )
 
+class ActiveResponseReport(BaseModel):
+    operation: Literal[
+        "add",
+        "delete",
+    ]
+
+    action_type: str
+    target: str
+    success: bool
+    result: str
 
 def validate_server(
     db: Session,
@@ -120,3 +137,109 @@ def receive_suricata_event(
         db,
         event,
     )
+@router.post("/wazuh/active-response")
+def receive_wazuh_active_response(
+    data: ActiveResponseReport,
+    db: Session = Depends(get_db),
+):
+    """
+    Recibe el resultado real de Wazuh Active Response.
+
+    ADD:
+        Corresponde a la ejecución de una acción defensiva.
+
+    DELETE:
+        Corresponde al rollback de una acción temporal.
+
+    CyberShield NO ejecuta comandos privilegiados aquí.
+    Wazuh realiza la acción y este endpoint solamente
+    registra su resultado.
+    """
+
+    # =========================================================
+    # EJECUCIÓN DE RESPUESTA
+    # =========================================================
+
+    if data.operation == "add":
+
+        action = (
+            get_latest_response_action_for_target(
+                db=db,
+                action_type=data.action_type,
+                target=data.target,
+                statuses=[
+                    "pending",
+                    "approved",
+                ],
+            )
+        )
+
+        if not action:
+            raise HTTPException(
+                status_code=404,
+                detail=(
+                    "No existe una acción pendiente "
+                    f"{data.action_type} para "
+                    f"{data.target}"
+                ),
+            )
+
+        updated = register_execution_result(
+            db=db,
+            action_id=action.id,
+            success=data.success,
+            result=data.result,
+        )
+
+        return {
+            "success": True,
+            "operation": "add",
+            "response_action": updated,
+        }
+
+    # =========================================================
+    # ROLLBACK
+    # =========================================================
+
+    action = (
+        get_latest_response_action_for_target(
+            db=db,
+            action_type=data.action_type,
+            target=data.target,
+            statuses=[
+                "executed",
+            ],
+        )
+    )
+
+    if not action:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "No existe una acción ejecutada "
+                f"{data.action_type} para "
+                f"{data.target}"
+            ),
+        )
+
+    if not action.reversible:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "La acción encontrada "
+                "no es reversible"
+            ),
+        )
+
+    updated = register_rollback_result(
+        db=db,
+        action_id=action.id,
+        success=data.success,
+        result=data.result,
+    )
+
+    return {
+        "success": True,
+        "operation": "delete",
+        "response_action": updated,
+    }

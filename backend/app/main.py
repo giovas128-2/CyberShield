@@ -13,23 +13,33 @@ from app.api.device_trust import router as device_trust_router
 from app.api.protections import router as protections_router
 from app.api.lab import router as lab_router
 
+from app.core.config import FRONTEND_URL
+from app.database.connection import check_database_connection
+
+
 app = FastAPI(
     title="CyberShield API",
     description="Backend principal del sistema CyberShield",
-    version="0.2.0",
+    version="0.3.0",
 )
 
 
+# ============================================================
+# CORS
+# ============================================================
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-    ],
+    allow_origins=[FRONTEND_URL],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+
+# ============================================================
+# ROUTERS
+# ============================================================
 
 app.include_router(auth_router)
 app.include_router(dashboard_router)
@@ -43,6 +53,11 @@ app.include_router(device_trust_router)
 app.include_router(protections_router)
 app.include_router(lab_router)
 
+
+# ============================================================
+# ROOT
+# ============================================================
+
 @app.get("/")
 def root():
     return {
@@ -50,10 +65,33 @@ def root():
     }
 
 
+# ============================================================
+# HEALTH CHECK GENERAL
+# ============================================================
+
 @app.get("/health")
 def health():
     return {
         "status": "ok",
         "service": "CyberShield Backend",
-        "version": "0.2.0",
+        "version": "0.3.0",
+    }
+
+
+# ============================================================
+# HEALTH CHECK BASE DE DATOS
+# ============================================================
+
+@app.get("/health/db")
+def database_health():
+
+    connected = check_database_connection()
+
+    return {
+        "status": "ok" if connected else "error",
+        "database": (
+            "connected"
+            if connected
+            else "unavailable"
+        ),
     }

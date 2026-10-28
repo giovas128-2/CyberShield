@@ -1,7 +1,9 @@
 from sqlalchemy.orm import Session
 
 from app.models.notification import Notification
-
+from app.services.telegram_service import (
+    send_telegram_message,
+)
 
 def create_incident_notification(
     db: Session,
@@ -42,6 +44,29 @@ def create_incident_notification(
     db.add(notification)
     db.commit()
     db.refresh(notification)
+
+    # =========================================================
+    # NOTIFICACIÓN MÓVIL TELEGRAM
+    # =========================================================
+    #
+    # El fallo de Telegram NO afecta la creación del incidente
+    # ni la notificación del dashboard.
+    # =========================================================
+
+    telegram_message = (
+        "🚨 CYBERSHIELD - ATAQUE DETECTADO\n\n"
+        f"Incidente: {incident_id}\n"
+        f"Severidad: {severity_upper}\n"
+        f"Tipo: {event_type}\n"
+        f"Servidor: "
+        f"{server_id if server_id is not None else 'N/D'}\n\n"
+        "CyberShield inició el proceso de análisis "
+        "y respuesta defensiva."
+    )
+
+    send_telegram_message(
+        telegram_message
+    )
 
     return notification
 

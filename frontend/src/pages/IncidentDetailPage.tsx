@@ -14,6 +14,17 @@ export default function IncidentDetailPage() {
       <div className="card" style={{ marginTop: 12 }}>
         <div className="row" style={{ padding: 0 }}><span className="eyebrow">{inc.id} / Detalle</span><SeverityBadge value={inc.severidad} /></div>
         <h1 style={{ marginBottom: 6 }}>{inc.titulo}</h1><p className="mu">{inc.resumen}</p>
+        <Link
+  to={`/incidents/${inc.backendId}/evidence`}
+  className="btn"
+  style={{
+    display: "inline-block",
+    marginTop: 10,
+    marginBottom: 14,
+  }}
+>
+  Ver evidencia de respuesta
+</Link>
         <div className="kv3"><div><small>Estado</small><b>{inc.estado}</b></div><div><small>Origen</small><b className="mono">{inc.origen}</b></div><div><small>Servidor</small><b>{inc.servidor}</b></div><div><small>Detectado</small><b>{inc.detectado}</b></div></div>
         <div className="detail-section"><div className="section-label">Clasificación técnica</div><MitreTechniqueCard techniques={inc.mitre ?? []} /></div>
         <div className="reco response-panel">

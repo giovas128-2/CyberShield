@@ -4,7 +4,9 @@ from sqlalchemy.orm import Session
 
 from app.models.incident import Incident
 from app.models.response_action import ResponseAction
-
+from app.services.telegram_service import (
+    send_telegram_message,
+)
 
 def create_response_action(
     db: Session,
@@ -85,6 +87,37 @@ def get_response_action_by_id(
         .first()
     )
 
+def get_latest_response_action_for_target(
+    db: Session,
+    action_type: str,
+    target: str,
+    statuses: list[str],
+):
+    """
+    Busca la acción de respuesta más reciente que coincida
+    con tipo, objetivo y alguno de los estados indicados.
+
+    Se utiliza para correlacionar el resultado real de
+    Wazuh Active Response con la acción creada previamente
+    por CyberShield.
+    """
+
+    return (
+        db.query(ResponseAction)
+        .filter(
+            ResponseAction.action_type
+            == action_type,
+            ResponseAction.target
+            == target,
+            ResponseAction.status.in_(
+                statuses
+            ),
+        )
+        .order_by(
+            ResponseAction.id.desc()
+        )
+        .first()
+    )
 
 def register_execution_result(
     db: Session,
@@ -102,18 +135,74 @@ def register_execution_result(
             f"No existe la acción {action_id}"
         )
 
+    incident = (
+        db.query(Incident)
+        .filter(
+            Incident.id == action.incident_id
+        )
+        .first()
+    )
+
+    if not incident:
+        raise ValueError(
+            f"No existe el incidente {action.incident_id}"
+        )
+
     if success:
         action.status = "executed"
         action.executed_at = datetime.now(
             timezone.utc
         )
+
+        # La acción defensiva fue ejecutada correctamente.
+        # Consideramos el incidente contenido/resuelto.
+        incident.status = "resolved"
+
     else:
         action.status = "failed"
+
+        # La acción defensiva no pudo contener el incidente.
+        # Se escala para intervención humana.
+        incident.status = "escalated"
 
     action.result = result
 
     db.commit()
+
     db.refresh(action)
+    db.refresh(incident)
+
+    # =========================================================
+    # NOTIFICACIÓN MÓVIL DEL RESULTADO
+    # =========================================================
+
+    if success:
+        telegram_message = (
+            "✅ CYBERSHIELD - ATAQUE CONTENIDO\n\n"
+            f"Incidente: {incident.id}\n"
+            f"Acción: {action.action_type}\n"
+            f"Objetivo: {action.target or 'N/D'}\n"
+            f"Estado: {action.status}\n\n"
+            "La respuesta defensiva fue ejecutada "
+            "correctamente."
+        )
+
+    else:
+        telegram_message = (
+            "⚠️ CYBERSHIELD - ATAQUE NO CONTENIDO\n\n"
+            f"Incidente: {incident.id}\n"
+            f"Acción: {action.action_type}\n"
+            f"Objetivo: {action.target or 'N/D'}\n"
+            f"Estado: {action.status}\n\n"
+            "No fue posible completar la respuesta "
+            "defensiva.\n"
+            "Se requiere intervención del ingeniero "
+            "de seguridad."
+        )
+
+    send_telegram_message(
+        telegram_message
+    )
 
     return action
 
@@ -183,14 +272,34 @@ def create_automatic_response_action(
 
     details = details or {}
 
+    sensor_confirmed_bruteforce = bool(
+        details.get(
+            "sensor_confirmed_bruteforce",
+            False,
+        )
+    )
+
+    is_confirmed_ssh_bruteforce = (
+        event_type
+        in (
+            "authentication_burst",
+            "authentication_failure",
+            "multiple_login_attempts",
+        )
+        and severity.lower() == "high"
+        and sensor_confirmed_bruteforce
+    )
+
     if (
         severity.lower() != "critical"
         and event_type != "possible_lateral_movement"
+        and not is_confirmed_ssh_bruteforce
     ):
         return None
 
     if (
-        event_type not in (
+        not is_confirmed_ssh_bruteforce
+        and event_type not in (
             "possible_data_exfiltration",
             "possible_lateral_movement",
         )
@@ -219,13 +328,25 @@ def create_automatic_response_action(
 
         action_type = "BLOCK_SOURCE_IP"
         target = source_ip
-        duration_seconds = 900
 
-        reason = (
-            "Incidente CRITICAL con IMPACT: "
-            "acceso no autorizado o compromiso de "
-            "autenticación confirmado"
-        )
+        if sensor_confirmed_bruteforce:
+            duration_seconds = 180
+
+            reason = (
+                "Wazuh confirmó fuerza bruta SSH mediante "
+                "la regla correlacionada 5763. "
+                "Se propone bloqueo temporal y reversible "
+                "de la IP de origen mediante Active Response."
+            )
+
+        else:
+            duration_seconds = 900
+
+            reason = (
+                "Incidente CRITICAL con IMPACT: "
+                "acceso no autorizado o compromiso de "
+                "autenticación confirmado."
+            )
     elif event_type == "possible_ransomware_behavior":
         if not source_ip:
             return None

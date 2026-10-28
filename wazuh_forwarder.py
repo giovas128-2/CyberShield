@@ -1,6 +1,7 @@
 import json
 import time
-import requests
+import httpx
+import httpx
 
 WAZUH_ALERTS = "/var/ossec/logs/alerts/alerts.json"
 
@@ -12,7 +13,7 @@ API_URL = (
 
 def send_event(event):
     try:
-        response = requests.post(
+        response = httpx.post(
             API_URL,
             json=event,
             timeout=10,
@@ -50,6 +51,11 @@ for line in follow(WAZUH_ALERTS):
 
         decoder = event.get("decoder") or {}
         syscheck = event.get("syscheck") or {}
+        rule = event.get("rule") or {}
+
+        rule_id = str(
+            rule.get("id") or ""
+        )
 
         is_fim = (
             decoder.get("name")
@@ -57,7 +63,14 @@ for line in follow(WAZUH_ALERTS):
             or bool(syscheck)
         )
 
-        if not is_fim:
+        is_ssh_bruteforce = (
+            rule_id == "5763"
+        )
+
+        if not (
+            is_fim
+            or is_ssh_bruteforce
+        ):
             continue
 
         send_event(event)

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { Check, ChevronDown, ChevronUp, Loader2, Search, X } from "lucide-react";
 import type { Incidente } from "../types";
 import { SeverityBadge } from "../components/SeverityBadge";
@@ -178,6 +179,17 @@ export function IncidentsView({
         {sel.responseAction.reason}
       </small>
     )}
+    <Link
+  to={`/incidents/${sel.backendId}/evidence`}
+  className="btn sm"
+  style={{
+    display: "inline-flex",
+    marginTop: 14,
+    textDecoration: "none",
+  }}
+>
+  Ver evidencia de respuesta
+</Link>
   </div>
 ) : (
   <div className="reco response-panel">

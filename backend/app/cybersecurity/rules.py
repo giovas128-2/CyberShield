@@ -21,7 +21,12 @@ def analyze_security_event(event):
         successful_login = details.get("successful_login", False)
         unauthorized_access = details.get("unauthorized_access", False)
         privilege_escalation = details.get("privilege_escalation", False)
-
+        sensor_confirmed_bruteforce = bool(
+            details.get(
+                "sensor_confirmed_bruteforce",
+                False,
+            )
+        )
         # Fallo aislado o pocos errores:
         # se guarda, pero NO se considera ataque automáticamente.
         if attempts <= 3:
@@ -62,6 +67,13 @@ def analyze_security_event(event):
             if severity == "normal":
                 scope = "BLOCKED"
             elif severity in ("warning", "high"):
+                scope = "REACHED"
+                
+        if sensor_confirmed_bruteforce:
+            severity = "high"
+            create_incident = True
+
+            if scope != "IMPACT":
                 scope = "REACHED"
         # ==========================================================
     # 2. DEVICE TRUST / DISPOSITIVO NO AUTORIZADO

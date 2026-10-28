@@ -1,5 +1,8 @@
 import axios from "axios";
 import type {
+  IncidentEvidence,
+} from "../types/evidence";
+import type {
   EventStats,
   Evento,
   IncidentStatus,
@@ -133,15 +136,33 @@ const ruleLabel = (eventType: string) => {
 
 const statusToUi = (status: string) => {
   const value = String(status ?? "open").toLowerCase();
+
   if (value === "resolved") return "Resuelto";
   if (value === "investigating") return "Investigando";
+  if (value === "escalated") return "Escalado";
+
   return "Pendiente";
 };
 
-const normalizeStatus = (status: unknown): IncidentStatus => {
-  const value = String(status ?? "open").toLowerCase();
-  if (value === "resolved") return "resolved";
-  if (value === "investigating") return "investigating";
+const normalizeStatus = (
+  status: unknown
+): IncidentStatus => {
+  const value = String(
+    status ?? "open"
+  ).toLowerCase();
+
+  if (value === "resolved") {
+    return "resolved";
+  }
+
+  if (value === "investigating") {
+    return "investigating";
+  }
+
+  if (value === "escalated") {
+    return "escalated";
+  }
+
   return "open";
 };
 
@@ -386,4 +407,27 @@ export async function simulateEvent(userName?: string): Promise<Incidente | null
   const incidents = await getIncidents();
   const full = incidents.find((item) => item.backendId === Number(inc.id));
   return full ? { ...full, asignado: userName ?? full.asignado } : null;
+}
+export async function getIncidentEvidence(
+  id: number | string
+): Promise<IncidentEvidence> {
+  const raw = String(id);
+
+  const normalized = raw
+    .toUpperCase()
+    .startsWith("INC-")
+    ? raw.slice(4)
+    : raw;
+
+  const incidentId = Number(normalized);
+
+  if (!Number.isFinite(incidentId)) {
+    throw new Error(
+      "ID de incidente inválido"
+    );
+  }
+
+  return api<IncidentEvidence>(
+    `/incidents/${incidentId}/evidence`
+  );
 }

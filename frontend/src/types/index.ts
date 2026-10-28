@@ -1,6 +1,6 @@
 export type Severidad = "NORMAL" | "WARNING" | "HIGH" | "CRITICAL";
 export type Scope = "BLOCKED" | "REACHED" | "IMPACT";
-export type IncidentStatus = "open" | "investigating" | "resolved";
+export type IncidentStatus = "open" | "investigating" | "resolved" | "escalated";
 export type ServerStatus = "online" | "offline" | "registered";
 
 export interface Evento {

@@ -9,6 +9,7 @@ import { ServersView } from "./pages/ServersView";
 import EventsPage from "./pages/EventsPage";
 import IncidentsPage from "./pages/IncidentsPage";
 import IncidentDetailPage from "./pages/IncidentDetailPage";
+import EvidencePage from "./pages/EvidencePage";
 import NotificationsPage from "./pages/NotificationsPage";
 import DevicesPage from "./pages/DevicesPage";
 import SessionsPage from "./pages/SessionsPage";
@@ -70,6 +71,7 @@ export default function App() {
             <Route path="/events" element={<EventsPage />} />
             <Route path="/incidents" element={<IncidentsPage />} />
             <Route path="/incidents/:id" element={<IncidentDetailPage />} />
+            <Route path="/incidents/:id/evidence" element={<EvidencePage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/devices" element={<DevicesPage />} />
             <Route path="/sessions" element={<SessionsPage />} />
