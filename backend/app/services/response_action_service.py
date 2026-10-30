@@ -290,10 +290,54 @@ def create_automatic_response_action(
         and sensor_confirmed_bruteforce
     )
 
+    sensor_confirmed_ransomware_like = bool(
+        details.get(
+            "sensor_confirmed_ransomware_like",
+            False,
+        )
+    )
+
+    is_confirmed_lab_ransomware = (
+        event_type == "possible_ransomware_behavior"
+        and severity.lower() in ("high", "critical")
+        and sensor_confirmed_ransomware_like
+    )
+
+    is_confirmed_privilege_abuse = (
+        event_type == "privilege_escalation"
+        and severity.lower() in ("high", "critical")
+        and bool(
+            details.get(
+                "sensor_confirmed_privilege",
+                False,
+            )
+        )
+        and bool(
+            details.get(
+                "sudo_used",
+                False,
+            )
+        )
+        and not bool(
+            details.get(
+                "authorized",
+                True,
+            )
+        )
+        and bool(
+            details.get(
+                "success",
+                False,
+            )
+        )
+    )
+
     if (
         severity.lower() != "critical"
         and event_type != "possible_lateral_movement"
         and not is_confirmed_ssh_bruteforce
+        and not is_confirmed_lab_ransomware
+        and not is_confirmed_privilege_abuse
     ):
         return None
 
@@ -302,6 +346,7 @@ def create_automatic_response_action(
         and event_type not in (
             "possible_data_exfiltration",
             "possible_lateral_movement",
+            "possible_ransomware_behavior",
         )
         and scope != "IMPACT"
     ):
@@ -347,33 +392,64 @@ def create_automatic_response_action(
                 "acceso no autorizado o compromiso de "
                 "autenticación confirmado."
             )
+    elif event_type == "privilege_escalation":
+        target_user = (
+            details.get("user")
+            or details.get("srcuser")
+        )
+
+        # Defensa exclusivamente sobre la
+        # cuenta de laboratorio permitida.
+        if target_user != "priv_demo":
+            return None
+
+        action_type = "TEMPORARY_ACCOUNT_LOCK"
+        target = target_user
+        duration_seconds = 180
+
+        reason = (
+            "Wazuh confirmó uso exitoso de sudo "
+            "por una cuenta de laboratorio que "
+            "no está autorizada como administradora. "
+            "Se propone bloqueo temporal y reversible."
+        )
+
     elif event_type == "possible_ransomware_behavior":
-        if not source_ip:
+        target = (
+            source_ip
+            or details.get("agent_name")
+        )
+
+        if not target:
             return None
 
         action_type = "CONTAIN_HOST"
-        target = source_ip
-        duration_seconds = 900
+        duration_seconds = 180
 
         reason = (
-            "Propuesta de contención reversible por "
-            "comportamiento tipo ransomware en laboratorio. "
-            "La acción queda PENDIENTE y no ejecuta "
-            "aislamiento real automáticamente."
+            "Contención reversible seleccionada por "
+            "comportamiento tipo ransomware confirmado "
+            "en laboratorio. La acción será ejecutada por "
+            "el bridge defensivo autorizado y su resultado "
+            "será verificado por CyberShield."
         )
     elif event_type == "possible_data_exfiltration":
-        if not source_ip:
+        destination_ip = details.get(
+            "destination_ip"
+        )
+
+        if not destination_ip:
             return None
 
         action_type = "RESTRICT_DATA_FLOW"
-        target = source_ip
-        duration_seconds = 900
+        target = destination_ip
+        duration_seconds = 180
 
         reason = (
-            "Propuesta de restricción reversible del flujo de datos "
-            "por posible exfiltración en laboratorio. "
-            "La acción queda PENDIENTE y no ejecuta "
-            "bloqueo real automáticamente."
+            "Restricción reversible seleccionada por "
+            "posible exfiltración confirmada por telemetría "
+            "de Suricata. El bridge defensivo aplicará y "
+            "verificará el bloqueo del flujo de laboratorio."
         )
     elif event_type == "possible_lateral_movement":
         if not source_ip:
@@ -381,16 +457,49 @@ def create_automatic_response_action(
 
         action_type = "RESTRICT_LATERAL_COMMUNICATION"
         target = source_ip
-        duration_seconds = 900
+        duration_seconds = 180
 
         reason = (
-            "Propuesta de restricción reversible de comunicación "
-            "por posible movimiento lateral mediante SSH en laboratorio. "
-            "La acción queda PENDIENTE y no ejecuta "
-            "bloqueo real automáticamente."
+            "Restricción reversible seleccionada por "
+            "movimiento lateral SSH confirmado en laboratorio. "
+            "El bridge defensivo aplicará el bloqueo temporal "
+            "y CyberShield registrará su verificación."
         )
     if action_type is None:
         return None
+
+    # =====================================================
+    # EVITAR CONTENCIONES DUPLICADAS DEL MISMO DESTINO
+    # =====================================================
+    #
+    # Si ya existe una restricción de datos activa para
+    # el mismo destino, no creamos otra acción paralela.
+    #
+    # El evento/incidente puede conservarse como evidencia,
+    # pero la infraestructura no necesita otra regla firewall.
+    if action_type == "RESTRICT_DATA_FLOW":
+        active_same_target = (
+            db.query(ResponseAction)
+            .filter(
+                ResponseAction.action_type
+                == "RESTRICT_DATA_FLOW",
+                ResponseAction.target == target,
+                ResponseAction.status.in_(
+                    [
+                        "pending",
+                        "approved",
+                        "executed",
+                    ]
+                ),
+            )
+            .order_by(
+                ResponseAction.id.desc()
+            )
+            .first()
+        )
+
+        if active_same_target:
+            return None
 
     existing = (
         db.query(ResponseAction)

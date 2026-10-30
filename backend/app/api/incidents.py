@@ -377,10 +377,14 @@ def get_incident_evidence(
                 "destination_user",
                 details.get("user"),
             ),
-            "sensor_confirmed": (
-                details.get(
+            "sensor_confirmed": any(
+                bool(details.get(flag, False))
+                for flag in (
                     "sensor_confirmed_bruteforce",
-                    False,
+                    "sensor_confirmed_ransomware_like",
+                    "sensor_confirmed_privilege",
+                    "sensor_confirmed_lateral",
+                    "sensor_confirmed_exfiltration",
                 )
             ),
             "timestamp": (

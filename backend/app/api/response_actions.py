@@ -55,6 +55,10 @@ def list_response_actions(
         "TEMPORARY_ACCOUNT_LOCK",
         "BLOCK_EGRESS",
         "ISOLATE_HOST",
+        "CONTAIN_HOST",
+        "RESTRICT_DATA_FLOW",
+        "RESTRICT_LATERAL_COMMUNICATION",
+        "LOCKDOWN",
     ]
     | None = Query(default=None),
 

@@ -119,14 +119,51 @@ def create_automatic_incident_mitre(
 
         if not sudo_used:
             return None
-    # T1486 solo cuando el escenario representa cambios
-    # compatibles sobre archivos. No implica cifrado real.
-    if event_type == "possible_ransomware_behavior":
-        renamed_files = int(
-            details.get("renamed_files", 0)
-        )
+    mapping = None
 
-        if renamed_files <= 0:
+    # Para ransomware-like conservamos primero la clasificación
+    # MITRE REAL entregada por el sensor.
+    #
+    # Un cambio FIM no implica automáticamente cifrado,
+    # por lo que NO debemos forzar T1486.
+    if event_type == "possible_ransomware_behavior":
+        mitre_ids = details.get("mitre_ids") or []
+        mitre_tactics = details.get("mitre_tactics") or []
+        mitre_techniques = details.get("mitre_techniques") or []
+
+        if "T1565.001" in mitre_ids:
+            mapping = {
+                "technique_id": "T1565.001",
+                "technique_name": (
+                    mitre_techniques[0]
+                    if mitre_techniques
+                    else "Stored Data Manipulation"
+                ),
+                "tactic": (
+                    mitre_tactics[0]
+                    if mitre_tactics
+                    else "Impact"
+                ),
+                "reference_url": (
+                    "https://attack.mitre.org/"
+                    "techniques/T1565/001/"
+                ),
+                "notes": (
+                    "Wazuh FIM confirmó manipulación de datos "
+                    "almacenados dentro del laboratorio "
+                    "ransomware-demo. No se afirma cifrado real."
+                ),
+            }
+
+        elif details.get(
+            "encryption_behavior_confirmed",
+            False,
+        ):
+            mapping = MITRE_MAPPING.get(
+                "possible_ransomware_behavior"
+            )
+
+        else:
             return None
 
     # T1021.004 solo para SSH exitoso entre un par
@@ -150,7 +187,8 @@ def create_automatic_incident_mitre(
             or pair_authorized
         ):
             return None
-    mapping = MITRE_MAPPING.get(event_type)
+    if mapping is None:
+        mapping = MITRE_MAPPING.get(event_type)
 
     if not mapping:
         return None

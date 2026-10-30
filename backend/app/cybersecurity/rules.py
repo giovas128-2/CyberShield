@@ -384,11 +384,35 @@ def analyze_security_event(event):
             details.get("maintenance_mode", False)
         )
 
+        sensor_confirmed_ransomware_like = bool(
+            details.get(
+                "sensor_confirmed_ransomware_like",
+                False,
+            )
+        )
+
+        lab_ransomware_signal = bool(
+            details.get(
+                "lab_ransomware_signal",
+                False,
+            )
+        )
+
         # Umbrales PROVISIONALES para laboratorio.
         # No se cifra ni destruye información real.
         if maintenance_mode:
             severity = "normal"
             create_incident = False
+
+        # Wazuh FIM confirmó un cambio real dentro de la carpeta
+        # dedicada exclusivamente al simulador ransomware-like.
+        elif (
+            sensor_confirmed_ransomware_like
+            and lab_ransomware_signal
+        ):
+            severity = "high"
+            create_incident = True
+            scope = "IMPACT"
 
         elif modified_files >= 100 and renamed_files >= 50:
             severity = "critical"
