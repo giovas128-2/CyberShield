@@ -305,11 +305,196 @@ def get_incident_evidence(
     response_payload = None
 
     if response_action:
+        action_type = (
+            response_action.action_type
+        )
+
+        target = str(
+            response_action.target or ""
+        )
+
+        tool = "CyberShield"
+
+        command_display = None
+        verification_command = None
+        rollback_command = None
+
+        # -----------------------------------------------------
+        # Fuerza bruta SSH
+        # La ejecución real la realiza Wazuh Active Response.
+        # -----------------------------------------------------
+        if action_type == "BLOCK_SOURCE_IP":
+            tool = (
+                "Wazuh Active Response / firewall-drop"
+            )
+
+            command_display = (
+                "Wazuh Active Response: "
+                f"firewall-drop ADD {target}"
+            )
+
+            rollback_command = (
+                "Wazuh Active Response: "
+                f"firewall-drop DELETE {target}"
+            )
+
+        # -----------------------------------------------------
+        # Abuso / escalación de privilegios
+        # Bridge ejecutado con privilegios root.
+        # -----------------------------------------------------
+        elif action_type == "TEMPORARY_ACCOUNT_LOCK":
+            tool = (
+                "CyberShield Privilege Response Bridge"
+            )
+
+            command_display = (
+                f"usermod -L {target}"
+            )
+
+            verification_command = (
+                f"passwd -S {target}"
+            )
+
+        # -----------------------------------------------------
+        # Movimiento lateral SSH
+        # -----------------------------------------------------
+        elif (
+            action_type
+            == "RESTRICT_LATERAL_COMMUNICATION"
+        ):
+            tool = (
+                "CyberShield Lateral Response Bridge / iptables"
+            )
+
+            command_display = (
+                "iptables -I INPUT 1 "
+                f"-s {target} "
+                "-p tcp --dport 22 -j DROP"
+            )
+
+            verification_command = (
+                "iptables -C INPUT "
+                f"-s {target} "
+                "-p tcp --dport 22 -j DROP"
+            )
+
+            rollback_command = (
+                "iptables -D INPUT "
+                f"-s {target} "
+                "-p tcp --dport 22 -j DROP"
+            )
+
+        # -----------------------------------------------------
+        # Exfiltración de datos
+        # -----------------------------------------------------
+        elif action_type == "RESTRICT_DATA_FLOW":
+            tool = (
+                "CyberShield Exfil Response Bridge / iptables"
+            )
+
+            command_display = (
+                "iptables -I OUTPUT 1 "
+                f"-d {target} "
+                "-p tcp --dport 8765 -j REJECT"
+            )
+
+            verification_command = (
+                "iptables -C OUTPUT "
+                f"-d {target} "
+                "-p tcp --dport 8765 -j REJECT"
+            )
+
+            rollback_command = (
+                "iptables -D OUTPUT "
+                f"-d {target} "
+                "-p tcp --dport 8765 -j REJECT"
+            )
+
+        # -----------------------------------------------------
+        # Ransomware-like de laboratorio
+        # No se inventa un comando shell:
+        # la defensa real se ejecuta desde Python.
+        # -----------------------------------------------------
+        elif action_type == "CONTAIN_HOST":
+            tool = (
+                "CyberShield Lab Response Bridge / Python"
+            )
+
+            command_display = (
+                "Python: os.kill("
+                "PID verificado de ransomware_demo.py, "
+                "signal.SIGTERM)"
+            )
+
+            verification_command = (
+                "Python: verify_containment() "
+                "y Path.chmod(mode & ~0o222) "
+                "sobre ransomware-demo"
+            )
+
+        # -----------------------------------------------------
+        # Construcción de terminal de evidencia
+        # -----------------------------------------------------
+        terminal_lines = []
+
+        if command_display:
+            terminal_lines.append({
+                "kind": "command",
+                "level": "INFO",
+                "text": command_display,
+            })
+
+        if verification_command:
+            terminal_lines.append({
+                "kind": "command",
+                "level": "INFO",
+                "text": verification_command,
+            })
+
+        result_text = (
+            response_action.result or ""
+        )
+
+        for result_line in result_text.splitlines():
+            clean_line = result_line.strip()
+
+            if not clean_line:
+                continue
+
+            is_rollback = (
+                clean_line.startswith(
+                    "ROLLBACK:"
+                )
+            )
+
+            if (
+                is_rollback
+                and rollback_command
+            ):
+                terminal_lines.append({
+                    "kind": "command",
+                    "level": "INFO",
+                    "text": rollback_command,
+                })
+
+            terminal_lines.append({
+                "kind": "output",
+                "level": (
+                    "INFO"
+                    if is_rollback
+                    else (
+                        "ERROR"
+                        if response_action.status
+                        == "failed"
+                        else "OK"
+                    )
+                ),
+                "text": clean_line,
+            })
+
         response_payload = {
             "id": response_action.id,
-            "action_type": (
-                response_action.action_type
-            ),
+            "action_type": action_type,
             "target": response_action.target,
             "status": response_action.status,
             "reversible": (
@@ -317,6 +502,19 @@ def get_incident_evidence(
             ),
             "duration_seconds": (
                 response_action.duration_seconds
+            ),
+            "tool": tool,
+            "command_display": (
+                command_display
+            ),
+            "verification_command": (
+                verification_command
+            ),
+            "rollback_command": (
+                rollback_command
+            ),
+            "terminal_lines": (
+                terminal_lines
             ),
             "reason": response_action.reason,
             "result": response_action.result,

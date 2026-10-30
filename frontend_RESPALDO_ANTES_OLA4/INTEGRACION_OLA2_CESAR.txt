@@ -1,0 +1,33 @@
+CYBERSHIELD — FRONTEND INTEGRADO OLA 2
+Base: frontend ya integrado de César
+Cambios tomados de la entrega corregida de Jacobo y adaptados a la estructura/diseño existente.
+
+SE CONSERVÓ
+- Estructura de carpetas de César: src/api, src/layout, src/pages, src/components, src/types, src/utils, src/styles.
+- Login y registro ya integrados.
+- Estilo visual oscuro actual.
+- Vista de incidentes con guía de investigación.
+- Vista de servidores.
+- PATCH /incidents/{id}/status.
+
+SE INTEGRÓ
+- Severidades oficiales NORMAL / WARNING / HIGH / CRITICAL.
+- Scope BLOCKED / REACHED / IMPACT.
+- GET /events/stats?window=1s y 60s.
+- GET /notifications.
+- Dashboard sin riesgo /100 inventado.
+- Eventos por segundo y por minuto.
+- Principales IP/orígenes, tipos y scope.
+- Conteo de servidores online/offline.
+- Notificaciones HIGH/CRITICAL.
+- POST /events/simulate adaptado al contrato real del backend de César.
+- Polling cada 5 s.
+- Si el backend nunca responde: DATOS SIMULADOS.
+- Si primero hubo datos reales y luego cae: conserva últimos datos y marca Sin conexión.
+
+PRUEBA
+1. Backend: uvicorn app.main:app --reload
+2. Frontend: npm run dev
+3. Abrir http://localhost:5173
+4. Verificar Network: /dashboard/summary, /events, /incidents, /servers, /events/stats?window=1s, /events/stats?window=60s, /notifications
+5. Pulsar Simular evento HIGH y verificar incidente + notificación.

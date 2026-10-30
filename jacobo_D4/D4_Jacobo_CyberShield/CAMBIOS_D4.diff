@@ -1,0 +1,2166 @@
+
+--- a/MAPEO_BACKEND_FRONTEND.md	2026-10-29 23:40:12.689406677 -0600
++++ b/MAPEO_BACKEND_FRONTEND.md	2026-10-29 23:41:00.557857438 -0600
+@@ -1,7 +1,7 @@
+-# MAPEO_BACKEND_FRONTEND · Evidencia de protección / Respuesta real (D1 + D2 + D3)
++# MAPEO_BACKEND_FRONTEND · Frontend completo + Evidencia de protección / Respuesta real (D1 a D4)
+ 
+ **Punto único de entrada de datos:** `getEvidenceResult(id, estado)` en `src/mocks/evidenceMock.ts` (hoy devuelve el mock) → el JSON real debe pasar por `adaptEvidencePayload(raw)` en `src/components/evidence/adaptEvidence.ts` → los componentes **solo reciben `ev: IncidentEvidence` por props**.
+-En los archivos de evidencia no hay `fetch` / `axios` / `WebSocket`. Para ver todos los puntos de conexión: `grep -rn BACKEND_GISS src` (48 comentarios en 7 archivos).
++En los archivos de evidencia no hay `fetch` / `axios` / `WebSocket`. Para ver todos los puntos de conexión: `grep -rn BACKEND_GISS src` (un comentario `BACKEND_GISS` en cada archivo que muestra datos dinámicos y uno por campo en `src/mocks/mockData.ts`).
+ 
+ > `07_evidence_payload_example.json` no venía en lo que recibí. El contrato salió del Plan Maestro (Día 1 Sebas/César): `incident_id, event_id, stage, timestamp, source, message, action_type, command_display, result, success`. Los demás campos (`level`, `terminal_lines`, `outcomes`, `tools`, `notification`, `failure_reason`, `reason`, `tool`, `verification_result`, `response_started_at`, `response_finished_at`, `elapsed_time`, `mitre_*`) son **propuesta del frontend**: si el payload real los llama distinto, se corrige solo `adaptEvidence.ts` (+ esta tabla). No se inventó ninguna ruta del backend.
+ 
+@@ -138,3 +138,28 @@
+ | Ransomware-like (simulación controlada) | `ransomware_like_behavior` | T1486 Data Encrypted for Impact | `STOP_PROCESS` | **placeholder** `[command_preview · lo entrega el backend…]` (no se inventa comando) |
+ 
+ Etiquetas de presentación para `event_type` / `action_type` nuevos: `EVENT_LABEL` y `ACTION_LABEL` en `evidenceUtils.ts` (una línea por tipo). Si el tipo no está, se muestra el valor crudo y la pantalla sigue funcionando. `06_defensive_command_planner.py` no venía en lo recibido; los nombres `STOP_PROCESS`, `CONTAIN_HOST`, `RESTRICT_DATA_FLOW`, etc. salen del diagrama del documento y **hay que confirmarlos** contra ese archivo.
++
++
++---
++# D4 · Mapeo del resto de la aplicación (frontend desacoplado)
++**Punto único de datos de ejemplo:** `src/mocks/mockData.ts`. **Punto único de lectura:** funciones de `src/api/client.ts` y `src/services/management.ts` (misma firma que el cliente real; hoy devuelven el mock sin red). Los componentes no traen datos propios.
++Lo que sigue lista variable visual ← dato backend esperado (mismos nombres que los comentarios `BACKEND_GISS`).
++
++| Pantalla | Función | Variable frontend | Dato backend esperado | Tipo |
++|---|---|---|---|---|
++| Login / Registro | `login`, `register` | `user.id/name/email`, `token` | `user.{id,name,email}`, `token` | obj / string |
++| Dashboard | `getDashboard` | `servidores, servidoresOnline, servidoresOffline, eventos, incidentes, criticos, estado` | `summary.{servers, servers_online, servers_offline, events, incidents, critical_incidents}` | number |
++| Dashboard / Eventos | `getEvents` | `Evento.{id, createdAt, tipo, origen, severidad, estado, scope, serverId, serverName}` | `event.{id, created_at, event_type, source_ip, severity, estado, scope, server_id, server_name}` | `scope`: BLOCKED\|REACHED\|IMPACT |
++| Dashboard | `getEventStats(window)` | `EventStats.{total_events, by_source[], by_type[], by_scope, by_server[], window_seconds}` | `stats.{total_events, by_source, by_type, by_scope, by_server, window_seconds}` | window: "1s"\|"60s" |
++| Incidentes | `getIncidents` | `Incidente.{backendId, id, eventId, eventType, severidad, status, origen, servidor, detectado, asignado, reco, investigationSteps[], resolutionCriteria, mitre[], responseAction}` | `incident.{id, event_id, event_type, severity, status, source_ip, server_name, created_at, assigned_to, recommendation, investigation_steps, resolution_criteria, mitre_techniques, response_action}` | `status`: open\|investigating\|resolved |
++| Incidentes | `updateIncidentStatus` | `(backendId, status)` | cambia `incident.status` | investigating\|resolved |
++| Servidores | `getServers` | `ServerItem.{id, name, ipAddress, status, agent, createdAt, lastSeen}` | `server.{id, name, ip_address, status, agent, created_at, last_seen}` | `status`: online\|offline\|registered |
++| Notificaciones | `getNotifications` | `NotificationItem.{id, incident_id, severity, recipient, channel, message, status, created_at, sent_at}` | `notification.*` (mismos nombres) | |
++| Dispositivos | `getDevices` | `Device.{id, name, user, os, status, last_seen, mode}` | `device.{id, device_name, user, platform, status, last_seen, source_mode}` | status: trusted\|unauthorized\|unknown |
++| Sesiones | `getSessions` | `SessionItem.{id, user, device, ip, started_at, status, mode}` | `session.{id, user, device, ip, started_at, status, source_mode}` | status: active\|revoked\|expired |
++| Acciones | `getActions` | `ActionItem.{id, type, target, status, incident_id, created_at, reversible, mode}` | `response_action.{id, action_type, target, status, incident_id, created_at, reversible, source_mode}` | status: executed\|reverted\|failed\|pending |
++| Protecciones | `getProtections` | `Protection.{id, name, sensor, description, mode, mitre[]}` | `control.{id, name, sensor, description, source_mode, mitre_techniques}` | mode: integrated\|simulated\|pending |
++| Laboratorio | `getLabScenarios`, `runLabScenario` | `LabScenario.{…}` / `id` | `scenario.*` / ejecutar escenario `id` | |
++| EmpresaDemo | (mock §9) | `ED_DEVICES[].trusted`, `ED_PROFILE.*` | decisión de Device Trust, usuario/sesión | clientes/documentos/reportes son contenido ficticio de la app demo |
++
++Cambios de D4 respecto a D3: se eliminó `axios`, `src/api/endpoints.ts`, `.env.example` (`VITE_API_URL`), `src/data/mock.ts`, `src/mocks/management.ts` y `src/layout/Console.tsx` (código muerto no enrutado); el contenido de los mocks se unificó en `src/mocks/mockData.ts`.
+
+--- a/README_INTEGRACION_GISS.md	1969-12-31 18:00:00.000000000 -0600
++++ b/README_INTEGRACION_GISS.md	2026-10-29 23:41:00.543507577 -0600
+@@ -0,0 +1,80 @@
++# README_INTEGRACION_GISS · D4 · Frontend desacoplado de CyberShield (Jacobo)
++
++**Estado:** el frontend corre 100 % con mock local. No hay `fetch`, `axios`, `WebSocket`, URLs ni endpoints en `src/`. Nada depende del backend.
++**Tú (Giss) eres quien integra.** Esta guía te dice qué copiar, dónde está el mock, qué variable va con qué dato y cómo reemplazarlo.
++
++## 1. Cómo arrancar el frontend solo (para ver la referencia visual)
++```bash
++cd frontend
++npm install
++npm run dev        # o: npm run build && npm run preview
++```
++Sesión: cualquier correo válido y contraseña (el mock acepta todo). Todo el sistema muestra "DATOS SIMULADOS" mientras `MOCK_MODE = true`.
++
++## 2. Dependencias npm
++Solo las de siempre: `react`, `react-dom`, `react-router-dom`, `lucide-react` (y dev: `typescript`, `vite`, `@vitejs/plugin-react`, `@types/react`, `@types/react-dom`).
++**No hay dependencias nuevas.** Se quitó `axios` de este paquete (el proyecto maestro conserva el suyo).
++
++## 3. Componente raíz y rutas
++- Raíz de la app: `src/App.tsx` (HashRouter). Layout con datos: `src/layout/AppLayout.tsx` (usa `useCyberShieldData`).
++- **Pantallas de evidencia (lo central de la demo):** ruta `/incidents/:id/evidence` → `src/pages/EvidencePage.tsx` → `DetectionPanel` (pantalla 1) + `DefensiveCommandPanel` (pantalla 2) en `src/components/evidence/`. **Un solo componente para todos los ataques**; solo cambia el JSON.
++- EmpresaDemo (app ficticia protegida): rutas `/empresa-demo/*`, carpeta `src/empresademo/` y `src/pages/empresademo/`.
++
++## 4. Dónde está el mock (UN solo archivo)
++`src/mocks/mockData.ts` — todo dato de ejemplo vive ahí, dividido en secciones numeradas:
++1 usuario · 2 servidores · 3 eventos · 4 incidentes · 5 resumen dashboard · 6 estadísticas 1s/60s · 7 notificaciones · 8 dispositivos/sesiones/acciones/protecciones/laboratorio · 9 EmpresaDemo · 10 evidencia (generador del JSON de ejemplo de los 2 ataques × 5 estados).
++Ningún componente tiene datos propios. Los comandos defensivos tampoco viven en componentes: salen de `response.command_preview` / `terminal_lines`.
++
++## 5. Qué archivos copiar al proyecto maestro
++| Copia (UI, sin lógica de datos) | Notas |
++|---|---|
++| `src/components/evidence/*` (DetectionPanel, DefensiveCommandPanel, adaptEvidence, evidenceUtils, MockStateSwitcher) | núcleo de la evidencia |
++| `src/types/evidence.ts` | contrato del JSON de evidencia |
++| `src/pages/EvidencePage.tsx` | **aquí conectas el servicio real** (ver §6.A) |
++| `src/styles/styles.css` | estilos `.ev-*` (copia o fusiona; no cambia el resto) |
++| `src/pages/IncidentDetailPage.tsx`, `IncidentsView.tsx`, `IncidentsPage.tsx` | si en el maestro aún no traen el botón/ruta de evidencia |
++| `src/components/{SeverityBadge,SimBanner,OriginChip,Sidebar}.tsx`, `src/components/mitre/*` | si difieren del maestro |
++| `src/empresademo/*`, `src/pages/empresademo/*` | si el maestro aún no tiene EmpresaDemo (los datos ED_* salen del mock) |
++| `src/mocks/*` | opcional: sirve como fixture de desarrollo/regresión visual |
++
++**NO sobrescribas** en el maestro: `src/api/client.ts`, `src/services/management.ts`, `src/hooks/useCyberShieldData.ts`. En este paquete son **simulaciones sin red** con la **misma firma** que el cliente real; sirven como especificación de qué función devuelve qué.
++
++## 6. Pasos exactos para reemplazar el mock por el backend
++### A. Evidencia (lo prioritario)
++1. En `src/pages/EvidencePage.tsx` busca la línea marcada `BACKEND_GISS` donde se llama `getEvidenceResult(id, estado, ataque)`.
++2. Reemplázala por: pedir el JSON de evidencia del incidente `id` → `adaptEvidencePayload(raw)` → `setResult({phase:"ready", ev})`. Estados ya dibujados: `loading | ready | empty | error` (el botón **Reintentar** debe volver a llamar tu función de carga). Mientras `ev.status` sea `DETECTED` o `RESPONDING` repite la lectura cada 2–3 s y detén el polling en `CONTAINED/FAILED/ESCALATED`.
++3. Si el JSON real nombra distinto un campo, cámbialo **solo** en `src/components/evidence/adaptEvidence.ts` (una línea por campo). No lanza errores: lo que falta cae a un fallback (ver tabla en MAPEO).
++4. Borra lo solo-dev: `<MockStateSwitcher …/>` en `EvidencePage.tsx` y la etiqueta `MOCK LOCAL` (`.ev-tag`) de `DetectionPanel.tsx`. `?estado=` y `?ataque=` solo existen en el mock.
++
++### B. Resto de pantallas (una función ↔ un dato)
++Cada función de `src/api/client.ts` y `src/services/management.ts` trae un comentario `BACKEND_GISS` con el dato que debe devolver. Tabla resumen:
++| Función | Pantalla | Debe devolver |
++|---|---|---|
++| `login`, `register` | Login / Registro | `{token,user}` / `user` |
++| `getDashboard` | Dashboard | totales de servidores, eventos e incidentes |
++| `getEvents`, `getEventStats("1s"\|"60s")` | Dashboard, Eventos | lista de `Evento`; `EventStats` por ventana |
++| `getIncidents`, `updateIncidentStatus` | Incidentes | lista de `Incidente` (con `mitre[]`, `responseAction`); cambia estado |
++| `getServers` | Servidores | lista de `ServerItem` |
++| `getNotifications` | Notificaciones | lista de `NotificationItem` |
++| `simulateEvent` | Botón "Simular" | el `Incidente` creado |
++| `getDevices/Sessions/Actions/Protections/LabScenarios`, `runLabScenario` | Dispositivos, Sesiones, Acciones, Protecciones, Laboratorio | listas tipadas en `src/types/index.ts` |
++Tipos de salida: `src/types/index.ts` y `src/types/evidence.ts`. Mapeo campo por campo: `MAPEO_BACKEND_FRONTEND.md`.
++
++### C. Quitar la marca "simulado"
++En `src/hooks/useCyberShieldData.ts` cambia `const MOCK_MODE = true` a `false` (o bórralo). Así `demo` solo se activa si el backend no responde. En `services/management.ts` devuelve `source:"api"` para que desaparezca el aviso "DATOS SIMULADOS" de esas pantallas.
++
++### D. Verificar
++1. `grep -rn BACKEND_GISS src` → recorre la lista; cada punto debe quedar conectado o descartado.
++2. DevTools → Network: una lectura de evidencia por incidente; sin 4xx/5xx; sin peticiones tras `CONTAINED`.
++3. Un incidente real por estado (`DETECTED`, `RESPONDING`, `CONTAINED`, `FAILED`, `ESCALATED`) y F5 en cada uno: la misma pantalla.
++4. Consola sin errores; ningún comando de un ataque aparece en otro.
++
++## 7. Reglas del contrato que la pantalla asume (para que no "mienta")
++- `timestamp` ISO 8601 UTC; sin timestamp válido el círculo queda gris.
++- `stage` ∈ `ATTACK_RECEIVED, DETECTED, RULE_APPLIED, INCIDENT_CREATED, RESPONDING, CONTAINED, FAILED, ESCALATED`.
++- Círculo 5 "Acción ejecutada": entrada `RESPONDING` con `success:true`. Círculo 6 verde y "Empresa protegida": solo con entrada `CONTAINED` **y** `verification_result:"contained"`. En `FAILED/ESCALATED` es rojo/ámbar, nunca verde.
++- `response.failure_reason` ya sanitizado (sin rutas ni credenciales). `response.notification.notified:true` solo si el ingeniero fue avisado de verdad.
++- El payload de ejemplo `07_evidence_payload_example.json` **no venía en el material** que recibí: el contrato salió del Plan Maestro y del mock. Compáralo con el real.
++
++## 8. Rollback
++El paquete anterior (`D3_Jacobo_CyberShield.zip`) conserva la capa de datos con axios. `CAMBIOS_D4.diff` (diff contra D3) permite revertir: `patch -R -p1 < CAMBIOS_D4.diff`.
+
+--- a/frontend/.env.example	2026-10-29 23:40:12.692303285 -0600
++++ b/frontend/.env.example	1969-12-31 18:00:00.000000000 -0600
+@@ -1 +0,0 @@
+-VITE_API_URL=http://localhost:8000
+
+--- a/frontend/README.md	2026-10-29 23:40:12.692112282 -0600
++++ b/frontend/README.md	2026-10-29 23:41:00.541333677 -0600
+@@ -1,33 +1,19 @@
+-# CyberShield Frontend
++# CyberShield Frontend (desacoplado · D4)
+ 
+-Frontend del MVP de CyberShield desarrollado con React + TypeScript + Vite.
+-
+-## Ejecutar
++React 18 + TypeScript + Vite. **No se conecta al backend**: no usa fetch, axios ni endpoints. Todos los datos salen de un único mock: `src/mocks/mockData.ts`.
+ 
++## Ejecutar solo el frontend
+ ```bash
+ npm install
+-npm run dev
++npm run dev      # http://localhost:5173  (login: cualquier correo válido + contraseña; el mock acepta todo)
++npm run build    # tsc --noEmit && vite build  -> carpeta dist/
++npm run preview  # sirve dist/ para probar el build
+ ```
+ 
+-La API de FastAPI debe ejecutarse por defecto en `http://localhost:8000`.
+-Puedes cambiarla creando `.env` a partir de `.env.example`.
+-
+-## Endpoints usados
+-
+-- `POST /auth/register`
+-- `POST /auth/login`
+-- `GET /dashboard/summary`
+-- `GET /events`
+-- `GET /incidents`
+-- `POST /events/simulate`
+-
+-## Estructura
+-
+-- `src/pages`: Login, registro y vistas principales.
+-- `src/layout`: consola/navegación principal.
+-- `src/components`: componentes reutilizables.
+-- `src/api`: cliente y normalización de respuestas del backend.
+-- `src/data`: datos demo para cuando la API no está disponible.
+-- `src/types`: tipos TypeScript.
+-- `src/utils`: formato y utilidades.
+-- `src/styles`: estilos globales.
++## Rutas para la demo
++`#/login/cybershield` · `#/dashboard` · `#/events` · `#/incidents` · `#/incidents/INC-077/evidence` · `#/notifications` · `#/actions` · `#/empresa-demo/login`
++Evidencia: `?ataque=brute_force|ransomware&estado=detected|responding|contained|failed|escalated` (solo mock).
++
++## Para quien integra
++Lee `../README_INTEGRACION_GISS.md` y `../MAPEO_BACKEND_FRONTEND.md`. Puntos de conexión: `grep -rn BACKEND_GISS src`.
++Documentos de días anteriores (César/Alex/Ola) están en `docs_anteriores/` solo como historial; pueden mencionar endpoints que ya no existen aquí.
+
+--- a/frontend/package.json	2026-10-29 23:40:12.692281681 -0600
++++ b/frontend/package.json	2026-10-29 23:39:02.936632573 -0600
+@@ -1,11 +1,14 @@
+ {
+   "name": "cybershield-frontend",
+   "private": true,
+-  "version": "0.1.0",
++  "version": "0.4.0",
+   "type": "module",
+-  "scripts": { "dev": "vite", "build": "tsc --noEmit && vite build", "preview": "vite preview" },
++  "scripts": {
++    "dev": "vite",
++    "build": "tsc --noEmit && vite build",
++    "preview": "vite preview"
++  },
+   "dependencies": {
+-    "axios": "^1.7.0",
+     "lucide-react": "^0.447.0",
+     "react": "^18.3.1",
+     "react-dom": "^18.3.1",
+
+--- a/frontend/src/api/client.ts	2026-10-29 23:40:12.690456963 -0600
++++ b/frontend/src/api/client.ts	2026-10-29 23:39:35.119859491 -0600
+@@ -1,389 +1,143 @@
+-import axios from "axios";
+-import type {
+-  EventStats,
+-  Evento,
+-  IncidentStatus,
+-  Incidente,
+-  MitreTechnique,
+-  NotificationItem,
+-  Scope,
+-  ServerItem,
+-  ServerStatus,
+-  Stats,
+-  User,
+-} from "../types";
+-import { hhmm, stamp, toSeverity } from "../utils/format";
+-
+-export const http = axios.create({
+-  baseURL: import.meta.env.VITE_API_URL ?? "http://localhost:8000",
+-})
+-
+-http.interceptors.request.use((cfg) => {
+-  const token = localStorage.getItem("cs_token");
+-  if (token && token !== "mvp-session") cfg.headers.Authorization = `Bearer ${token}`;
+-  return cfg;
+-});
+-
+-export const ROUTES = {
+-  login: "/auth/login",
+-  register: "/auth/register",
+-  dashboard: "/dashboard/summary",
+-  events: "/events",
+-  incidents: "/incidents",
+-  servers: "/servers",
+-  simulate: "/events/simulate",
+-  eventStats: "/events/stats",
+-  notifications: "/notifications",
+-};
+-
+-export const isNet = (e: unknown) => axios.isAxiosError(e) && !e.response;
++/* ============================================================================================================
++   CAPA DE DATOS DEL FRONTEND DESACOPLADO (D4)
++   Esta capa NO hace ninguna petición de red: no usa fetch, axios, WebSocket ni URLs. Cada función devuelve datos de
++   src/mocks/mockData.ts (el ÚNICO mock) con una pequeña espera simulada para que se vean los estados de carga.
++
++   Los nombres, parámetros y tipos de retorno de las funciones exportadas son EXACTAMENTE los que usa el resto de la app.
++   Giss: para conectar el backend, reemplaza SOLO el cuerpo de cada función marcada BACKEND_GISS (la firma no cambia)
++   y deja intactos los componentes. Pasos exactos en README_INTEGRACION_GISS.md; contrato de campos en MAPEO_BACKEND_FRONTEND.md.
++   ============================================================================================================ */
++import type { EventStats, Evento, Incidente, IncidentStatus, MitreTechnique, NotificationItem, ServerItem, Stats, User } from "../types";
++import { stamp } from "../utils/format";
++import {
++  MOCK_DASHBOARD, MOCK_EVENTS, MOCK_EVENT_STATS, MOCK_INCIDENTS, MOCK_NOTIFICATIONS, MOCK_SERVERS, MOCK_USER,
++} from "../mocks/mockData";
++
++const wait = (ms = 120) => new Promise<void>((r) => setTimeout(r, ms));
++const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
++
++/* Estado en memoria (solo mock): permite que "Simular evento" y "Cambiar estado del incidente" se vean reflejados al recargar la lista.
++   BACKEND_GISS: este objeto desaparece; el estado vive en el backend. */
++const mem = { events: clone(MOCK_EVENTS) as Evento[], incidents: clone(MOCK_INCIDENTS) as Incidente[], users: [] as { name: string; email: string }[] };
+ 
++/* ---------- Utilidades que NO son red (se conservan tal cual para Giss) ---------- */
+ export class ApiError extends Error {
+   constructor(message: string, public status: number) { super(message); }
+ }
+-
+-export async function api<T = any>(path: string, method: "GET" | "POST" = "GET", body?: unknown, signal?: AbortSignal): Promise<T> {
+-  try {
+-    const res = await http.request<T>({ url: path, method, data: body, signal });
+-    return res.data;
+-  } catch (e) {
+-    if (axios.isAxiosError(e) && e.response) {
+-      const d = (e.response.data as any)?.detail;
+-      const msg = typeof d === "string" ? d : Array.isArray(d) ? d.map((x: any) => x.msg).join(", ") : "Error del servidor";
+-      throw new ApiError(msg, e.response.status);
+-    }
+-    throw e;
+-  }
+-}
+-
++/* BACKEND_GISS: con backend real, isNet = error sin respuesta del servidor y isMissing = 404/405/501 (ver cliente del proyecto maestro). */
++export const isNet = (_e: unknown) => false;
+ export const isMissing = (e: unknown) => e instanceof ApiError && [404, 405, 501].includes(e.status);
+ 
++export const incidentCode = (id: number) => `INC-${String(id).padStart(3, "0")}`;
++
+ export function normalizeMitre(v: any): MitreTechnique[] {
+   const raw = Array.isArray(v) ? v : v ? [v] : [];
+-
+   return raw
+     .map((x: any) => ({
+-      technique_id: String(
+-        x?.technique_id ?? x?.id ?? ""
+-      ),
+-      technique_name: String(
+-        x?.technique_name ?? x?.name ?? ""
+-      ),
++      technique_id: String(x?.technique_id ?? x?.id ?? ""),
++      technique_name: String(x?.technique_name ?? x?.name ?? ""),
+       tactic: x?.tactic ?? null,
+-      url:
+-        x?.reference_url ??
+-        x?.url ??
+-        null,
+-      is_primary: Boolean(
+-        x?.is_primary ?? true
+-      ),
+-      rationale:
+-        x?.notes ??
+-        x?.rationale ??
+-        x?.justification ??
+-        null,
++      url: x?.reference_url ?? x?.url ?? null,
++      is_primary: Boolean(x?.is_primary ?? true),
++      rationale: x?.notes ?? x?.rationale ?? x?.justification ?? null,
+     }))
+-    .filter((t) => t.technique_id);
++    .filter((t: MitreTechnique) => t.technique_id);
+ }
+ 
+-export const incidentCode = (id: number) => `INC-${String(id).padStart(3, "0")}`;
+-
+-const eventTitle = (eventType: string) => {
+-  const titles: Record<string, string> = {
+-    authentication_failure: "Intento de autenticación fallido",
+-    authentication_burst: "Patrón sospechoso de autenticación",
+-    multiple_login_attempts: "Múltiples intentos de autenticación",
+-    suspicious_file_change: "Cambio sospechoso de archivo",
+-    suspicious_network_traffic: "Tráfico de red sospechoso",
+-    unusual_external_connection: "Conexión externa inusual",
+-    unusual_outbound_connection_burst: "Conexiones salientes inusuales",
+-    privilege_escalation: "Escalación de privilegios",
+-  };
+-  return titles[eventType] ?? eventType.replaceAll("_", " ");
+-};
+-
+-const eventSummary = (eventType: string) => {
+-  const summaries: Record<string, string> = {
+-    authentication_failure: "Se registró un intento de autenticación fallido.",
+-    authentication_burst: "Se detectó un patrón anormal de autenticación que requiere revisión.",
+-    multiple_login_attempts: "Se detectaron varios intentos de autenticación en una ventana corta.",
+-    suspicious_file_change: "CyberShield detectó una modificación de archivo que requiere validación.",
+-    suspicious_network_traffic: "Se detectó un patrón de tráfico fuera del comportamiento esperado.",
+-    unusual_external_connection: "Se detectó una conexión externa fuera del patrón esperado.",
+-    privilege_escalation: "Se observó actividad relacionada con privilegios elevados.",
+-  };
+-  return summaries[eventType] ?? "Evento de seguridad clasificado por CyberShield para revisión.";
+-};
+-
+-const serviceLabel = (eventType: string) => {
+-  if (eventType.includes("authentication")) return "Autenticación";
+-  if (eventType.includes("file")) return "Sistema de archivos";
+-  if (eventType.includes("network") || eventType.includes("connection")) return "Red";
+-  if (eventType.includes("privilege")) return "Identidad / privilegios";
+-  return "Por determinar";
+-};
+-
+-const ruleLabel = (eventType: string) => {
+-  if (eventType.includes("authentication")) return "AUTH-CORRELATION";
+-  if (eventType.includes("file")) return "FILE-CHANGE";
+-  if (eventType.includes("network") || eventType.includes("connection")) return "NETWORK-CORRELATION";
+-  if (eventType.includes("privilege")) return "PRIVILEGE-CORRELATION";
+-  return "CYBERSHIELD-RULE";
+-};
+-
+-const statusToUi = (status: string) => {
+-  const value = String(status ?? "open").toLowerCase();
+-  if (value === "resolved") return "Resuelto";
+-  if (value === "investigating") return "Investigando";
+-  return "Pendiente";
+-};
+-
+-const normalizeStatus = (status: unknown): IncidentStatus => {
+-  const value = String(status ?? "open").toLowerCase();
+-  if (value === "resolved") return "resolved";
+-  if (value === "investigating") return "investigating";
+-  return "open";
+-};
+-
+-const normalizeServerStatus = (status: unknown): ServerStatus => {
+-  const value = String(status ?? "registered").toLowerCase();
+-  if (value === "online") return "online";
+-  if (value === "offline") return "offline";
+-  return "registered";
+-};
+-
+-const normalizeScope = (value: unknown): Scope | null => {
+-  const scope = String(value ?? "").toUpperCase();
+-  if (scope === "BLOCKED" || scope === "REACHED" || scope === "IMPACT") return scope;
+-  return null;
+-};
+-
+-export async function register(body: { name: string; email: string; password: string }) {
+-  const res = await http.post(ROUTES.register, body);
+-  return res.data.user as User;
+-}
+-
+-export async function login(
+-  body: {
+-    email: string;
+-    password: string;
+-  }
+-) {
+-  try {
+-    const res = await http.post(
+-      ROUTES.login,
+-      body
+-    );
+-
+-    return {
+-      token: "mvp-session",
+-      user: res.data.user as User,
+-    };
+-
+-  } catch (error: any) {
+-    const status =
+-      error?.response?.status;
+-
+-    const detail =
+-      error?.response?.data?.detail;
+-
+-    if (status === 403) {
+-      throw new Error(
+-        detail ||
+-          "Acceso bloqueado: origen no autorizado."
+-      );
+-    }
+-
+-    if (status === 401) {
+-      throw new Error(
+-        "Correo o contraseña incorrectos."
+-      );
+-    }
+-
+-    if (!error?.response) {
+-      throw new Error(
+-        "No se pudo conectar con el servidor CyberShield."
+-      );
+-    }
+-
+-    throw new Error(
+-      detail ||
+-        "No fue posible iniciar sesión."
+-    );
+-  }
++/* ---------- Sesión ---------- */
++/* BACKEND_GISS: register <- enviar {name,email,password} al registro del backend; devolver user {id,name,email}. Error "correo ya registrado" -> Error con ese texto. */
++export async function register(body: { name: string; email: string; password: string }): Promise<User> {
++  await wait();
++  if (mem.users.some((u) => u.email.toLowerCase() === body.email.toLowerCase())) throw new Error("Ese correo ya está registrado.");
++  mem.users.push({ name: body.name, email: body.email }); // la contraseña NO se guarda en el mock
++  return { ...MOCK_USER, name: body.name, email: body.email };
++}
++
++/* BACKEND_GISS: login <- enviar {email,password} al login del backend; devolver {token, user}. Mensajes de error que la pantalla ya muestra:
++   401 "Correo o contraseña incorrectos." · 403 detail del backend (origen no autorizado) · sin red "No se pudo conectar con el servidor CyberShield."
++   MOCK: acepta cualquier correo/contraseña con formato válido (la validación de formato la hace Login.tsx). */
++export async function login(body: { email: string; password: string }): Promise<{ token: string; user: User }> {
++  await wait();
++  const known = mem.users.find((u) => u.email.toLowerCase() === body.email.toLowerCase());
++  const name = known?.name ?? MOCK_USER.name;
++  return { token: "mvp-session", user: { ...MOCK_USER, name, email: body.email } };
+ }
+ 
++/* ---------- Dashboard ---------- */
++/* BACKEND_GISS: getDashboard <- resumen del dashboard {servers, servers_online, servers_offline, events, incidents, critical_incidents}. */
+ export async function getDashboard(): Promise<Stats> {
+-  const res = await http.get(ROUTES.dashboard);
+-  const d = res.data ?? {};
+-  return {
+-    estado: "Monitoreo activo. Revisa los incidentes y eventos recientes.",
+-    servidores: Number(d.servers ?? 0),
+-    servidoresOnline: Number(d.servers_online ?? 0),
+-    servidoresOffline: Number(d.servers_offline ?? 0),
+-    eventos: Number(d.events ?? 0),
+-    incidentes: Number(d.incidents ?? 0),
+-    criticos: Number(d.critical_incidents ?? 0),
+-  };
++  await wait();
++  return clone(MOCK_DASHBOARD);
+ }
+ 
++/* ---------- Eventos ---------- */
++/* BACKEND_GISS: getEvents <- lista de eventos del backend (campos en mocks/mockData.ts §3 y MAPEO_BACKEND_FRONTEND.md). Orden: la pantalla reordena por createdAt. */
+ export async function getEvents(): Promise<Evento[]> {
+-  const res = await http.get(ROUTES.events);
+-  const list = res.data ?? [];
+-  return list.map((e: any) => {
+-    const createdAt = e.created_at ?? e.createdAt ?? null;
+-    return {
+-      id: e.id,
+-      createdAt: createdAt ?? undefined,
+-      fecha: createdAt ? hhmm(new Date(createdAt)) : "—",
+-      tipo: String(e.event_type ?? e.tipo ?? "Evento"),
+-      origen: String(e.source_ip ?? e.origen ?? "—"),
+-      severidad: toSeverity(e.severity ?? e.severidad),
+-      estado: e.estado ?? (toSeverity(e.severity) === "NORMAL" ? "Registrado" : "Detectado"),
+-      scope: normalizeScope(e.scope),
+-      serverId: e.server_id != null ? Number(e.server_id) : null,
+-      serverName: e.server_name ?? e.hostname ?? null,
+-    };
+-  });
++  await wait();
++  return clone(mem.events);
+ }
+ 
++/* ---------- Incidentes ---------- */
++/* BACKEND_GISS: getIncidents <- lista de incidentes del backend (campos en mocks/mockData.ts §4). El código INC-xxx se arma con incidentCode(incident.id). */
+ export async function getIncidents(): Promise<Incidente[]> {
+-  const res = await http.get(ROUTES.incidents);
+-  const list = res.data ?? [];
+-  return list.map((i: any) => {
+-    const backendId = Number(i.id);
+-    const eventType = String(i.event_type ?? "security_incident");
+-    const status = normalizeStatus(i.status);
+-    return {
+-      id: incidentCode(backendId),
+-      backendId,
+-      eventId: i.event_id != null ? Number(i.event_id) : undefined,
+-      eventType,
+-      titulo: eventTitle(eventType),
+-      resumen: eventSummary(eventType),
+-      severidad: toSeverity(i.severity),
+-      estado: statusToUi(status),
+-      status,
+-      origen: String(i.source_ip ?? "—"),
+-      servidor: i.server_name ?? i.hostname ?? (i.server_id != null ? `Servidor #${i.server_id}` : "srv-cyber-01"),
+-      servicio: serviceLabel(eventType),
+-      detectado: i.created_at ? stamp(i.created_at) : stamp(),
+-      asignado: "—",
+-      regla: ruleLabel(eventType),
+-      reco: i.recommendation ?? "Revisar el evento asociado, su contexto y la evidencia antes de aplicar una respuesta.",
+-      investigationSteps: Array.isArray(i.investigation_steps) && i.investigation_steps.length
+-        ? i.investigation_steps
+-        : ["Revisar el evento asociado.", "Validar el origen y el servidor.", "Buscar actividad relacionada."],
+-      resolutionCriteria: i.resolution_criteria ?? "El evento fue investigado y existe evidencia suficiente para considerarlo legítimo, contenido o resuelto.",
+-      mitre: normalizeMitre(i.mitre_techniques ?? i.mitre ?? i.techniques),
+-      responseAction: i.response_action
+-  ? {
+-      id: Number(i.response_action.id),
+-      action_type: String(
+-        i.response_action.action_type ?? ""
+-      ),
+-      target:
+-        i.response_action.target ?? null,
+-      status:
+-        i.response_action.status ?? "pending",
+-      reversible:
+-        Boolean(i.response_action.reversible),
+-      duration_seconds:
+-        i.response_action.duration_seconds != null
+-          ? Number(
+-              i.response_action.duration_seconds
+-            )
+-          : null,
+-      reason:
+-        i.response_action.reason ?? null,
+-      result:
+-        i.response_action.result ?? null,
+-      created_at:
+-        i.response_action.created_at ?? null,
+-      executed_at:
+-        i.response_action.executed_at ?? null,
+-      rolled_back_at:
+-        i.response_action.rolled_back_at ?? null,
+-    }
+-  : null,
+-    };
+-  });
++  await wait();
++  return clone(mem.incidents);
+ }
+ 
++/* BACKEND_GISS: updateIncidentStatus <- cambiar el estado del incidente `id` a "investigating" | "resolved" en el backend. */
+ export async function updateIncidentStatus(id: number, status: "investigating" | "resolved") {
+-  const res = await http.patch(`${ROUTES.incidents}/${id}/status`, { status });
+-  return res.data;
++  await wait();
++  const inc = mem.incidents.find((i) => i.backendId === id);
++  if (!inc) throw new ApiError("Incidente no encontrado", 404);
++  inc.status = status as IncidentStatus;
++  inc.estado = status === "resolved" ? "Resuelto" : "Investigando";
++  return { id, status };
+ }
+ 
++/* ---------- Servidores ---------- */
++/* BACKEND_GISS: getServers <- lista de servidores del backend (campos en mocks/mockData.ts §2). */
+ export async function getServers(): Promise<ServerItem[]> {
+-  const res = await http.get(ROUTES.servers);
+-  const list = res.data ?? [];
+-  return list.map((s: any) => ({
+-    id: Number(s.id),
+-    name: s.name ?? "—",
+-    ipAddress: String(s.ip_address ?? s.ip ?? "—"),
+-    status: normalizeServerStatus(s.status),
+-    agent: s.agent ?? null,
+-    createdAt: s.created_at ?? null,
+-    lastSeen: s.last_seen ?? null,
+-  }));
++  await wait();
++  return clone(MOCK_SERVERS);
+ }
+ 
++/* ---------- Estadísticas de eventos ---------- */
++/* BACKEND_GISS: getEventStats <- estadísticas de eventos de la ventana `window` ("1s" | "60s") (campos en mocks/mockData.ts §6). */
+ export async function getEventStats(window: "1s" | "60s"): Promise<EventStats> {
+-  const res = await http.get(ROUTES.eventStats, { params: { window } });
+-  const r = res.data ?? {};
+-  return {
+-    window,
+-    window_seconds: Number(r.window_seconds ?? (window === "1s" ? 1 : 60)),
+-    total_events: Number(r.total_events ?? 0),
+-    by_source: (r.by_source ?? []).map((x: any) => ({ source_ip: x.source_ip ?? null, count: Number(x.count ?? 0) })),
+-    by_type: (r.by_type ?? []).map((x: any) => ({ event_type: String(x.event_type ?? ""), count: Number(x.count ?? 0) })),
+-    by_scope: {
+-      BLOCKED: Number(r.by_scope?.BLOCKED ?? 0),
+-      REACHED: Number(r.by_scope?.REACHED ?? 0),
+-      IMPACT: Number(r.by_scope?.IMPACT ?? 0),
+-    },
+-    by_server: (r.by_server ?? []).map((x: any) => ({ server_id: x.server_id ?? null, count: Number(x.count ?? 0) })),
+-  };
++  await wait();
++  return clone(MOCK_EVENT_STATS[window]);
+ }
+ 
++/* ---------- Notificaciones ---------- */
++/* BACKEND_GISS: getNotifications <- lista de notificaciones enviadas (campos en mocks/mockData.ts §7). */
+ export async function getNotifications(): Promise<NotificationItem[]> {
+-  const res = await http.get(ROUTES.notifications);
+-  return (res.data ?? []).map((n: any) => ({
+-    id: Number(n.id),
+-    incident_id: Number(n.incident_id),
+-    severity: toSeverity(n.severity),
+-    recipient: String(n.recipient ?? ""),
+-    channel: String(n.channel ?? ""),
+-    message: String(n.message ?? ""),
+-    status: String(n.status ?? ""),
+-    created_at: String(n.created_at ?? ""),
+-    sent_at: n.sent_at ?? null,
+-  }));
++  await wait();
++  return clone(MOCK_NOTIFICATIONS);
+ }
+ 
++/* ---------- Simulación (botón "Simular evento HIGH") ---------- */
++/* BACKEND_GISS: simulateEvent <- pedir al backend que genere un evento de prueba y devolver el incidente creado (ya normalizado como Incidente).
++   MOCK: agrega a la memoria un evento HIGH y un incidente nuevo. */
+ export async function simulateEvent(userName?: string): Promise<Incidente | null> {
+-  const body = {
+-    event_type: "authentication_burst",
+-    source: "simulator",
+-    source_ip: "192.168.1.50",
+-    server_id: 2,
+-    user: userName ?? "usuario_demo",
+-    description: "Patrón sospechoso contra múltiples cuentas",
+-    details: {
+-      attempts: 15,
+-      time_window_seconds: 60,
+-      distinct_users: 5,
+-      successful_login: false,
+-      unauthorized_access: false,
+-      privilege_escalation: false,
+-    },
++  await wait(250);
++  const n = mem.incidents.reduce((m, i) => Math.max(m, i.backendId), 0) + 1;
++  const now = new Date();
++  mem.events.push({ id: 1000 + n, fecha: now.toTimeString().slice(0, 5), createdAt: now.toISOString(), tipo: "authentication_burst", origen: "192.168.1.50", severidad: "HIGH", estado: "Detectado", scope: "REACHED", serverId: 2, serverName: "srv-cyber-01" });
++  const inc: Incidente = {
++    id: incidentCode(n), backendId: n, eventType: "authentication_burst",
++    titulo: "Patrón sospechoso de autenticación", resumen: "Se detectó un patrón anormal de autenticación que requiere revisión.",
++    severidad: "HIGH", estado: "Pendiente", status: "open", origen: "192.168.1.50", servidor: "srv-cyber-01", servicio: "Autenticación",
++    detectado: stamp(), asignado: userName ?? "—", regla: "AUTH-CORRELATION",
++    reco: "Validar el origen, las cuentas afectadas y si hubo acceso exitoso posterior.",
++    investigationSteps: ["Revisar origen y cuentas afectadas.", "Correlacionar fallos y accesos exitosos.", "Buscar actividad privilegiada posterior."],
++    mitre: [], resolutionCriteria: "La actividad quedó explicada o contenida con evidencia suficiente.",
+   };
++  mem.incidents.unshift(inc);
++  return clone(inc);
++}
+ 
+-  const res = await http.post(ROUTES.simulate, body);
+-  const inc = res.data?.incident;
+-  if (!inc?.id) return null;
+-  const incidents = await getIncidents();
+-  const full = incidents.find((item) => item.backendId === Number(inc.id));
+-  return full ? { ...full, asignado: userName ?? full.asignado } : null;
++/* ---------- Laboratorio ---------- */
++/* BACKEND_GISS: runLabScenario <- pedir al backend que ejecute el escenario `id` del laboratorio (simulación controlada, datos ficticios). */
++export async function runLabScenario(_id: string): Promise<void> {
++  await wait(1200);
+ }
+
+--- a/frontend/src/api/endpoints.ts	2026-10-29 23:40:12.690393556 -0600
++++ b/frontend/src/api/endpoints.ts	1969-12-31 18:00:00.000000000 -0600
+@@ -1,13 +0,0 @@
+-/* ===== RUTAS PENDIENTES DE CONFIRMAR CON CÉSAR =====
+-   No están definidas en el contrato del backend, por eso valen null (el frontend NO inventa rutas).
+-   Mientras sean null, cada pantalla muestra datos de src/mocks con el aviso "DATOS SIMULADOS".
+-   Cuando César confirme una ruta, pégala aquí (ej.: devices: "/devices") y ajusta el normalizador en src/services/management.ts. */
+-export const PENDING_ENDPOINTS: Record<"devices" | "sessions" | "actions" | "protections" | "labScenarios", string | null> = {
+-  devices: "/devices",
+-  sessions: "/sessions",
+-  actions: "/response-actions",
+-  protections: "/protections",
+-  labScenarios: "/lab/scenarios",
+-};
+-// POST para ejecutar un escenario de laboratorio. Pendiente de contrato.
+-export const LAB_RUN_ENDPOINT: string | null = "/lab/scenarios";
+
+--- a/frontend/src/components/OriginChip.tsx	2026-10-29 23:40:12.689827119 -0600
++++ b/frontend/src/components/OriginChip.tsx	2026-10-29 23:39:02.928690931 -0600
+@@ -2,6 +2,6 @@
+ export function OriginChip({ demo, stale, at }: { demo: boolean; stale: boolean; at: Date }) {
+   const utc = at.toISOString().slice(0, 16).replace("T", " ") + " UTC";
+   if (stale) return <span className="origin er" title="El backend no responde; se muestran los últimos datos reales recibidos">SIN CONEXIÓN · ÚLTIMOS DATOS REALES · {utc}</span>;
+-  if (demo) return <span className="origin wn" title="El backend nunca respondió en esta sesión">ORIGEN: DEMO · DATOS SIMULADOS</span>;
++  if (demo) return <span className="origin wn" title="Frontend desacoplado: datos del mock local">ORIGEN: DEMO · DATOS SIMULADOS</span>;
+   return <span className="origin ok">ORIGEN: BACKEND REAL · {utc}</span>;
+ }
+
+--- a/frontend/src/components/Sidebar.tsx	2026-10-29 23:40:12.689943933 -0600
++++ b/frontend/src/components/Sidebar.tsx	2026-10-29 23:39:52.451457798 -0600
+@@ -1,3 +1,4 @@
++/* BACKEND_GISS: openIncidents <- cantidad de incidentes no resueltos · notifications <- cantidad de notificaciones · status.online/offline <- servidores · status.updatedAt <- última lectura. Todo viene de useCyberShieldData(). */
+ import { NavLink } from "react-router-dom";
+ import { Activity, Bell, FlaskConical, LayoutDashboard, Lock, Server, Settings, ShieldAlert, ShieldCheck, Smartphone, User as UserIcon, Wrench } from "lucide-react";
+ import type { LucideIcon } from "lucide-react";
+
+--- a/frontend/src/components/SimBanner.tsx	2026-10-29 23:40:12.689782245 -0600
++++ b/frontend/src/components/SimBanner.tsx	2026-10-29 23:39:02.928253516 -0600
+@@ -7,7 +7,7 @@
+       {stale ? <WifiOff size={16} /> : <Info size={16} />}
+       {stale
+         ? "Sin conexión · Se muestran los últimos datos reales recibidos."
+-        : "DATOS SIMULADOS · El backend no respondió desde el inicio de la sesión."}
++        : "DATOS SIMULADOS · Frontend desacoplado: datos del mock local."}
+     </div>
+   );
+ }
+
+--- a/frontend/src/data/mock.ts	2026-10-29 23:40:12.690787199 -0600
++++ b/frontend/src/data/mock.ts	1969-12-31 18:00:00.000000000 -0600
+@@ -1,25 +0,0 @@
+-import type { Evento, Incidente } from "../types";
+-
+-const ago = (minutes: number) => new Date(Date.now() - minutes * 60000).toISOString();
+-
+-export const MOCK_EVENTS: Evento[] = [
+-  { id: 1, fecha: "12:01", createdAt: ago(8), tipo: "authentication_failure", origen: "192.168.1.10", severidad: "NORMAL", estado: "Registrado", scope: "BLOCKED", serverId: 2 },
+-  { id: 2, fecha: "12:03", createdAt: ago(6), tipo: "authentication_burst", origen: "192.168.1.50", severidad: "HIGH", estado: "Detectado", scope: "REACHED", serverId: 2 },
+-  { id: 3, fecha: "12:04", createdAt: ago(4), tipo: "suspicious_network_traffic", origen: "192.168.1.80", severidad: "WARNING", estado: "Registrado", scope: "REACHED", serverId: 2 },
+-  { id: 4, fecha: "12:05", createdAt: ago(2), tipo: "privilege_escalation", origen: "192.168.1.90", severidad: "CRITICAL", estado: "Detectado", scope: "IMPACT", serverId: 2 },
+-];
+-
+-export const MOCK_INC: Incidente[] = [
+-  {
+-    id: "INC-003", backendId: 3, eventType: "authentication_burst",
+-    titulo: "Patrón sospechoso de autenticación",
+-    resumen: "Actividad de autenticación contra varias cuentas en una ventana corta.",
+-    severidad: "HIGH", estado: "Investigando", status: "investigating",
+-    origen: "192.168.1.50", servidor: "srv-cyber-01", servicio: "Autenticación",
+-    detectado: "14 oct 2026 · 12:03", asignado: "César", regla: "AUTH-CORRELATION",
+-    reco: "Validar el origen, las cuentas afectadas y si hubo acceso exitoso posterior.",
+-    investigationSteps: ["Revisar origen y cuentas afectadas.", "Correlacionar fallos y accesos exitosos.", "Buscar actividad privilegiada posterior."],
+-    mitre: [],
+-    resolutionCriteria: "La actividad quedó explicada o contenida con evidencia suficiente.",
+-  },
+-];
+
+--- a/frontend/src/empresademo/EmpresaDemoLayout.tsx	2026-10-29 23:40:12.690740708 -0600
++++ b/frontend/src/empresademo/EmpresaDemoLayout.tsx	2026-10-29 23:39:52.453067370 -0600
+@@ -1,3 +1,4 @@
++/* BACKEND_GISS: ED_ORIGIN / ED_PROFILE / dispositivo actual <- backend (mocks/mockData.ts §9). */
+ import { useEffect, useState } from "react";
+ import { NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
+ import { BarChart3, FileText, Home, Layers, Menu, UserCircle, Users } from "lucide-react";
+
+--- a/frontend/src/empresademo/fixtures.ts	2026-10-29 23:40:12.690716292 -0600
++++ b/frontend/src/empresademo/fixtures.ts	2026-10-29 23:38:50.905144814 -0600
+@@ -1,51 +1,11 @@
+-/* EmpresaDemo: aplicación corporativa FICTICIA protegida por CyberShield.
+-   Todos los datos son inventados (sin personas, correos, teléfonos ni credenciales reales). No hay llamadas al backend. */
+-
+-export const ED_DATE_LABEL = "Martes, 20 de octubre de 2026";
+-export const ED_ORIGIN = "ORIGEN: DEMO · 20 oct 2026 · 10:24 UTC";
+-
+-export interface EDDevice { name: string; id: string; trusted: boolean }
+-export const ED_DEVICES: Record<string, EDDevice> = {
+-  "demo-equipo-01": { name: "demo-equipo-01", id: "DV-001", trusted: true },
+-  "demo-equipo-06": { name: "demo-equipo-06", id: "DV-006", trusted: false },
+-};
+-export const ED_PROFILE = { alias: "Analista Demo", user: "analista.demo", org: "Oficina central ficticia", role: "Analista de muestra", session: "SES-011" };
++/* EmpresaDemo: los DATOS ficticios viven en el mock central (src/mocks/mockData.ts §9). Aquí solo quedan los helpers de sesión de la demo
++   y la re-exportación para que las páginas ED* no cambien sus imports. No hay llamadas al backend. */
++import { ED_DEVICES, type EDDevice } from "../mocks/mockData";
++export { ED_ACTIVITY, ED_BARS, ED_CLIENTS, ED_DATE_LABEL, ED_DEVICES, ED_DOCS, ED_ORIGIN, ED_PROFILE, ED_REPORTS } from "../mocks/mockData";
++export type { EDClient, EDDevice, EDDoc } from "../mocks/mockData";
+ 
+ const KEY = "ed_device";
+ /* Sesión de demostración: solo recuerda qué equipo ficticio se eligió; no es autenticación real. */
+ export const edGetDevice = (): EDDevice | null => { try { const k = sessionStorage.getItem(KEY); return k ? ED_DEVICES[k] ?? null : null; } catch { return null; } };
+ export const edSetDevice = (name: string) => { try { sessionStorage.setItem(KEY, name); } catch { /* sin almacenamiento: la demo sigue funcionando */ } };
+ export const edClear = () => { try { sessionStorage.removeItem(KEY); } catch { /* noop */ } };
+-
+-export interface EDClient { id: string; code: string; name: string; sector: string; owner: string; status: "En curso" | "En revisión" | "En seguimiento"; last: string; note: string }
+-export const ED_CLIENTS: EDClient[] = [
+-  { id: "c1", code: "CLI-001", name: "Proyecto Olivo", sector: "Servicios profesionales", owner: "Equipo Demo A", status: "En curso", last: "Hoy · Propuesta v3", note: "Relación activa desde septiembre de 2026. Propuesta comercial DOC-018 actualizada hoy a las 10:08. Próximo hito ficticio: revisión de alcance." },
+-  { id: "c2", code: "CLI-002", name: "Estudio Bruma", sector: "Diseño y consultoría", owner: "Equipo Demo B", status: "En curso", last: "Hoy · Resumen revisado", note: "Resumen de servicio DOC-016 revisado esta mañana. Sin pendientes críticos." },
+-  { id: "c3", code: "CLI-003", name: "Grupo Ladera", sector: "Operaciones", owner: "Equipo Demo A", status: "En revisión", last: "19 oct · Plan de trabajo", note: "Plan de trabajo DOC-012 en borrador, pendiente de revisión del equipo." },
+-  { id: "c4", code: "CLI-004", name: "Taller Marea", sector: "Producción", owner: "Equipo Demo C", status: "En curso", last: "18 oct · Entrega de muestra", note: "Entrega de muestra DOC-011 revisada." },
+-  { id: "c5", code: "CLI-005", name: "Casa Umbral", sector: "Comercio", owner: "Equipo Demo B", status: "En seguimiento", last: "17 oct · Nota de proyecto", note: "Nota de proyecto DOC-009 por revisar." },
+-  { id: "c6", code: "CLI-006", name: "Nodo Prado", sector: "Tecnología", owner: "Equipo Demo C", status: "En curso", last: "16 oct · Reporte mensual", note: "Reporte mensual compartido con el equipo." },
+-];
+-
+-export interface EDDoc { id: string; code: string; title: string; kind: string; client: string; state: "Por revisar" | "Revisado" | "Borrador"; version: string; when: string; owner: string; outline: string[] }
+-export const ED_DOCS: EDDoc[] = [
+-  { id: "d1", code: "DOC-018", title: "Propuesta comercial", kind: "Documento", client: "Proyecto Olivo", state: "Por revisar", version: "v3", when: "Hoy · 10:08", owner: "Equipo Demo A", outline: ["Objetivo del proyecto", "Alcance orientativo", "Próximos pasos"] },
+-  { id: "d2", code: "DOC-016", title: "Resumen de servicio", kind: "Documento", client: "Estudio Bruma", state: "Revisado", version: "v2", when: "Hoy · 09:42", owner: "Equipo Demo B", outline: ["Contexto", "Servicios entregados", "Siguientes pasos"] },
+-  { id: "d3", code: "DOC-012", title: "Plan de trabajo", kind: "Documento", client: "Grupo Ladera", state: "Borrador", version: "v1", when: "Ayer", owner: "Equipo Demo A", outline: ["Etapas", "Responsables ficticios", "Calendario de muestra"] },
+-  { id: "d4", code: "DOC-011", title: "Entrega de muestra", kind: "Documento", client: "Taller Marea", state: "Revisado", version: "v2", when: "18 oct", owner: "Equipo Demo C", outline: ["Resumen", "Entregables", "Observaciones"] },
+-  { id: "d5", code: "DOC-009", title: "Nota de proyecto", kind: "Nota", client: "Casa Umbral", state: "Por revisar", version: "v1", when: "17 oct", owner: "Equipo Demo B", outline: ["Contexto", "Notas"] },
+-];
+-
+-export const ED_ACTIVITY = [
+-  { t: "10:08", title: "Propuesta actualizada", meta: "DOC-018 · Proyecto Olivo · Versión 3" },
+-  { t: "09:42", title: "Documento revisado", meta: "DOC-016 · Estudio Bruma" },
+-  { t: "09:30", title: "Reporte consultado", meta: "REP-006 · Resumen de octubre" },
+-  { t: "09:00", title: "Acceso normal", meta: "Analista Demo · Equipo de confianza" },
+-];
+-export const ED_REPORTS = [
+-  { code: "REP-006", name: "Resumen de octubre", period: "Octubre 2026", content: "Actividad del equipo", last: "Hoy · 09:30" },
+-  { code: "REP-005", name: "Seguimiento documental", period: "Octubre 2026", content: "Versiones y revisiones", last: "19 oct · 15:20" },
+-  { code: "REP-004", name: "Panorama de clientes", period: "Septiembre 2026", content: "Relaciones y proyectos", last: "17 oct · 11:05" },
+-];
+-/* Distribución ilustrativa del 1 al 20 de octubre; no representa productividad real. */
+-export const ED_BARS = [5, 9, 6, 12, 8, 10, 19, 38, 15, 8, 6, 5];
+
+--- a/frontend/src/hooks/useCyberShieldData.ts	2026-10-29 23:40:12.690241813 -0600
++++ b/frontend/src/hooks/useCyberShieldData.ts	2026-10-29 23:39:02.926486553 -0600
+@@ -10,8 +10,9 @@
+   simulateEvent,
+   updateIncidentStatus,
+ } from "../api/client";
+-import { MOCK_EVENTS, MOCK_INC } from "../data/mock";
+-import type { EventStats, Incidente, NotificationItem, ServerItem, Stats, User } from "../types";
++/* BACKEND_GISS: MOCK_MODE=true marca TODA la app como "DATOS SIMULADOS". Con backend real pon MOCK_MODE=false (o bórralo) y deja que `demo` solo se active si el backend no responde. */
++const MOCK_MODE = true;
++import type { EventStats, Evento, Incidente, NotificationItem, ServerItem, Stats, User } from "../types";
+ import type { ToastData } from "../components/Toast";
+ import { eventsPerMinute } from "../utils/format";
+ 
+@@ -26,15 +27,15 @@
+ };
+ 
+ export function useCyberShieldData(user: User) {
+-  const [demo, setDemo] = useState(false);
++  const [demo, setDemo] = useState(MOCK_MODE);
+   const [stale, setStale] = useState(false);
+-  const hasRealData = useRef(false);
++  const hasRealData = useRef(false); // BACKEND_GISS: true cuando el backend respondió al menos una vez
+   const [stats, setStats] = useState<Stats>(emptyStats);
+   const [stats1s, setStats1s] = useState<EventStats | null>(null);
+   const [stats60s, setStats60s] = useState<EventStats | null>(null);
+   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+-  const [lista, setLista] = useState(MOCK_EVENTS);
+-  const [incs, setIncs] = useState<Incidente[]>(MOCK_INC);
++  const [lista, setLista] = useState<Evento[]>([]);
++  const [incs, setIncs] = useState<Incidente[]>([]);
+   const [servers, setServers] = useState<ServerItem[]>([]);
+   const [selId, setSelId] = useState<string | null>(null);
+   const [alertInc, setAlertInc] = useState<Incidente | null>(null);
+@@ -47,7 +48,7 @@
+       const events = await getEvents();
+       setLista(events);
+       hasRealData.current = true;
+-      setDemo(false);
++      setDemo(MOCK_MODE);
+       setStale(false);
+       setUpdatedAt(new Date());
+ 
+@@ -90,7 +91,7 @@
+       setNotifications(notifs);
+       setLoading(false);
+       hasRealData.current = true;
+-      setDemo(false);
++      setDemo(MOCK_MODE);
+       setStale(false);
+       setUpdatedAt(new Date());
+     } catch (err) {
+@@ -100,7 +101,7 @@
+         else setDemo(true);
+       } else {
+         console.error("No se pudo actualizar CyberShield:", err);
+-        setToast({ kind: "err", text: "No se pudo actualizar uno de los endpoints principales." });
++        setToast({ kind: "err", text: "No se pudo actualizar uno de los orígenes de datos." });
+       }
+     }
+   }, []);
+@@ -128,7 +129,7 @@
+       await load();
+       return true;
+     } catch (err) {
+-      console.error(`PATCH /incidents/${incident.backendId}/status falló:`, err);
++      console.error(`No se pudo cambiar el estado del incidente ${incident.backendId}:`, err);
+       setToast({ kind: "err", text: status === "resolved" ? "No se pudo resolver el incidente." : "No se pudo iniciar la investigación." });
+       return false;
+     }
+@@ -141,7 +142,7 @@
+       if (inc) setAlertInc(inc);
+       setToast({ kind: "ok", text: "Evento HIGH simulado y registrado." });
+     } catch (err) {
+-      console.error("POST /events/simulate falló:", err);
++      console.error("No se pudo simular el evento:", err);
+       setToast({ kind: "err", text: "No se pudo simular el evento." });
+     }
+   }, [load, user?.name]);
+
+--- a/frontend/src/layout/Console.tsx	2026-10-29 23:40:12.690569004 -0600
++++ b/frontend/src/layout/Console.tsx	1969-12-31 18:00:00.000000000 -0600
+@@ -1,246 +0,0 @@
+-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+-import { Activity, Bell, LayoutDashboard, Lock, Server, Settings, ShieldAlert } from "lucide-react";
+-import {
+-  getDashboard,
+-  getEventStats,
+-  getEvents,
+-  getIncidents,
+-  getNotifications,
+-  getServers,
+-  isNet,
+-  simulateEvent,
+-  updateIncidentStatus,
+-} from "../api/client";
+-import { MOCK_EVENTS, MOCK_INC } from "../data/mock";
+-import type { EventStats, Incidente, NotificationItem, Stats, User } from "../types";
+-import { Brand } from "../components/Brand";
+-import { AlertModal } from "../components/AlertModal";
+-import { Toast, type ToastData } from "../components/Toast";
+-import { DashboardView } from "../pages/DashboardView";
+-import { IncidentsView } from "../pages/IncidentsView";
+-import { ServersView } from "../pages/ServersView";
+-import { eventsPerMinute } from "../utils/format";
+-
+-const emptyStats: Stats = {
+-  estado: "Monitoreo activo.",
+-  servidores: 0,
+-  servidoresOnline: 0,
+-  servidoresOffline: 0,
+-  eventos: 0,
+-  incidentes: 0,
+-  criticos: 0,
+-};
+-
+-export function Console({ user, onLogout }: { user: User; onLogout: () => void }) {
+-  const [view, setView] = useState("dashboard");
+-  const [demo, setDemo] = useState(false);
+-  const [stale, setStale] = useState(false);
+-  const hasRealData = useRef(false);
+-  const [stats, setStats] = useState<Stats>(emptyStats);
+-  const [stats1s, setStats1s] = useState<EventStats | null>(null);
+-  const [stats60s, setStats60s] = useState<EventStats | null>(null);
+-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+-  const [lista, setLista] = useState(MOCK_EVENTS);
+-  const [incs, setIncs] = useState<Incidente[]>(MOCK_INC);
+-  const [selId, setSelId] = useState<string | null>(null);
+-  const [alertInc, setAlertInc] = useState<Incidente | null>(null);
+-  const [toast, setToast] = useState<ToastData | null>(null);
+-  const [updatedAt, setUpdatedAt] = useState(new Date());
+-
+-  const load = useCallback(async () => {
+-    try {
+-    // Primero cargamos eventos.
+-    // Así, aunque otro endpoint falle,
+-    // la actividad reciente sí aparece.
+-      const events = await getEvents();
+-
+-      setLista(events);
+-      hasRealData.current = true;
+-      setDemo(false);
+-      setStale(false);
+-      setUpdatedAt(new Date());
+-
+-    // Después cargamos el resto del dashboard.
+-      const [
+-        summary,
+-        incidents,
+-        servers,
+-        s1,
+-        s60,
+-        notifs,
+-      ] = await Promise.all([
+-        getDashboard(),
+-        getIncidents(),
+-        getServers(),
+-        getEventStats("1s"),
+-        getEventStats("60s"),
+-        getNotifications(),
+-      ]);
+-
+-      const open = incidents.filter(
+-        (i) => i.status !== "resolved"
+-      );
+-
+-      const online = servers.filter(
+-        (s) => s.status === "online"
+-      ).length;
+-
+-      const offline = servers.filter(
+-        (s) => s.status === "offline"
+-      ).length;
+-
+-      const critical = open.filter(
+-        (i) => i.severidad === "CRITICAL"
+-      ).length;
+-
+-      setStats({
+-        ...summary,
+-        servidores: servers.length,
+-        servidoresOnline: online,
+-        servidoresOffline: offline,
+-        eventos: events.length,
+-        incidentes: open.length,
+-        criticos: critical,
+-        estado:
+-          critical > 0
+-            ? "Hay incidentes críticos abiertos que requieren revisión."
+-            : "Monitoreo activo sin incidentes críticos abiertos.",
+-      });
+-
+-      setIncs(incidents);
+-      setStats1s(s1);
+-      setStats60s(s60);
+-      setNotifications(notifs);
+-
+-      hasRealData.current = true;
+-      setDemo(false);
+-      setStale(false);
+-      setUpdatedAt(new Date());
+-
+-    } catch (err) {
+-      if (isNet(err)) {
+-        if (hasRealData.current) {
+-          setStale(true);
+-        } else {
+-          setDemo(true);
+-        }
+-      } else {
+-        console.error(
+-          "No se pudo actualizar CyberShield:",
+-          err
+-        );
+-
+-        setToast({
+-          kind: "err",
+-          text:
+-            "No se pudo actualizar uno de los endpoints del dashboard.",
+-        });
+-      }
+-    }
+-  }, []);
+-
+-  useEffect(() => {
+-    load();
+-    const timer = window.setInterval(load, 5000);
+-    return () => window.clearInterval(timer);
+-  }, [load]);
+-
+-  const serie = useMemo(() => eventsPerMinute(lista), [lista]);
+-  const recentEvents = useMemo(() => [...lista].sort((a, b) => {
+-    const aa = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+-    const bb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+-    return bb - aa;
+-  }), [lista]);
+-
+-  const changeStatus = async (incident: Incidente, status: "investigating" | "resolved"): Promise<boolean> => {
+-    try {
+-      await updateIncidentStatus(incident.backendId, status);
+-      setIncs((current) => current.map((item) => item.backendId === incident.backendId
+-        ? { ...item, status, estado: status === "resolved" ? "Resuelto" : "Investigando" }
+-        : item));
+-      setToast({ kind: "ok", text: status === "resolved" ? "Incidente marcado como Resuelto" : "Incidente marcado como En investigación" });
+-      await load();
+-      return true;
+-    } catch (err) {
+-      console.error(`PATCH /incidents/${incident.backendId}/status falló:`, err);
+-      setToast({ kind: "err", text: status === "resolved" ? "No se pudo resolver el incidente." : "No se pudo iniciar la investigación." });
+-      return false;
+-    }
+-  };
+-
+-  const simulate = async () => {
+-    try {
+-      const inc = await simulateEvent(user?.name);
+-      await load();
+-      if (inc) setAlertInc(inc);
+-      setToast({ kind: "ok", text: "Evento HIGH simulado y registrado." });
+-    } catch (err) {
+-      console.error("POST /events/simulate falló:", err);
+-      setToast({ kind: "err", text: "No se pudo simular el evento." });
+-    }
+-  };
+-
+-  const abiertos = incs.filter((i) => i.status !== "resolved").length;
+-  const nav: [string, string, any][] = [
+-    ["dashboard", "Dashboard", LayoutDashboard],
+-    ["servers", "Servidores", Server],
+-    ["events", "Eventos", Activity],
+-    ["incidents", "Incidentes", ShieldAlert],
+-    ["notifications", "Notificaciones", Bell],
+-    ["security", "Seguridad", Lock],
+-    ["config", "Configuración", Settings],
+-  ];
+-
+-  const data = { ...stats, demo, stale, lista: recentEvents, serie, stats1s, stats60s, notifications };
+-
+-  return (
+-    <div className="shell">
+-      <aside className="side">
+-        <div style={{ padding: "0 8px 16px" }}><Brand /></div>
+-        {nav.map(([key, label, Icon]) => (
+-          <button key={key} className={`nav ${view === key ? "on" : ""}`} onClick={() => setView(key)}>
+-            <Icon size={16} />{label}
+-            {key === "incidents" && abiertos > 0 && <span className="bdg">{abiertos}</span>}
+-            {key === "notifications" && notifications.length > 0 && <span className="bdg">{notifications.length}</span>}
+-          </button>
+-        ))}
+-
+-        <div className="agent">
+-          <span className={`sv ${stale ? "wn" : demo ? "wn" : "ok"}`}>● {stale ? "Sin conexión" : demo ? "Datos simulados" : "Backend conectado"}</span>
+-          <div style={{ marginTop: 6 }}>{stats.servidoresOnline} online · {stats.servidoresOffline} offline</div>
+-          <div>Actualizado: {updatedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</div>
+-        </div>
+-      </aside>
+-
+-      <div>
+-        <header className="top">
+-          <span className="pill">CyberShield</span><span className="sp" />
+-          <div className="av">{user?.name?.slice(0, 2).toUpperCase()}</div>
+-          <div style={{ lineHeight: 1.2 }}>{user?.name}<div className="mu" style={{ fontSize: 11 }}>Administrador</div></div>
+-          <button className="lnk" style={{ color: "var(--mu)" }} onClick={onLogout}>Salir</button>
+-        </header>
+-
+-        <main className="main">
+-          {view === "dashboard" && <DashboardView d={data} simulate={simulate} />}
+-          {view === "incidents" && <IncidentsView list={incs} selId={selId} setSelId={setSelId} onInvestigate={(incident) => changeStatus(incident, "investigating")} onResolve={(incident) => changeStatus(incident, "resolved")} />}
+-          {view === "servers" && <ServersView />}
+-          {view === "notifications" && (
+-            <div className="card">
+-              <h2>Notificaciones</h2>
+-              <div className="notification-list">
+-                {notifications.map((n) => <div className="notification-row" key={n.id}><b>{n.message}</b><span className="mu">{n.status}</span></div>)}
+-                {!notifications.length && <div className="mu">No hay notificaciones registradas.</div>}
+-              </div>
+-            </div>
+-          )}
+-          {!['dashboard', 'incidents', 'servers', 'notifications'].includes(view) && (
+-            <div className="card"><h2>{nav.find((item) => item[0] === view)?.[1]}</h2><div className="mu">Próximamente. Esta sección aún no está disponible en el MVP.</div></div>
+-          )}
+-        </main>
+-      </div>
+-
+-      {alertInc && <AlertModal inc={alertInc} onClose={() => setAlertInc(null)} onView={() => { setSelId(alertInc.id); setView("incidents"); setAlertInc(null); }} />}
+-      <Toast toast={toast} onClose={() => setToast(null)} />
+-    </div>
+-  );
+-}
+
+--- a/frontend/src/mocks/evidenceMock.ts	2026-10-29 23:40:12.692026456 -0600
++++ b/frontend/src/mocks/evidenceMock.ts	2026-10-29 23:38:50.905708526 -0600
+@@ -1,98 +1,10 @@
+-/* MOCK LOCAL CENTRALIZADO de "Evidencia de protección / Respuesta real" (D3).  >>> DATOS DE DEMOSTRACIÓN, NO SON REALES <<<
+-   Un MISMO componente muestra 2 ataques (fuerza bruta y ransomware-like) en 5 estados: detected -> responding -> contained | failed | escalated.
++/* Acceso a la EVIDENCIA (D4). Los datos de ejemplo viven en el mock central (src/mocks/mockData.ts §10); aquí solo está el punto único de lectura.
+    El id del incidente sale de la ruta (no está escrito aquí). Este archivo NO hace fetch/axios/WebSocket.
+-   Giss reemplaza getEvidenceResult() por la respuesta real del backend (ver PASOS_PARA_GISS.md).
+-   Convención: BACKEND_GISS: <variable visual> <- <dato backend esperado>
+-   D3: los comandos NO viven en los componentes. Cada ataque trae su `command_preview` (campo mock): Giss lo reemplaza con el dato real. */
+-import type { EvidenceAttack, EvidenceEntry, EvidenceResult, EvidenceScenario, EvidenceStage, LogLevel, TerminalLine } from "../types/evidence";
++   Giss reemplaza getEvidenceResult() por la respuesta real del backend (ver README_INTEGRACION_GISS.md).
++   Convención: BACKEND_GISS: <variable visual> <- <dato backend esperado> */
++import type { EvidenceAttack, EvidenceResult, EvidenceScenario } from "../types/evidence";
+ import { adaptEvidencePayload } from "../components/evidence/adaptEvidence";
+-
+-type Notif = { channel: string; status: string; notified: boolean | null };
+-type Outcome = { label: string; detail: string };
+-
+-/* Todo lo que cambia de un ataque a otro. La pantalla es la misma; solo cambian estos datos. */
+-interface AttackMock {
+-  day: string;            // BACKEND_GISS: entries[].timestamp <- backend.evidence[].timestamp (ISO 8601 UTC); aquí solo se arma el mock
+-  event_type: string;     // BACKEND_GISS: event_type <- backend.incident.event_type
+-  severity: "NORMAL" | "WARNING" | "HIGH" | "CRITICAL"; // BACKEND_GISS: severity <- backend.incident.severity
+-  server: string;         // BACKEND_GISS: server <- backend.incident.server_name
+-  source_ip: string | null; // BACKEND_GISS: source_ip <- backend.event.source_ip
+-  rule: string;           // BACKEND_GISS: rule <- backend.evidence.rule
+-  mitre_id: string; mitre_name: string; mitre_tactic: string; // BACKEND_GISS: mitre_* <- backend.incident.mitre[0].{technique_id,technique_name,tactic}
+-  action_type: string;    // BACKEND_GISS: response.action_type <- backend.response_action.action_type
+-  tool: string;           // BACKEND_GISS: response.tool <- backend.response_action.tool
+-  command_preview: string; // BACKEND_GISS: response.command_preview <- backend.response_action.command_preview  (Giss lo reemplaza con el comando real)
+-  scenario_note: string | null; // BACKEND_GISS: scenario_note <- backend.incident.simulation_note (opcional)
+-  reason: string;         // BACKEND_GISS: response.reason <- backend.response_action.reason
+-  actionVerb: string;     // texto de la entrada RESPONDING ("Bloqueo de IP (…)")
+-  failure_reason: string; // BACKEND_GISS: response.failure_reason <- backend.response_action.failure_reason (YA sanitizado por el backend)
+-  attack: [number, LogLevel, string, string][];  // [segundo, nivel, fuente, mensaje] de ATTACK_RECEIVED
+-  detect: [number, LogLevel, string, string][];  // idem para DETECTED
+-  applied: string[];      // líneas de salida (OK) cuando la acción se ejecuta bien
+-  verifyLines: [string, string];  // [intento de verificación, resultado de la verificación (DENIED/OK)]
+-  contained_msg: string;
+-  failed_line: string;    // salida de error de la terminal (mock; el backend la entrega en terminal_lines)
+-  outcomes: Outcome[];
+-  tools: { name: string; detail: string; role: string }[]; // BACKEND_GISS: tools[] <- backend.evidence.tools (o lista fija decidida por Giss)
+-}
+-
+-const ATTACKS: Record<EvidenceAttack, AttackMock> = {
+-  brute_force: {
+-    day: "2026-10-27T15:00:",
+-    event_type: "multiple_login_attempts", severity: "HIGH", server: "srv-prod-01", source_ip: "192.168.56.50", rule: "CYBERSHIELD-RULE",
+-    mitre_id: "T1110", mitre_name: "Brute Force", mitre_tactic: "Credential Access",
+-    action_type: "BLOCK_SOURCE_IP", tool: "iptables / Wazuh Active Response",
+-    command_preview: "sudo iptables -I INPUT -s 192.168.56.50 -j DROP", // BACKEND_GISS: command_preview <- backend.response_action.command_preview
+-    scenario_note: null,
+-    reason: "El incidente actual corresponde a un ataque de fuerza bruta (MITRE T1110). Por ello, CyberShield muestra y ejecuta únicamente el comando defensivo asociado a este tipo de ataque, que consiste en bloquear la IP de origen en el firewall.",
+-    actionVerb: "Bloqueo de IP (192.168.56.50)",
+-    failure_reason: "El helper de Active Response no confirmó la regla (timeout). Requiere intervención manual.",
+-    attack: [[0, "INFO", "Suricata", "Intento de autenticación SSH detectado"], [1, "INFO", "Suricata", "IP origen: 192.168.56.50 -> Servidor: srv-prod-01 (SSH/22)"]],
+-    detect: [[2, "INFO", "Wazuh", "Múltiples intentos de autenticación (12 en 45s)"]],
+-    applied: ["Regla insertada correctamente.", "IP 192.168.56.50 bloqueada en firewall."],
+-    verifyLines: ["Nuevo intento de conexión SSH desde 192.168.56.50", "Conexión rechazada por firewall (DROP)."],
+-    contained_msg: "El ataque de fuerza bruta ha sido contenido.",
+-    failed_line: "No se pudo insertar la regla (tiempo de espera agotado).",
+-    outcomes: [
+-      { label: "Ataque contenido", detail: "No se detectan más intentos del origen en monitoreo." },
+-      { label: "Acceso denegado", detail: "La IP de origen fue bloqueada en firewall." },
+-      { label: "Proceso detenido", detail: "Intentos de conexión denegados." },
+-      { label: "Empresa protegida", detail: "Los sistemas continúan operativos." },
+-    ],
+-    tools: [
+-      { name: "Wazuh", detail: "Detección de eventos", role: "HIDS / NIDS" }, { name: "Suricata", detail: "Análisis de tráfico de red", role: "NIDS" },
+-      { name: "CyberShield Engine", detail: "Coordinación y respuesta automática", role: "Motor" }, { name: "PostgreSQL", detail: "Almacenamiento de eventos", role: "Base de datos" },
+-      { name: "Firewall / Active Response", detail: "Ejecución de comandos defensivos", role: "Respuesta" },
+-    ],
+-  },
+-  ransomware: {
+-    day: "2026-10-28T16:30:",
+-    event_type: "ransomware_like_behavior", severity: "CRITICAL", server: "srv-files-01", source_ip: "192.168.56.30", rule: "CYBERSHIELD-RULE-RANSOM-SIM",
+-    mitre_id: "T1486", mitre_name: "Data Encrypted for Impact", mitre_tactic: "Impact",
+-    action_type: "STOP_PROCESS", tool: "Wazuh Active Response / sistema operativo",
+-    command_preview: "[command_preview · lo entrega el backend para la acción STOP_PROCESS]", // BACKEND_GISS: command_preview <- backend.response_action.command_preview (placeholder: NO se inventa un comando)
+-    scenario_note: "Simulación controlada: comportamiento compatible con ransomware generado en el laboratorio. No es malware real.",
+-    reason: "El incidente actual muestra un comportamiento compatible con ransomware (MITRE T1486): modificación masiva de archivos. CyberShield muestra únicamente la acción defensiva asociada a este tipo de incidente: detener el proceso sospechoso y contener el host.",
+-    actionVerb: "Detener proceso sospechoso (srv-files-01)",
+-    failure_reason: "El agente no confirmó que el proceso se detuviera (sin respuesta). Requiere intervención manual.",
+-    attack: [[0, "INFO", "Wazuh", "Actividad de archivos fuera de lo normal en srv-files-01 (simulación controlada)"], [1, "WARN", "Wazuh", "Modificación masiva de archivos: patrón compatible con cifrado (130 archivos en 20s)"]],
+-    detect: [[2, "WARN", "Wazuh", "Comportamiento compatible con ransomware detectado (simulación controlada)"]],
+-    applied: ["Acción de contención aplicada sobre el proceso sospechoso.", "Host srv-files-01 aislado de la red de producción."],
+-    verifyLines: ["Verificando actividad de archivos en srv-files-01...", "Sin nuevas modificaciones masivas de archivos."],
+-    contained_msg: "El comportamiento compatible con ransomware fue contenido (simulación controlada).",
+-    failed_line: "No se pudo detener el proceso sospechoso (sin respuesta del agente).",
+-    outcomes: [
+-      { label: "Comportamiento contenido", detail: "Sin nuevas modificaciones masivas de archivos." },
+-      { label: "Proceso detenido", detail: "El proceso sospechoso fue detenido." },
+-      { label: "Host aislado", detail: "srv-files-01 contenido; no se propaga a otros equipos." },
+-      { label: "Empresa protegida", detail: "Los demás sistemas continúan operativos." },
+-    ],
+-    tools: [
+-      { name: "Wazuh", detail: "Monitoreo de integridad de archivos (FIM)", role: "HIDS" }, { name: "CyberShield Engine", detail: "Coordinación y respuesta automática", role: "Motor" },
+-      { name: "Wazuh Active Response", detail: "Ejecución de la acción defensiva", role: "Respuesta" }, { name: "PostgreSQL", detail: "Almacenamiento de eventos", role: "Base de datos" },
+-    ],
+-  },
+-};
++import { buildMockEvidencePayload } from "./mockData";
+ 
+ export const EVIDENCE_ATTACKS: { key: EvidenceAttack; label: string }[] = [
+   { key: "brute_force", label: "Fuerza bruta" }, { key: "ransomware", label: "Ransomware-like (simulación)" },
+@@ -106,69 +18,6 @@
+   { key: "cargando", label: "Cargando" }, { key: "vacio", label: "Sin evidencia (404)" }, { key: "error", label: "Error de API (500)" }, { key: "invalido", label: "Payload inválido" },
+ ];
+ 
+-/* Construye el payload (lo que entregaría el backend) del ataque y estado pedidos para el incidente `id`. */
+-function buildPayload(id: string, attack: EvidenceAttack, scenario: EvidenceScenario): unknown {
+-  const A = ATTACKS[attack];
+-  const at = (s: number) => `${A.day}${String(s).padStart(2, "0")}Z`;
+-  const prompt = `root@${A.server}:~# `;
+-  const entry = (stage: EvidenceStage, s: number, level: LogLevel, source: string, message: string, extra: Partial<EvidenceEntry> = {}): EvidenceEntry => ({
+-    incident_id: id, event_id: 1, stage, timestamp: at(s), source, level, message, action_type: null, command_display: null, result: null, success: null, ...extra,
+-  });
+-  const cmd = (s: number, text: string): TerminalLine => ({ kind: "command", timestamp: at(s), text: prompt + text });
+-  const out = (s: number, level: LogLevel, text: string): TerminalLine => ({ kind: "output", timestamp: at(s), level, text });
+-  const blank: TerminalLine = { kind: "blank", text: "" };
+-
+-  /* Etapas comunes: ataque -> detección -> regla -> incidente creado (los 4 primeros círculos). */
+-  const detectedEntries: EvidenceEntry[] = [
+-    ...A.attack.map(([s, l, src, m]) => entry("ATTACK_RECEIVED", s, l, src, m)),
+-    ...A.detect.map(([s, l, src, m]) => entry("DETECTED", s, l, src, m)),
+-    entry("DETECTED", 2, "INFO", "CyberShield", "Evento normalizado por CyberShield"),
+-    entry("DETECTED", 2, "INFO", "CyberShield", `Clasificación: ${A.mitre_id} - ${A.mitre_name} (${A.mitre_tactic})`),
+-    entry("RULE_APPLIED", 3, "INFO", "CyberShield", `Regla aplicada: ${A.rule}`),
+-    entry("INCIDENT_CREATED", 4, "INFO", "CyberShield", `Incidente creado: ${id} (Severidad: ${A.severity})`),
+-  ];
+-  const startEntry = entry("RESPONDING", 5, "INFO", "CyberShield", `Ejecutando acción de respuesta: ${A.actionVerb}`, { action_type: A.action_type, command_display: A.command_preview });
+-
+-  const common = {
+-    incident_id: id, event_id: 1, event_type: A.event_type, severity: A.severity, server: A.server, source_ip: A.source_ip, rule: A.rule,
+-    mitre_id: A.mitre_id, mitre_name: A.mitre_name, mitre_tactic: A.mitre_tactic, scenario_note: A.scenario_note, detected_at: at(2), outcomes: [] as Outcome[], tools: A.tools, elapsed_time: null as number | null,
+-  };
+-  const resp = {
+-    action_type: A.action_type, tool: A.tool, command_display: null as string | null, command_preview: A.command_preview, reason: A.reason,
+-    result: null as string | null, success: null as boolean | null, failure_reason: null as string | null, notification: null as Notif | null,
+-  };
+-
+-  if (scenario === "detected") return { ...common, status: "DETECTED", response_started_at: null, response_finished_at: null, verification_result: null,
+-    entries: detectedEntries, response: { ...resp, terminal_lines: [] } };
+-
+-  if (scenario === "responding") return { ...common, status: "RESPONDING", response_started_at: at(5), response_finished_at: null, verification_result: null,
+-    entries: [...detectedEntries, startEntry, entry("RESPONDING", 6, "INFO", "Active Response", "Aplicando la acción defensiva...", { action_type: A.action_type })],
+-    response: { ...resp, terminal_lines: [cmd(5, A.command_preview), out(6, "INFO", "Aplicando la acción defensiva...")] } };
+-
+-  if (scenario === "failed" || scenario === "escalated") {
+-    const esc = scenario === "escalated";
+-    const failEntry = entry("FAILED", 9, "ERROR", "Active Response", "La acción defensiva no se pudo ejecutar", { action_type: A.action_type, result: "failed", success: false });
+-    return { ...common, status: esc ? "ESCALATED" : "FAILED", response_started_at: at(5), response_finished_at: at(esc ? 10 : 9), verification_result: "failed",
+-      entries: [...detectedEntries, startEntry, failEntry,
+-        ...(esc ? [entry("ESCALATED", 10, "WARN", "CyberShield", "Incidente escalado al ingeniero de guardia (respuesta manual)", { action_type: A.action_type, result: "escalated" })] : [])],
+-      response: { ...resp, result: esc ? "escalated" : "failed", success: false, failure_reason: A.failure_reason,
+-        notification: { channel: "Telegram", status: esc ? "Enviada al ingeniero de guardia" : "Enviada (alerta de fallo)", notified: true }, // BACKEND_GISS: response.notification <- backend.notification {channel,status,notified}
+-        terminal_lines: [cmd(5, A.command_preview), out(9, "ERROR", A.failed_line), ...(esc ? [blank, out(10, "WARN", "Escalado: se requiere intervención del equipo de seguridad.")] : [])] } };
+-  }
+-
+-  /* contained */
+-  return { ...common, status: "CONTAINED", response_started_at: at(5), response_finished_at: at(8), verification_result: "contained", // BACKEND_GISS: verification_result <- backend.response_action.verification_result
+-    entries: [...detectedEntries, startEntry,
+-      entry("RESPONDING", 6, "OK", "Active Response", "Acción defensiva aplicada correctamente", { action_type: A.action_type, result: "applied", success: true }),
+-      entry("RESPONDING", 7, "INFO", "CyberShield", A.verifyLines[0]),
+-      entry("CONTAINED", 8, "WARN", "CyberShield", A.verifyLines[1], { action_type: A.action_type, result: "denied", success: true }),
+-      entry("CONTAINED", 8, "OK", "CyberShield", A.contained_msg)],
+-    response: { ...resp, result: "contained", success: true,
+-      notification: { channel: "Telegram", status: "Enviada", notified: true }, // BACKEND_GISS: response.notification <- backend.notification {channel,status,notified}
+-      terminal_lines: [cmd(5, A.command_preview), ...A.applied.map((t) => out(6, "OK", t)), blank, out(7, "INFO", A.verifyLines[0]), out(8, "DENIED", A.verifyLines[1]), out(8, "INFO", A.contained_msg)] }, // BACKEND_GISS: response.terminal_lines <- backend.evidence.terminal_lines[] {kind, timestamp, level, text}
+-    outcomes: A.outcomes }; // BACKEND_GISS: outcomes[] <- backend.evidence.outcomes[] (solo si status=CONTAINED y verification_result=contained)
+-}
+-
+ /* "7" / "inc-7" -> "INC-007" (solo normaliza el texto de la ruta). */
+ export const normalizeIncidentCode = (id: string) => { const m = /(\d+)$/.exec(id); return m ? `INC-${m[1].padStart(3, "0")}` : id.toUpperCase(); };
+ const SCENARIOS: EvidenceScenario[] = ["detected", "responding", "contained", "failed", "escalated"];
+@@ -186,6 +35,6 @@
+   if (estado === "vacio") return { phase: "empty", incident_id: id };
+   if (estado === "error") return { phase: "error", code: "HTTP_500", message: "El servicio de evidencia no respondió correctamente." };
+   if (estado === "invalido") { const ev = adaptEvidencePayload({ status: "CONTAINED" }); return ev ? { phase: "ready", ev } : { phase: "error", code: "PAYLOAD_INVALIDO", message: "La respuesta del backend no trae incident_id; no se puede mostrar la evidencia." }; }
+-  const ev = adaptEvidencePayload(buildPayload(id, parseAttack(ataque), parseScenario(estado) ?? "contained"));
++  const ev = adaptEvidencePayload(buildMockEvidencePayload(id, parseAttack(ataque), parseScenario(estado) ?? "contained"));
+   return ev ? { phase: "ready", ev } : { phase: "error", code: "PAYLOAD_INVALIDO", message: "No se pudo interpretar la evidencia." };
+ }
+
+--- a/frontend/src/mocks/management.ts	2026-10-29 23:40:12.692063637 -0600
++++ b/frontend/src/mocks/management.ts	1969-12-31 18:00:00.000000000 -0600
+@@ -1,39 +0,0 @@
+-/* DATOS SIMULADOS de Dispositivos, Sesiones, Acciones, Protecciones y Laboratorio.
+-   Se reemplazan cuando exista el endpoint real (ver src/api/endpoints.ts). Los mapeos MITRE son de demostración:
+-   deben ser revisados por el responsable de ciberseguridad antes de presentarse como reales. */
+-import type { ActionItem, Device, LabScenario, MitreTechnique, Protection, SessionItem } from "../types";
+-
+-const ago = (min: number) => new Date(Date.now() - min * 60000).toISOString();
+-const mt = (id: string, name: string, tactic: string, primary = true): MitreTechnique => ({
+-  technique_id: id, technique_name: name, tactic, is_primary: primary,
+-  url: `https://attack.mitre.org/techniques/${id.replace(".", "/")}/`, rationale: "Asociación contextual de demostración; no confirma por sí sola un ataque.",
+-});
+-
+-export const MOCK_DEVICES: Device[] = [
+-  { id: "dev-1", name: "laptop-ventas-01", user: "usuario.demo", os: "Windows 11", status: "trusted", last_seen: ago(3), mode: "simulated" },
+-  { id: "dev-2", name: "desconocido-10.20.4.19", user: null, os: "Windows", status: "unauthorized", last_seen: ago(12), mode: "simulated" },
+-  { id: "dev-3", name: "tablet-bodega", user: "bodega.demo", os: "Android", status: "unknown", last_seen: ago(180), mode: "simulated" },
+-];
+-export const MOCK_SESSIONS: SessionItem[] = [
+-  { id: "ses-1", user: "usuario.demo", device: "laptop-ventas-01", ip: "192.168.1.60", started_at: ago(12), status: "active", mode: "simulated" },
+-  { id: "ses-2", user: "admin.demo", device: "desconocido-10.20.4.19", ip: "10.20.4.19", started_at: ago(95), status: "revoked", mode: "simulated" },
+-];
+-export const MOCK_ACTIONS: ActionItem[] = [
+-  { id: "act-1", type: "Bloquear IP", target: "185.220.101.34", status: "executed", incident_id: 842, created_at: ago(2), reversible: true, mode: "simulated" },
+-  { id: "act-2", type: "Revocar sesión", target: "ses-2", status: "executed", incident_id: 839, created_at: ago(60), reversible: true, mode: "simulated" },
+-  { id: "act-3", type: "Aislar servidor", target: "srv-demo-03", status: "pending", incident_id: null, created_at: ago(5), reversible: true, mode: "simulated" },
+-];
+-export const MOCK_PROTECTIONS: Protection[] = [
+-  { id: "c1", name: "Fuerza bruta", sensor: "Wazuh", description: "Monitoreo con respuesta segura y reversible en el laboratorio.", mode: "integrated", mitre: [mt("T1110", "Brute Force", "Credential Access")] },
+-  { id: "c2", name: "Dispositivo no autorizado", sensor: "Aplicación", description: "Device Trust preparado; validación E2E con backend/BD pendiente.", mode: "pending", mitre: [mt("T1078", "Valid Accounts", "Defense Evasion")] },
+-  { id: "c3", name: "Cambio de archivo crítico", sensor: "Wazuh FIM", description: null, mode: "integrated", mitre: [mt("T1565.001", "Stored Data Manipulation", "Impact")] },
+-  { id: "c4", name: "Abuso de privilegios", sensor: "Wazuh", description: "Señal Wazuh disponible; cierre E2E real pendiente de adaptación del evento sudo.", mode: "pending", mitre: [mt("T1548.003", "Sudo and Sudo Caching", "Privilege Escalation")] },
+-  { id: "c5", name: "Conexión externa sospechosa", sensor: "Suricata", description: "Telemetría de red disponible; integración de la regla al backend pendiente.", mode: "pending", mitre: [mt("T1041", "Exfiltration Over C2 Channel", "Exfiltration")] },
+-  { id: "c6", name: "Posible exfiltración de datos", sensor: "Suricata + App", description: "Escenario defensivo con datos ficticios; no implica exfiltración confirmada.", mode: "simulated", mitre: [mt("T1041", "Exfiltration Over C2 Channel", "Exfiltration")] },
+-  { id: "c7", name: "Comportamiento tipo ransomware", sensor: "Wazuh", description: "Patrón benigno de modificaciones masivas; no utiliza malware ni cifrado real.", mode: "simulated", mitre: [mt("T1486", "Data Encrypted for Impact", "Impact")] },
+-  { id: "c8", name: "Posible movimiento lateral", sensor: "Wazuh + Suricata", description: "Conexión SSH autorizada entre hosts del laboratorio; clasificación contextual.", mode: "simulated", mitre: [mt("T1021.004", "Remote Services: SSH", "Lateral Movement")] },
+-];
+-export const MOCK_SCENARIOS: LabScenario[] = MOCK_PROTECTIONS.map((p, i) => ({
+-  id: `sc${i + 1}`, name: p.name, control: p.name, description: "Genera telemetría defensiva de prueba para validar detección, clasificación y respuesta.",
+-  event_source: p.sensor, mode: p.mode === "integrated" ? "integrated" : "simulated", mitre: p.mitre,
+-}));
+
+--- a/frontend/src/mocks/mockData.ts	1969-12-31 18:00:00.000000000 -0600
++++ b/frontend/src/mocks/mockData.ts	2026-10-29 23:39:35.119442886 -0600
+@@ -0,0 +1,366 @@
++/* ============================================================================================================
++   MOCK CENTRAL ÚNICO de CyberShield (frontend desacoplado · D4)          >>> DATOS DE DEMOSTRACIÓN, NO REALES <<<
++   TODOS los datos de ejemplo de la aplicación viven SOLO en este archivo. Ningún componente trae datos propios.
++   Este archivo NO hace fetch / axios / WebSocket y no conoce ninguna URL ni endpoint.
++
++   Cómo lo usa la app:  componentes -> src/api/client.ts (funciones getXxx) -> este archivo.
++   Giss: para conectar el backend se reemplaza el CUERPO de cada función de src/api/client.ts (ver README_INTEGRACION_GISS.md)
++   y este archivo puede quedarse como fixture de desarrollo o borrarse.
++
++   Convención de comentarios:   BACKEND_GISS: <variable visual> <- <dato backend esperado>
++   Buscar todos los puntos de conexión:   grep -rn BACKEND_GISS src
++   ============================================================================================================ */
++import type { ActionItem, Device, EventStats, Evento, Incidente, LabScenario, MitreTechnique, NotificationItem, Protection, ServerItem, SessionItem, Stats, User } from "../types";
++import type { EvidenceAttack, EvidenceEntry, EvidenceScenario, EvidenceStage, LogLevel, TerminalLine } from "../types/evidence";
++
++const ago = (minutes: number) => new Date(Date.now() - minutes * 60000).toISOString();
++
++/* ---------- 1. Usuario de la sesión (login / registro) ---------- */
++/* BACKEND_GISS: user.id <- backend.user.id · user.name <- backend.user.name · user.email <- backend.user.email */
++export const MOCK_USER: User = { id: 1, name: "Analista Demo", email: "analista@cybershield.demo" };
++
++/* ---------- 2. Servidores ---------- */
++/* BACKEND_GISS: ServerItem.id <- server.id · name <- server.name · ipAddress <- server.ip_address · status <- server.status (online|offline|registered)
++   · agent <- server.agent · createdAt <- server.created_at · lastSeen <- server.last_seen */
++export const MOCK_SERVERS: ServerItem[] = [
++  { id: 1, name: "srv-prod-01", ipAddress: "192.168.56.10", status: "online", agent: "Wazuh 4.x", createdAt: ago(60 * 24 * 12), lastSeen: ago(1) },
++  { id: 2, name: "srv-cyber-01", ipAddress: "192.168.56.20", status: "online", agent: "Wazuh 4.x + Suricata", createdAt: ago(60 * 24 * 12), lastSeen: ago(1) },
++  { id: 3, name: "srv-files-01", ipAddress: "192.168.56.30", status: "online", agent: "Wazuh 4.x (FIM)", createdAt: ago(60 * 24 * 9), lastSeen: ago(2) },
++  { id: 4, name: "srv-backup-01", ipAddress: "192.168.56.40", status: "offline", agent: null, createdAt: ago(60 * 24 * 5), lastSeen: ago(60 * 26) },
++];
++
++/* ---------- 3. Eventos ---------- */
++/* BACKEND_GISS: Evento.id <- event.id · createdAt <- event.created_at (ISO UTC) · fecha <- se calcula de created_at · tipo <- event.event_type
++   · origen <- event.source_ip · severidad <- event.severity · estado <- event.estado (o se deduce de severity) · scope <- event.scope (BLOCKED|REACHED|IMPACT)
++   · serverId <- event.server_id · serverName <- event.server_name */
++
++
++export const MOCK_EVENTS: Evento[] = [
++  { id: 1, fecha: "12:01", createdAt: ago(8), tipo: "authentication_failure", origen: "192.168.1.10", severidad: "NORMAL", estado: "Registrado", scope: "BLOCKED", serverId: 2 },
++  { id: 2, fecha: "12:03", createdAt: ago(6), tipo: "authentication_burst", origen: "192.168.1.50", severidad: "HIGH", estado: "Detectado", scope: "REACHED", serverId: 2 },
++  { id: 3, fecha: "12:04", createdAt: ago(4), tipo: "suspicious_network_traffic", origen: "192.168.1.80", severidad: "WARNING", estado: "Registrado", scope: "REACHED", serverId: 2 },
++  { id: 4, fecha: "12:05", createdAt: ago(2), tipo: "privilege_escalation", origen: "192.168.1.90", severidad: "CRITICAL", estado: "Detectado", scope: "IMPACT", serverId: 2 },
++  { id: 5, fecha: "15:00", createdAt: ago(30), tipo: "multiple_login_attempts", origen: "192.168.56.50", severidad: "HIGH", estado: "Detectado", scope: "BLOCKED", serverId: 1, serverName: "srv-prod-01" },
++  { id: 6, fecha: "16:30", createdAt: ago(20), tipo: "ransomware_like_behavior", origen: "192.168.56.30", severidad: "CRITICAL", estado: "Detectado", scope: "IMPACT", serverId: 3, serverName: "srv-files-01" },
++];
++
++export const MOCK_INC_SEED: Incidente[] = [
++  {
++    id: "INC-003", backendId: 3, eventType: "authentication_burst",
++    titulo: "Patrón sospechoso de autenticación",
++    resumen: "Actividad de autenticación contra varias cuentas en una ventana corta.",
++    severidad: "HIGH", estado: "Investigando", status: "investigating",
++    origen: "192.168.1.50", servidor: "srv-cyber-01", servicio: "Autenticación",
++    detectado: "14 oct 2026 · 12:03", asignado: "César", regla: "AUTH-CORRELATION",
++    reco: "Validar el origen, las cuentas afectadas y si hubo acceso exitoso posterior.",
++    investigationSteps: ["Revisar origen y cuentas afectadas.", "Correlacionar fallos y accesos exitosos.", "Buscar actividad privilegiada posterior."],
++    mitre: [],
++    resolutionCriteria: "La actividad quedó explicada o contenida con evidencia suficiente.",
++  },
++];
++
++
++/* ---------- 4. Incidentes ---------- */
++/* BACKEND_GISS: Incidente.backendId <- incident.id · id (INC-007) <- se arma con incidentCode(incident.id) · eventId <- incident.event_id
++   · eventType <- incident.event_type · titulo/resumen/servicio/regla <- se derivan de event_type (client.ts) o de incident.title/summary si el backend los trae
++   · severidad <- incident.severity · status <- incident.status (open|investigating|resolved) · estado <- texto de status
++   · origen <- incident.source_ip · servidor <- incident.server_name · detectado <- incident.created_at · asignado <- incident.assigned_to
++   · reco <- incident.recommendation · investigationSteps <- incident.investigation_steps[] · resolutionCriteria <- incident.resolution_criteria
++   · mitre[] <- incident.mitre_techniques[] {technique_id, technique_name, tactic, reference_url, is_primary, notes}
++   · responseAction <- incident.response_action {id, action_type, target, status, reversible, duration_seconds, reason, result, created_at, executed_at, rolled_back_at} */
++const mitreBF: MitreTechnique[] = [{ technique_id: "T1110", technique_name: "Brute Force", tactic: "Credential Access", url: "https://attack.mitre.org/techniques/T1110/", is_primary: true, rationale: "Múltiples intentos de autenticación contra el mismo servicio." }];
++const mitreRW: MitreTechnique[] = [{ technique_id: "T1486", technique_name: "Data Encrypted for Impact", tactic: "Impact", url: "https://attack.mitre.org/techniques/T1486/", is_primary: true, rationale: "Modificación masiva de archivos compatible con cifrado (simulación controlada)." }];
++
++export const MOCK_INCIDENTS: Incidente[] = [
++  {
++    id: "INC-077", backendId: 77, eventId: 5, eventType: "multiple_login_attempts",
++    titulo: "Múltiples intentos de autenticación",
++    resumen: "Se detectaron varios intentos de autenticación SSH en una ventana corta desde un mismo origen.",
++    severidad: "HIGH", estado: "Pendiente", status: "open",
++    origen: "192.168.56.50", servidor: "srv-prod-01", servicio: "Autenticación",
++    detectado: "27 oct 2026 · 15:00", asignado: "—", regla: "CYBERSHIELD-RULE",
++    reco: "Bloquear la IP de origen y validar que no hubo acceso exitoso posterior.",
++    investigationSteps: ["Revisar el origen y las cuentas afectadas.", "Confirmar que la IP quedó bloqueada en el firewall.", "Buscar accesos exitosos posteriores."],
++    mitre: mitreBF,
++    resolutionCriteria: "La IP de origen quedó bloqueada y no hay nuevos intentos.",
++    responseAction: { id: 1, action_type: "BLOCK_SOURCE_IP", target: "192.168.56.50", status: "executed", reversible: true, duration_seconds: 7200, reason: "Fuerza bruta (T1110) → bloquear IP de origen", result: "contained", created_at: ago(30), executed_at: ago(29), rolled_back_at: null },
++  },
++  {
++    id: "INC-078", backendId: 78, eventId: 6, eventType: "ransomware_like_behavior",
++    titulo: "Comportamiento compatible con ransomware (simulación)",
++    resumen: "Simulación controlada: modificación masiva de archivos en el servidor de archivos. No es malware real.",
++    severidad: "CRITICAL", estado: "Investigando", status: "investigating",
++    origen: "192.168.56.30", servidor: "srv-files-01", servicio: "Sistema de archivos",
++    detectado: "28 oct 2026 · 16:30", asignado: "Analista Demo", regla: "CYBERSHIELD-RULE-RANSOM-SIM",
++    reco: "Detener el proceso sospechoso, aislar el host y validar la integridad de los archivos.",
++    investigationSteps: ["Identificar el proceso que modifica archivos.", "Aislar el host de la red de producción.", "Validar la integridad de los archivos con la copia de respaldo."],
++    mitre: mitreRW,
++    resolutionCriteria: "El proceso fue detenido y no hay nuevas modificaciones masivas de archivos.",
++    responseAction: { id: 2, action_type: "STOP_PROCESS", target: "srv-files-01", status: "failed", reversible: true, duration_seconds: null, reason: "Comportamiento compatible con ransomware (T1486) → detener proceso", result: "failed", created_at: ago(20), executed_at: null, rolled_back_at: null },
++  },
++  ...MOCK_INC_SEED,
++];
++
++/* ---------- 5. Resumen del dashboard (los totales se recalculan en useCyberShieldData a partir de las listas) ---------- */
++/* BACKEND_GISS: Stats.servidores <- summary.servers · servidoresOnline <- summary.servers_online · servidoresOffline <- summary.servers_offline
++   · eventos <- summary.events · incidentes <- summary.incidents · criticos <- summary.critical_incidents · estado <- texto del dashboard */
++export const MOCK_DASHBOARD: Stats = { estado: "Monitoreo activo. Revisa los incidentes y eventos recientes.", servidores: 4, servidoresOnline: 3, servidoresOffline: 1, eventos: 6, incidentes: 3, criticos: 1 };
++
++/* ---------- 6. Estadísticas de eventos por ventana (1 s / 60 s) ---------- */
++/* BACKEND_GISS: EventStats.total_events <- stats.total_events · by_source[] <- stats.by_source [{source_ip,count}] · by_type[] <- stats.by_type [{event_type,count}]
++   · by_scope <- stats.by_scope {BLOCKED,REACHED,IMPACT} · by_server[] <- stats.by_server [{server_id,count}] · window_seconds <- stats.window_seconds */
++export const MOCK_EVENT_STATS: Record<"1s" | "60s", EventStats> = {
++  "1s": { window: "1s", window_seconds: 1, total_events: 1, by_source: [{ source_ip: "192.168.1.90", count: 1 }], by_type: [{ event_type: "privilege_escalation", count: 1 }], by_scope: { BLOCKED: 0, REACHED: 0, IMPACT: 1 }, by_server: [{ server_id: 2, count: 1 }] },
++  "60s": { window: "60s", window_seconds: 60, total_events: 6, by_source: [{ source_ip: "192.168.56.50", count: 2 }, { source_ip: "192.168.1.50", count: 2 }, { source_ip: "192.168.1.90", count: 1 }, { source_ip: "192.168.56.30", count: 1 }], by_type: [{ event_type: "authentication_burst", count: 2 }, { event_type: "multiple_login_attempts", count: 1 }, { event_type: "privilege_escalation", count: 1 }, { event_type: "ransomware_like_behavior", count: 1 }, { event_type: "authentication_failure", count: 1 }], by_scope: { BLOCKED: 2, REACHED: 3, IMPACT: 1 }, by_server: [{ server_id: 2, count: 4 }, { server_id: 1, count: 1 }, { server_id: 3, count: 1 }] },
++};
++
++/* ---------- 7. Notificaciones ---------- */
++/* BACKEND_GISS: NotificationItem.id <- notification.id · incident_id <- notification.incident_id · severity <- notification.severity · recipient <- notification.recipient
++   · channel <- notification.channel · message <- notification.message · status <- notification.status · created_at / sent_at <- notification.created_at / sent_at */
++export const MOCK_NOTIFICATIONS: NotificationItem[] = [
++  { id: 1, incident_id: 77, severity: "HIGH", recipient: "ingeniero.guardia", channel: "Telegram", message: "Fuerza bruta contenida: IP 192.168.56.50 bloqueada en srv-prod-01.", status: "sent", created_at: ago(29), sent_at: ago(29) },
++  { id: 2, incident_id: 78, severity: "CRITICAL", recipient: "ingeniero.guardia", channel: "Telegram", message: "Respuesta fallida en srv-files-01: se requiere intervención manual.", status: "sent", created_at: ago(19), sent_at: ago(19) },
++];
++
++/* ---------- 8. Dispositivos, sesiones, acciones, protecciones y laboratorio ---------- */
++/* BACKEND_GISS (todo este bloque): Device.* <- device.{id,device_name,user,platform,status,last_seen,source_mode} · SessionItem.* <- session.{id,user,device,ip,started_at,status,source_mode}
++   · ActionItem.* <- response_action.{id,action_type,target,status,incident_id,created_at,reversible,source_mode} · Protection.* <- control.{id,name,sensor,description,source_mode,mitre_techniques}
++   · LabScenario.* <- scenario.{id,name,control,description,event_source,source_mode,mitre_techniques} */
++/* DATOS SIMULADOS de Dispositivos, Sesiones, Acciones, Protecciones y Laboratorio.
++   Se reemplazan cuando exista el endpoint real (ver src/api/client.ts). Los mapeos MITRE son de demostración:
++   deben ser revisados por el responsable de ciberseguridad antes de presentarse como reales. */
++
++const mt = (id: string, name: string, tactic: string, primary = true): MitreTechnique => ({
++  technique_id: id, technique_name: name, tactic, is_primary: primary,
++  url: `https://attack.mitre.org/techniques/${id.replace(".", "/")}/`, rationale: "Asociación contextual de demostración; no confirma por sí sola un ataque.",
++});
++
++export const MOCK_DEVICES: Device[] = [
++  { id: "dev-1", name: "laptop-ventas-01", user: "usuario.demo", os: "Windows 11", status: "trusted", last_seen: ago(3), mode: "simulated" },
++  { id: "dev-2", name: "desconocido-10.20.4.19", user: null, os: "Windows", status: "unauthorized", last_seen: ago(12), mode: "simulated" },
++  { id: "dev-3", name: "tablet-bodega", user: "bodega.demo", os: "Android", status: "unknown", last_seen: ago(180), mode: "simulated" },
++];
++export const MOCK_SESSIONS: SessionItem[] = [
++  { id: "ses-1", user: "usuario.demo", device: "laptop-ventas-01", ip: "192.168.1.60", started_at: ago(12), status: "active", mode: "simulated" },
++  { id: "ses-2", user: "admin.demo", device: "desconocido-10.20.4.19", ip: "10.20.4.19", started_at: ago(95), status: "revoked", mode: "simulated" },
++];
++export const MOCK_ACTIONS: ActionItem[] = [
++  { id: "act-1", type: "Bloquear IP", target: "185.220.101.34", status: "executed", incident_id: 842, created_at: ago(2), reversible: true, mode: "simulated" },
++  { id: "act-2", type: "Revocar sesión", target: "ses-2", status: "executed", incident_id: 839, created_at: ago(60), reversible: true, mode: "simulated" },
++  { id: "act-3", type: "Aislar servidor", target: "srv-demo-03", status: "pending", incident_id: null, created_at: ago(5), reversible: true, mode: "simulated" },
++];
++export const MOCK_PROTECTIONS: Protection[] = [
++  { id: "c1", name: "Fuerza bruta", sensor: "Wazuh", description: "Monitoreo con respuesta segura y reversible en el laboratorio.", mode: "integrated", mitre: [mt("T1110", "Brute Force", "Credential Access")] },
++  { id: "c2", name: "Dispositivo no autorizado", sensor: "Aplicación", description: "Device Trust preparado; validación E2E con backend/BD pendiente.", mode: "pending", mitre: [mt("T1078", "Valid Accounts", "Defense Evasion")] },
++  { id: "c3", name: "Cambio de archivo crítico", sensor: "Wazuh FIM", description: null, mode: "integrated", mitre: [mt("T1565.001", "Stored Data Manipulation", "Impact")] },
++  { id: "c4", name: "Abuso de privilegios", sensor: "Wazuh", description: "Señal Wazuh disponible; cierre E2E real pendiente de adaptación del evento sudo.", mode: "pending", mitre: [mt("T1548.003", "Sudo and Sudo Caching", "Privilege Escalation")] },
++  { id: "c5", name: "Conexión externa sospechosa", sensor: "Suricata", description: "Telemetría de red disponible; integración de la regla al backend pendiente.", mode: "pending", mitre: [mt("T1041", "Exfiltration Over C2 Channel", "Exfiltration")] },
++  { id: "c6", name: "Posible exfiltración de datos", sensor: "Suricata + App", description: "Escenario defensivo con datos ficticios; no implica exfiltración confirmada.", mode: "simulated", mitre: [mt("T1041", "Exfiltration Over C2 Channel", "Exfiltration")] },
++  { id: "c7", name: "Comportamiento tipo ransomware", sensor: "Wazuh", description: "Patrón benigno de modificaciones masivas; no utiliza malware ni cifrado real.", mode: "simulated", mitre: [mt("T1486", "Data Encrypted for Impact", "Impact")] },
++  { id: "c8", name: "Posible movimiento lateral", sensor: "Wazuh + Suricata", description: "Conexión SSH autorizada entre hosts del laboratorio; clasificación contextual.", mode: "simulated", mitre: [mt("T1021.004", "Remote Services: SSH", "Lateral Movement")] },
++];
++export const MOCK_SCENARIOS: LabScenario[] = MOCK_PROTECTIONS.map((p, i) => ({
++  id: `sc${i + 1}`, name: p.name, control: p.name, description: "Genera telemetría defensiva de prueba para validar detección, clasificación y respuesta.",
++  event_source: p.sensor, mode: p.mode === "integrated" ? "integrated" : "simulated", mitre: p.mitre,
++}));
++
++
++/* ---------- 9. EmpresaDemo (aplicación corporativa FICTICIA protegida por CyberShield) ---------- */
++/* BACKEND_GISS: ED_DEVICES[].trusted <- device_trust.trusted (decide si el equipo entra a /empresa-demo/inicio o a "acceso restringido")
++   · ED_PROFILE.session <- session.id · ED_PROFILE.user/alias <- user.username/name · el resto (clientes, documentos, reportes) es contenido ficticio de la app demo, no viene de CyberShield. */
++export const ED_DATE_LABEL = "Martes, 20 de octubre de 2026";
++export const ED_ORIGIN = "ORIGEN: DEMO · 20 oct 2026 · 10:24 UTC";
++
++export interface EDDevice { name: string; id: string; trusted: boolean }
++export const ED_DEVICES: Record<string, EDDevice> = {
++  "demo-equipo-01": { name: "demo-equipo-01", id: "DV-001", trusted: true },
++  "demo-equipo-06": { name: "demo-equipo-06", id: "DV-006", trusted: false },
++};
++export const ED_PROFILE = { alias: "Analista Demo", user: "analista.demo", org: "Oficina central ficticia", role: "Analista de muestra", session: "SES-011" };
++
++export interface EDClient { id: string; code: string; name: string; sector: string; owner: string; status: "En curso" | "En revisión" | "En seguimiento"; last: string; note: string }
++export const ED_CLIENTS: EDClient[] = [
++  { id: "c1", code: "CLI-001", name: "Proyecto Olivo", sector: "Servicios profesionales", owner: "Equipo Demo A", status: "En curso", last: "Hoy · Propuesta v3", note: "Relación activa desde septiembre de 2026. Propuesta comercial DOC-018 actualizada hoy a las 10:08. Próximo hito ficticio: revisión de alcance." },
++  { id: "c2", code: "CLI-002", name: "Estudio Bruma", sector: "Diseño y consultoría", owner: "Equipo Demo B", status: "En curso", last: "Hoy · Resumen revisado", note: "Resumen de servicio DOC-016 revisado esta mañana. Sin pendientes críticos." },
++  { id: "c3", code: "CLI-003", name: "Grupo Ladera", sector: "Operaciones", owner: "Equipo Demo A", status: "En revisión", last: "19 oct · Plan de trabajo", note: "Plan de trabajo DOC-012 en borrador, pendiente de revisión del equipo." },
++  { id: "c4", code: "CLI-004", name: "Taller Marea", sector: "Producción", owner: "Equipo Demo C", status: "En curso", last: "18 oct · Entrega de muestra", note: "Entrega de muestra DOC-011 revisada." },
++  { id: "c5", code: "CLI-005", name: "Casa Umbral", sector: "Comercio", owner: "Equipo Demo B", status: "En seguimiento", last: "17 oct · Nota de proyecto", note: "Nota de proyecto DOC-009 por revisar." },
++  { id: "c6", code: "CLI-006", name: "Nodo Prado", sector: "Tecnología", owner: "Equipo Demo C", status: "En curso", last: "16 oct · Reporte mensual", note: "Reporte mensual compartido con el equipo." },
++];
++
++export interface EDDoc { id: string; code: string; title: string; kind: string; client: string; state: "Por revisar" | "Revisado" | "Borrador"; version: string; when: string; owner: string; outline: string[] }
++export const ED_DOCS: EDDoc[] = [
++  { id: "d1", code: "DOC-018", title: "Propuesta comercial", kind: "Documento", client: "Proyecto Olivo", state: "Por revisar", version: "v3", when: "Hoy · 10:08", owner: "Equipo Demo A", outline: ["Objetivo del proyecto", "Alcance orientativo", "Próximos pasos"] },
++  { id: "d2", code: "DOC-016", title: "Resumen de servicio", kind: "Documento", client: "Estudio Bruma", state: "Revisado", version: "v2", when: "Hoy · 09:42", owner: "Equipo Demo B", outline: ["Contexto", "Servicios entregados", "Siguientes pasos"] },
++  { id: "d3", code: "DOC-012", title: "Plan de trabajo", kind: "Documento", client: "Grupo Ladera", state: "Borrador", version: "v1", when: "Ayer", owner: "Equipo Demo A", outline: ["Etapas", "Responsables ficticios", "Calendario de muestra"] },
++  { id: "d4", code: "DOC-011", title: "Entrega de muestra", kind: "Documento", client: "Taller Marea", state: "Revisado", version: "v2", when: "18 oct", owner: "Equipo Demo C", outline: ["Resumen", "Entregables", "Observaciones"] },
++  { id: "d5", code: "DOC-009", title: "Nota de proyecto", kind: "Nota", client: "Casa Umbral", state: "Por revisar", version: "v1", when: "17 oct", owner: "Equipo Demo B", outline: ["Contexto", "Notas"] },
++];
++
++export const ED_ACTIVITY = [
++  { t: "10:08", title: "Propuesta actualizada", meta: "DOC-018 · Proyecto Olivo · Versión 3" },
++  { t: "09:42", title: "Documento revisado", meta: "DOC-016 · Estudio Bruma" },
++  { t: "09:30", title: "Reporte consultado", meta: "REP-006 · Resumen de octubre" },
++  { t: "09:00", title: "Acceso normal", meta: "Analista Demo · Equipo de confianza" },
++];
++export const ED_REPORTS = [
++  { code: "REP-006", name: "Resumen de octubre", period: "Octubre 2026", content: "Actividad del equipo", last: "Hoy · 09:30" },
++  { code: "REP-005", name: "Seguimiento documental", period: "Octubre 2026", content: "Versiones y revisiones", last: "19 oct · 15:20" },
++  { code: "REP-004", name: "Panorama de clientes", period: "Septiembre 2026", content: "Relaciones y proyectos", last: "17 oct · 11:05" },
++];
++/* Distribución ilustrativa del 1 al 20 de octubre; no representa productividad real. */
++export const ED_BARS = [5, 9, 6, 12, 8, 10, 19, 38, 15, 8, 6, 5];
++
++
++/* ---------- 10. Evidencia de protección / respuesta real (pantallas 1 y 2) ---------- */
++/* BACKEND_GISS: buildMockEvidencePayload() fabrica lo que devolvería el backend para un incidente. Giss NO lo llama: pide el JSON real
++   y lo pasa por adaptEvidencePayload() (src/components/evidence/adaptEvidence.ts). Contrato completo en MAPEO_BACKEND_FRONTEND.md. */
++type Notif = { channel: string; status: string; notified: boolean | null };
++type Outcome = { label: string; detail: string };
++
++/* Todo lo que cambia de un ataque a otro. La pantalla es la misma; solo cambian estos datos. */
++interface AttackMock {
++  day: string;            // BACKEND_GISS: entries[].timestamp <- backend.evidence[].timestamp (ISO 8601 UTC); aquí solo se arma el mock
++  event_type: string;     // BACKEND_GISS: event_type <- backend.incident.event_type
++  severity: "NORMAL" | "WARNING" | "HIGH" | "CRITICAL"; // BACKEND_GISS: severity <- backend.incident.severity
++  server: string;         // BACKEND_GISS: server <- backend.incident.server_name
++  source_ip: string | null; // BACKEND_GISS: source_ip <- backend.event.source_ip
++  rule: string;           // BACKEND_GISS: rule <- backend.evidence.rule
++  mitre_id: string; mitre_name: string; mitre_tactic: string; // BACKEND_GISS: mitre_* <- backend.incident.mitre[0].{technique_id,technique_name,tactic}
++  action_type: string;    // BACKEND_GISS: response.action_type <- backend.response_action.action_type
++  tool: string;           // BACKEND_GISS: response.tool <- backend.response_action.tool
++  command_preview: string; // BACKEND_GISS: response.command_preview <- backend.response_action.command_preview  (Giss lo reemplaza con el comando real)
++  scenario_note: string | null; // BACKEND_GISS: scenario_note <- backend.incident.simulation_note (opcional)
++  reason: string;         // BACKEND_GISS: response.reason <- backend.response_action.reason
++  actionVerb: string;     // texto de la entrada RESPONDING ("Bloqueo de IP (…)")
++  failure_reason: string; // BACKEND_GISS: response.failure_reason <- backend.response_action.failure_reason (YA sanitizado por el backend)
++  attack: [number, LogLevel, string, string][];  // [segundo, nivel, fuente, mensaje] de ATTACK_RECEIVED
++  detect: [number, LogLevel, string, string][];  // idem para DETECTED
++  applied: string[];      // líneas de salida (OK) cuando la acción se ejecuta bien
++  verifyLines: [string, string];  // [intento de verificación, resultado de la verificación (DENIED/OK)]
++  contained_msg: string;
++  failed_line: string;    // salida de error de la terminal (mock; el backend la entrega en terminal_lines)
++  outcomes: Outcome[];
++  tools: { name: string; detail: string; role: string }[]; // BACKEND_GISS: tools[] <- backend.evidence.tools (o lista fija decidida por Giss)
++}
++
++const ATTACKS: Record<EvidenceAttack, AttackMock> = {
++  brute_force: {
++    day: "2026-10-27T15:00:",
++    event_type: "multiple_login_attempts", severity: "HIGH", server: "srv-prod-01", source_ip: "192.168.56.50", rule: "CYBERSHIELD-RULE",
++    mitre_id: "T1110", mitre_name: "Brute Force", mitre_tactic: "Credential Access",
++    action_type: "BLOCK_SOURCE_IP", tool: "iptables / Wazuh Active Response",
++    command_preview: "sudo iptables -I INPUT -s 192.168.56.50 -j DROP", // BACKEND_GISS: command_preview <- backend.response_action.command_preview
++    scenario_note: null,
++    reason: "El incidente actual corresponde a un ataque de fuerza bruta (MITRE T1110). Por ello, CyberShield muestra y ejecuta únicamente el comando defensivo asociado a este tipo de ataque, que consiste en bloquear la IP de origen en el firewall.",
++    actionVerb: "Bloqueo de IP (192.168.56.50)",
++    failure_reason: "El helper de Active Response no confirmó la regla (timeout). Requiere intervención manual.",
++    attack: [[0, "INFO", "Suricata", "Intento de autenticación SSH detectado"], [1, "INFO", "Suricata", "IP origen: 192.168.56.50 -> Servidor: srv-prod-01 (SSH/22)"]],
++    detect: [[2, "INFO", "Wazuh", "Múltiples intentos de autenticación (12 en 45s)"]],
++    applied: ["Regla insertada correctamente.", "IP 192.168.56.50 bloqueada en firewall."],
++    verifyLines: ["Nuevo intento de conexión SSH desde 192.168.56.50", "Conexión rechazada por firewall (DROP)."],
++    contained_msg: "El ataque de fuerza bruta ha sido contenido.",
++    failed_line: "No se pudo insertar la regla (tiempo de espera agotado).",
++    outcomes: [
++      { label: "Ataque contenido", detail: "No se detectan más intentos del origen en monitoreo." },
++      { label: "Acceso denegado", detail: "La IP de origen fue bloqueada en firewall." },
++      { label: "Proceso detenido", detail: "Intentos de conexión denegados." },
++      { label: "Empresa protegida", detail: "Los sistemas continúan operativos." },
++    ],
++    tools: [
++      { name: "Wazuh", detail: "Detección de eventos", role: "HIDS / NIDS" }, { name: "Suricata", detail: "Análisis de tráfico de red", role: "NIDS" },
++      { name: "CyberShield Engine", detail: "Coordinación y respuesta automática", role: "Motor" }, { name: "PostgreSQL", detail: "Almacenamiento de eventos", role: "Base de datos" },
++      { name: "Firewall / Active Response", detail: "Ejecución de comandos defensivos", role: "Respuesta" },
++    ],
++  },
++  ransomware: {
++    day: "2026-10-28T16:30:",
++    event_type: "ransomware_like_behavior", severity: "CRITICAL", server: "srv-files-01", source_ip: "192.168.56.30", rule: "CYBERSHIELD-RULE-RANSOM-SIM",
++    mitre_id: "T1486", mitre_name: "Data Encrypted for Impact", mitre_tactic: "Impact",
++    action_type: "STOP_PROCESS", tool: "Wazuh Active Response / sistema operativo",
++    command_preview: "[command_preview · lo entrega el backend para la acción STOP_PROCESS]", // BACKEND_GISS: command_preview <- backend.response_action.command_preview (placeholder: NO se inventa un comando)
++    scenario_note: "Simulación controlada: comportamiento compatible con ransomware generado en el laboratorio. No es malware real.",
++    reason: "El incidente actual muestra un comportamiento compatible con ransomware (MITRE T1486): modificación masiva de archivos. CyberShield muestra únicamente la acción defensiva asociada a este tipo de incidente: detener el proceso sospechoso y contener el host.",
++    actionVerb: "Detener proceso sospechoso (srv-files-01)",
++    failure_reason: "El agente no confirmó que el proceso se detuviera (sin respuesta). Requiere intervención manual.",
++    attack: [[0, "INFO", "Wazuh", "Actividad de archivos fuera de lo normal en srv-files-01 (simulación controlada)"], [1, "WARN", "Wazuh", "Modificación masiva de archivos: patrón compatible con cifrado (130 archivos en 20s)"]],
++    detect: [[2, "WARN", "Wazuh", "Comportamiento compatible con ransomware detectado (simulación controlada)"]],
++    applied: ["Acción de contención aplicada sobre el proceso sospechoso.", "Host srv-files-01 aislado de la red de producción."],
++    verifyLines: ["Verificando actividad de archivos en srv-files-01...", "Sin nuevas modificaciones masivas de archivos."],
++    contained_msg: "El comportamiento compatible con ransomware fue contenido (simulación controlada).",
++    failed_line: "No se pudo detener el proceso sospechoso (sin respuesta del agente).",
++    outcomes: [
++      { label: "Comportamiento contenido", detail: "Sin nuevas modificaciones masivas de archivos." },
++      { label: "Proceso detenido", detail: "El proceso sospechoso fue detenido." },
++      { label: "Host aislado", detail: "srv-files-01 contenido; no se propaga a otros equipos." },
++      { label: "Empresa protegida", detail: "Los demás sistemas continúan operativos." },
++    ],
++    tools: [
++      { name: "Wazuh", detail: "Monitoreo de integridad de archivos (FIM)", role: "HIDS" }, { name: "CyberShield Engine", detail: "Coordinación y respuesta automática", role: "Motor" },
++      { name: "Wazuh Active Response", detail: "Ejecución de la acción defensiva", role: "Respuesta" }, { name: "PostgreSQL", detail: "Almacenamiento de eventos", role: "Base de datos" },
++    ],
++  },
++};
++
++/* Construye el payload (lo que entregaría el backend) del ataque y estado pedidos para el incidente `id`. */
++export function buildMockEvidencePayload(id: string, attack: EvidenceAttack, scenario: EvidenceScenario): unknown {
++  const A = ATTACKS[attack];
++  const at = (s: number) => `${A.day}${String(s).padStart(2, "0")}Z`;
++  const prompt = `root@${A.server}:~# `;
++  const entry = (stage: EvidenceStage, s: number, level: LogLevel, source: string, message: string, extra: Partial<EvidenceEntry> = {}): EvidenceEntry => ({
++    incident_id: id, event_id: 1, stage, timestamp: at(s), source, level, message, action_type: null, command_display: null, result: null, success: null, ...extra,
++  });
++  const cmd = (s: number, text: string): TerminalLine => ({ kind: "command", timestamp: at(s), text: prompt + text });
++  const out = (s: number, level: LogLevel, text: string): TerminalLine => ({ kind: "output", timestamp: at(s), level, text });
++  const blank: TerminalLine = { kind: "blank", text: "" };
++
++  /* Etapas comunes: ataque -> detección -> regla -> incidente creado (los 4 primeros círculos). */
++  const detectedEntries: EvidenceEntry[] = [
++    ...A.attack.map(([s, l, src, m]) => entry("ATTACK_RECEIVED", s, l, src, m)),
++    ...A.detect.map(([s, l, src, m]) => entry("DETECTED", s, l, src, m)),
++    entry("DETECTED", 2, "INFO", "CyberShield", "Evento normalizado por CyberShield"),
++    entry("DETECTED", 2, "INFO", "CyberShield", `Clasificación: ${A.mitre_id} - ${A.mitre_name} (${A.mitre_tactic})`),
++    entry("RULE_APPLIED", 3, "INFO", "CyberShield", `Regla aplicada: ${A.rule}`),
++    entry("INCIDENT_CREATED", 4, "INFO", "CyberShield", `Incidente creado: ${id} (Severidad: ${A.severity})`),
++  ];
++  const startEntry = entry("RESPONDING", 5, "INFO", "CyberShield", `Ejecutando acción de respuesta: ${A.actionVerb}`, { action_type: A.action_type, command_display: A.command_preview });
++
++  const common = {
++    incident_id: id, event_id: 1, event_type: A.event_type, severity: A.severity, server: A.server, source_ip: A.source_ip, rule: A.rule,
++    mitre_id: A.mitre_id, mitre_name: A.mitre_name, mitre_tactic: A.mitre_tactic, scenario_note: A.scenario_note, detected_at: at(2), outcomes: [] as Outcome[], tools: A.tools, elapsed_time: null as number | null,
++  };
++  const resp = {
++    action_type: A.action_type, tool: A.tool, command_display: null as string | null, command_preview: A.command_preview, reason: A.reason,
++    result: null as string | null, success: null as boolean | null, failure_reason: null as string | null, notification: null as Notif | null,
++  };
++
++  if (scenario === "detected") return { ...common, status: "DETECTED", response_started_at: null, response_finished_at: null, verification_result: null,
++    entries: detectedEntries, response: { ...resp, terminal_lines: [] } };
++
++  if (scenario === "responding") return { ...common, status: "RESPONDING", response_started_at: at(5), response_finished_at: null, verification_result: null,
++    entries: [...detectedEntries, startEntry, entry("RESPONDING", 6, "INFO", "Active Response", "Aplicando la acción defensiva...", { action_type: A.action_type })],
++    response: { ...resp, terminal_lines: [cmd(5, A.command_preview), out(6, "INFO", "Aplicando la acción defensiva...")] } };
++
++  if (scenario === "failed" || scenario === "escalated") {
++    const esc = scenario === "escalated";
++    const failEntry = entry("FAILED", 9, "ERROR", "Active Response", "La acción defensiva no se pudo ejecutar", { action_type: A.action_type, result: "failed", success: false });
++    return { ...common, status: esc ? "ESCALATED" : "FAILED", response_started_at: at(5), response_finished_at: at(esc ? 10 : 9), verification_result: "failed",
++      entries: [...detectedEntries, startEntry, failEntry,
++        ...(esc ? [entry("ESCALATED", 10, "WARN", "CyberShield", "Incidente escalado al ingeniero de guardia (respuesta manual)", { action_type: A.action_type, result: "escalated" })] : [])],
++      response: { ...resp, result: esc ? "escalated" : "failed", success: false, failure_reason: A.failure_reason,
++        notification: { channel: "Telegram", status: esc ? "Enviada al ingeniero de guardia" : "Enviada (alerta de fallo)", notified: true }, // BACKEND_GISS: response.notification <- backend.notification {channel,status,notified}
++        terminal_lines: [cmd(5, A.command_preview), out(9, "ERROR", A.failed_line), ...(esc ? [blank, out(10, "WARN", "Escalado: se requiere intervención del equipo de seguridad.")] : [])] } };
++  }
++
++  /* contained */
++  return { ...common, status: "CONTAINED", response_started_at: at(5), response_finished_at: at(8), verification_result: "contained", // BACKEND_GISS: verification_result <- backend.response_action.verification_result
++    entries: [...detectedEntries, startEntry,
++      entry("RESPONDING", 6, "OK", "Active Response", "Acción defensiva aplicada correctamente", { action_type: A.action_type, result: "applied", success: true }),
++      entry("RESPONDING", 7, "INFO", "CyberShield", A.verifyLines[0]),
++      entry("CONTAINED", 8, "WARN", "CyberShield", A.verifyLines[1], { action_type: A.action_type, result: "denied", success: true }),
++      entry("CONTAINED", 8, "OK", "CyberShield", A.contained_msg)],
++    response: { ...resp, result: "contained", success: true,
++      notification: { channel: "Telegram", status: "Enviada", notified: true }, // BACKEND_GISS: response.notification <- backend.notification {channel,status,notified}
++      terminal_lines: [cmd(5, A.command_preview), ...A.applied.map((t) => out(6, "OK", t)), blank, out(7, "INFO", A.verifyLines[0]), out(8, "DENIED", A.verifyLines[1]), out(8, "INFO", A.contained_msg)] }, // BACKEND_GISS: response.terminal_lines <- backend.evidence.terminal_lines[] {kind, timestamp, level, text}
++    outcomes: A.outcomes }; // BACKEND_GISS: outcomes[] <- backend.evidence.outcomes[] (solo si status=CONTAINED y verification_result=contained)
++}
+
+--- a/frontend/src/pages/ActionsPage.tsx	2026-10-29 23:40:12.691012946 -0600
++++ b/frontend/src/pages/ActionsPage.tsx	2026-10-29 23:39:52.450344922 -0600
+@@ -1,3 +1,4 @@
++/* BACKEND_GISS: ActionItem[] <- getActions() (services/management.ts): id, type, target, status, incident_id, created_at, reversible, mode. */
+ import { Link } from "react-router-dom";
+ import { DataTable, ModeBadge, PageHeader, Pill, ResourceView } from "../components/ui";
+ import { useResource } from "../hooks/useResource";
+
+--- a/frontend/src/pages/DashboardPage.tsx	2026-10-29 23:40:12.691522001 -0600
++++ b/frontend/src/pages/DashboardPage.tsx	2026-10-29 23:39:52.448251153 -0600
+@@ -1,3 +1,4 @@
++/* BACKEND_GISS: no trae datos propios; lee dashboardData de useCyberShieldData() (hooks/useCyberShieldData.ts -> api/client.ts). */
+ import { useOutletContext } from "react-router-dom";
+ import { DashboardView } from "./DashboardView";
+ import type { CyberShieldCtx } from "../hooks/useCyberShieldData";
+
+--- a/frontend/src/pages/DashboardView.tsx	2026-10-29 23:40:12.691361798 -0600
++++ b/frontend/src/pages/DashboardView.tsx	2026-10-29 23:39:52.447982332 -0600
+@@ -1,3 +1,4 @@
++/* BACKEND_GISS: servidores/servidoresOnline/servidoresOffline/eventos/incidentes/criticos/estado <- getDashboard() + listas · lista <- getEvents() · serie <- se calcula de eventos por minuto · stats1s/stats60s <- getEventStats() · notifications <- getNotifications(). Todo llega por useCyberShieldData(). */
+ import { Activity, Bell, Crosshair, Server, ShieldAlert, WifiOff } from "lucide-react";
+ import type { Evento, EventStats, NotificationItem, Scope } from "../types";
+ import { SeverityBadge } from "../components/SeverityBadge";
+
+--- a/frontend/src/pages/DevicesPage.tsx	2026-10-29 23:40:12.691078842 -0600
++++ b/frontend/src/pages/DevicesPage.tsx	2026-10-29 23:39:52.449963751 -0600
+@@ -1,3 +1,4 @@
++/* BACKEND_GISS: Device[] <- getDevices() (services/management.ts): id, name, user, os, status, last_seen, mode. */
+ import { DataTable, ModeBadge, PageHeader, Pill, ResourceView } from "../components/ui";
+ import { useResource } from "../hooks/useResource";
+ import { getDevices } from "../services/management";
+
+--- a/frontend/src/pages/EventsPage.tsx	2026-10-29 23:40:12.690895765 -0600
++++ b/frontend/src/pages/EventsPage.tsx	2026-10-29 23:39:52.448478354 -0600
+@@ -1,3 +1,4 @@
++/* BACKEND_GISS: ctx.events <- getEvents() (Evento.id/createdAt/tipo/origen/severidad/estado/scope/serverId/serverName) · ctx.servers <- getServers() para nombrar el servidor. */
+ import { useMemo, useState } from "react";
+ import { useOutletContext } from "react-router-dom";
+ import type { CyberShieldCtx } from "../hooks/useCyberShieldData";
+@@ -24,7 +25,7 @@
+           </select>
+         </div>
+       </div>
+-      {ctx.demo && <div className="demo">DATOS SIMULADOS · El backend no respondió desde el inicio de la sesión.</div>}
++      {ctx.demo && <div className="demo">DATOS SIMULADOS · Frontend desacoplado: datos del mock local.</div>}
+       <div className="tw"><table><thead><tr><th>Hora</th><th>Tipo</th><th>Origen</th><th>Servidor</th><th>Severidad</th><th>Scope</th><th>Estado</th></tr></thead>
+         <tbody>{rows.map((e) => <tr key={String(e.id)}><td className="mono">{e.fecha}</td><td>{e.tipo.replaceAll("_", " ")}</td><td className="mono">{e.origen}</td><td>{e.serverName ?? (e.serverId != null ? `#${e.serverId}` : "—")}</td><td><SeverityBadge value={e.severidad} /></td><td>{e.scope ? <span className={`sv ${scopeClass[e.scope]}`}>{e.scope}</span> : <span className="mu">—</span>}</td><td className="mu">● {e.estado}</td></tr>)}</tbody>
+       </table></div>
+
+--- a/frontend/src/pages/IncidentDetailPage.tsx	2026-10-29 23:40:12.691388328 -0600
++++ b/frontend/src/pages/IncidentDetailPage.tsx	2026-10-29 23:39:52.449277080 -0600
+@@ -1,3 +1,4 @@
++/* BACKEND_GISS: el incidente sale de ctx.incidents (getIncidents()); el botón "Evidencia" navega a /incidents/<id>/evidence y EvidencePage lee getEvidenceResult(). */
+ import { Link, useOutletContext, useParams } from "react-router-dom";
+ import type { CyberShieldCtx } from "../hooks/useCyberShieldData";
+ import { SeverityBadge } from "../components/SeverityBadge";
+
+--- a/frontend/src/pages/IncidentsPage.tsx	2026-10-29 23:40:12.691057047 -0600
++++ b/frontend/src/pages/IncidentsPage.tsx	2026-10-29 23:39:52.448670192 -0600
+@@ -1,3 +1,4 @@
++/* BACKEND_GISS: ctx.incidents <- getIncidents() (ver mocks/mockData.ts §4) · ctx.changeStatus -> updateIncidentStatus(backendId, status). */
+ import { useOutletContext } from "react-router-dom";
+ import { IncidentsView } from "./IncidentsView";
+ import type { CyberShieldCtx } from "../hooks/useCyberShieldData";
+
+--- a/frontend/src/pages/IncidentsView.tsx	2026-10-29 23:40:12.691470200 -0600
++++ b/frontend/src/pages/IncidentsView.tsx	2026-10-29 23:39:52.449048039 -0600
+@@ -1,3 +1,4 @@
++/* BACKEND_GISS: lista/detalle de Incidente <- getIncidents(): id, titulo, resumen, severidad, estado, origen, servidor, servicio, detectado, asignado, regla, reco, investigationSteps, resolutionCriteria, mitre[], responseAction. */
+ import { useEffect, useState } from "react";
+ import { Check, ChevronDown, ChevronUp, Loader2, Search, X } from "lucide-react";
+ import type { Incidente } from "../types";
+
+--- a/frontend/src/pages/LabPage.tsx	2026-10-29 23:40:12.691545639 -0600
++++ b/frontend/src/pages/LabPage.tsx	2026-10-29 23:39:52.450769560 -0600
+@@ -1,11 +1,11 @@
++/* BACKEND_GISS: LabScenario[] <- getLabScenarios() · botón "Ejecutar" -> runLabScenario(id) (api/client.ts). */
+ import { useState } from "react";
+ import { FlaskConical, Loader2, Check, ShieldCheck } from "lucide-react";
+ import { ModeBadge, PageHeader, ResourceView } from "../components/ui";
+ import { MitreBadge } from "../components/mitre/MitreTechniqueCard";
+ import { useResource } from "../hooks/useResource";
+ import { getLabScenarios } from "../services/management";
+-import { LAB_RUN_ENDPOINT } from "../api/endpoints";
+-import { api } from "../api/client";
++import { runLabScenario } from "../api/client";
+ 
+ 
+ export default function LabPage() {
+@@ -13,29 +13,14 @@
+   const [running, setRunning] = useState<string | null>(null);
+   const [done, setDone] = useState<string[]>([]);
+ 
+-  // Sin endpoint confirmado, la ejecución permanece local y se etiqueta explícitamente como simulación.
++  // Frontend desacoplado: la ejecución es local y se etiqueta explícitamente como simulación.
+   const run = async (id: string) => {
+   if (running) return;
+ 
+   setRunning(id);
+ 
+   try {
+-    if (LAB_RUN_ENDPOINT === null) {
+-      await new Promise((res) => setTimeout(res, 1500));
+-    } else if (
+-      id === "sc1" || 
+-      id === "sc2" || 
+-      id === "sc3" || 
+-      id === "sc4" || 
+-      id === "sc5" ||
+-      id === "sc6" ||
+-      id === "sc7" ||
+-      id === "sc8"
+-    ) {
+-      await api(`${LAB_RUN_ENDPOINT}/${id}/run`, "POST");
+-    } else {
+-      await new Promise((res) => setTimeout(res, 800));
+-    }
++    await runLabScenario(id); // BACKEND_GISS: ejecutar el escenario `id` en el backend (hoy simulado localmente)
+ 
+     setDone((d) => d.includes(id) ? d : [...d, id]);
+   } finally {
+@@ -62,7 +47,7 @@
+                 <div><small className="mu">ORIGEN DEL EVENTO</small><b>{s.event_source ?? "—"}</b></div>
+                 <div><small className="mu">MITRE ATT&amp;CK RELACIONADO</small>{s.mitre.length ? <span className="acts">{s.mitre.map((t) => <MitreBadge key={t.technique_id} t={t} />)}</span> : <b>Sin clasificación confirmada</b>}</div>
+               </div>
+-              {done.includes(s.id) && <div className="lab-result"><ShieldCheck size={16} /><span><b>Escenario ejecutado correctamente</b><small>{LAB_RUN_ENDPOINT === null ? " No se generó un incidente real porque el endpoint de ejecución aún no está confirmado." : " Revisa el incidente y la evidencia generada."}</small></span></div>}
++              {done.includes(s.id) && <div className="lab-result"><ShieldCheck size={16} /><span><b>Escenario ejecutado correctamente</b><small>{" Simulación local: no se generó un incidente real."}</small></span></div>}
+               <button className="ab lab-run" disabled={!!running} onClick={() => run(s.id)} aria-label={`Ejecutar escenario ${s.name}`}>
+                 {running === s.id ? <><Loader2 size={14} className="spin" />Ejecutando…</> : done.includes(s.id) ? <><Check size={14} />Ejecutar de nuevo</> : "Ejecutar escenario"}
+               </button>
+
+--- a/frontend/src/pages/Login.tsx	2026-10-29 23:40:12.690966853 -0600
++++ b/frontend/src/pages/Login.tsx	2026-10-29 23:39:52.451042811 -0600
+@@ -1,3 +1,4 @@
++/* BACKEND_GISS: login({email,password}) -> api/client.ts devuelve {token,user}; user se guarda en localStorage (cs_user) desde App.tsx. */
+ import { useState } from "react";
+ import {
+   ArrowRight,
+
+--- a/frontend/src/pages/NotificationsPage.tsx	2026-10-29 23:40:12.690922044 -0600
++++ b/frontend/src/pages/NotificationsPage.tsx	2026-10-29 23:39:52.449489201 -0600
+@@ -1,3 +1,4 @@
++/* BACKEND_GISS: ctx.notifications <- getNotifications() (id, incident_id, severity, recipient, channel, message, status, created_at, sent_at). */
+ import { useOutletContext } from "react-router-dom";
+ import type { CyberShieldCtx } from "../hooks/useCyberShieldData";
+ import { SeverityBadge } from "../components/SeverityBadge";
+
+--- a/frontend/src/pages/ProtectionsPage.tsx	2026-10-29 23:40:12.690990166 -0600
++++ b/frontend/src/pages/ProtectionsPage.tsx	2026-10-29 23:39:52.450522620 -0600
+@@ -1,3 +1,4 @@
++/* BACKEND_GISS: Protection[] <- getProtections() (services/management.ts): id, name, sensor, description, mode, mitre[]. */
+ import { PageHeader, ModeBadge, ResourceView } from "../components/ui";
+ import { MitreBadge } from "../components/mitre/MitreTechniqueCard";
+ import { useResource } from "../hooks/useResource";
+
+--- a/frontend/src/pages/Register.tsx	2026-10-29 23:40:12.691568805 -0600
++++ b/frontend/src/pages/Register.tsx	2026-10-29 23:39:52.451240554 -0600
+@@ -1,6 +1,7 @@
++/* BACKEND_GISS: register({name,email,password}) -> api/client.ts. */
+ import { useState } from "react";
+ import { ArrowRight, Loader2 } from "lucide-react";
+-import { register, isNet } from "../api/client";
++import { register } from "../api/client";
+ import { emailOk } from "../utils/format";
+ import { PasswordInput } from "../components/PasswordInput";
+ import { AuthShell } from "../components/AuthShell";
+@@ -12,6 +13,6 @@
+   const st=(k:string)=>(!touched[k]?"":errs[k as keyof typeof errs]?"bad":"good");
+   const bind=(k:keyof typeof f)=>({value:f[k],onChange:(e:any)=>setF({...f,[k]:e.target.value}),onBlur:()=>setTouched({...touched,[k]:true})});
+   const msg=(k:keyof typeof errs)=>touched[k]&&errs[k]&&<div className="hint er">{errs[k]}</div>;
+-  const submit=async(e:any)=>{e.preventDefault(); setTouched({name:true,email:true,password:true,confirm:true}); if(Object.values(errs).some(Boolean)||loading)return; setLoading(true); setError(""); const body={name:f.name,email:f.email,password:f.password}; try { try{await register(body);}catch(err){if(!isNet(err))throw err; const users=JSON.parse(localStorage.getItem("cs_users")||"[]"); if(users.some((u:any)=>u.email===f.email))throw new Error("Ese correo ya está registrado."); localStorage.setItem("cs_users",JSON.stringify([...users,body]));} onDone(); }catch(err:any){setError(err.message);}finally{setLoading(false);}};
++  const submit=async(e:any)=>{e.preventDefault(); setTouched({name:true,email:true,password:true,confirm:true}); if(Object.values(errs).some(Boolean)||loading)return; setLoading(true); setError(""); const body={name:f.name,email:f.email,password:f.password}; try { await register(body); onDone(); }catch(err:any){setError(err.message);}finally{setLoading(false);}};
+   return <AuthShell><form className="form" onSubmit={submit} noValidate><div className="eyebrow">Empieza con CyberShield</div><h2>Crear cuenta</h2><p className="mu">Configura tu acceso a la consola de seguridad.</p><label>Nombre completo</label><div className={`inp ${st("name")}`}><input placeholder="Tu nombre y apellidos" {...bind("name")}/></div>{msg("name")}<label>Correo electrónico</label><div className={`inp ${st("email")}`}><input type="email" placeholder="nombre@empresa.com" {...bind("email")}/></div>{msg("email")}<label>Contraseña</label><PasswordInput placeholder="Crea una contraseña segura" state={st("password")} {...bind("password")}/><div className="bars">{[0,1,2,3].map((i)=><i key={i} className={i<checks.filter(Boolean).length+(checks.every(Boolean)?1:0)?"on":""}/>)}</div><div className="hint">Mínimo 8 caracteres, una mayúscula y un número.</div><label>Confirmar contraseña</label><PasswordInput placeholder="Repite tu contraseña" state={st("confirm")} {...bind("confirm")}/>{msg("confirm")}{error&&<div className="errbox">{error}</div>}<button className="btn" disabled={loading}>{loading?<><Loader2 size={16} className="spin"/>Creando...</>:<><ArrowRight size={16}/>Crear cuenta</>}</button><div className="hint" style={{marginTop:10}}>Tu cuenta te permitirá acceder al entorno de monitorización de CyberShield.</div><div className="foot mu">¿Ya te registraste? <button type="button" className="lnk" onClick={goLogin}>Ya tengo cuenta</button></div></form></AuthShell>;
+ }
+
+--- a/frontend/src/pages/ServersView.tsx	2026-10-29 23:40:12.691958382 -0600
++++ b/frontend/src/pages/ServersView.tsx	2026-10-29 23:39:52.449748754 -0600
+@@ -1,3 +1,4 @@
++/* BACKEND_GISS: servers <- getServers() (id, name, ipAddress, status, agent, createdAt, lastSeen). */
+ import { useCallback, useEffect, useState } from "react";
+ import { Loader2, RefreshCw, Server } from "lucide-react";
+ import { getServers } from "../api/client";
+@@ -27,9 +28,9 @@
+     try {
+       setServers(await getServers());
+     } catch (err) {
+-      console.error("GET /servers falló:", err);
++      console.error("No se pudo cargar la lista de servidores:", err);
+       setServers([]);
+-      setError("No se pudo cargar la lista de servidores. Verifica que el backend esté activo.");
++      setError("No se pudo cargar la lista de servidores. Inténtalo de nuevo.");
+     }
+   }, []);
+ 
+
+--- a/frontend/src/pages/SessionsPage.tsx	2026-10-29 23:40:12.691034516 -0600
++++ b/frontend/src/pages/SessionsPage.tsx	2026-10-29 23:39:52.450137526 -0600
+@@ -1,3 +1,4 @@
++/* BACKEND_GISS: SessionItem[] <- getSessions() (services/management.ts): id, user, device, ip, started_at, status, mode. */
+ import { DataTable, ModeBadge, PageHeader, Pill, ResourceView } from "../components/ui";
+ import { useResource } from "../hooks/useResource";
+ import { getSessions } from "../services/management";
+
+--- a/frontend/src/pages/empresademo/EDClientes.tsx	2026-10-29 23:40:12.691338167 -0600
++++ b/frontend/src/pages/empresademo/EDClientes.tsx	2026-10-29 23:39:52.452681298 -0600
+@@ -1,3 +1,4 @@
++/* BACKEND_GISS: ED_CLIENTS <- contenido ficticio de la app demo (mocks/mockData.ts §9); no viene de CyberShield. */
+ import { useMemo, useState } from "react";
+ import { Link } from "react-router-dom";
+ import { ED_CLIENTS } from "../../empresademo/fixtures";
+
+--- a/frontend/src/pages/empresademo/EDDocumentos.tsx	2026-10-29 23:40:12.691286719 -0600
++++ b/frontend/src/pages/empresademo/EDDocumentos.tsx	2026-10-29 23:39:52.452476836 -0600
+@@ -1,3 +1,4 @@
++/* BACKEND_GISS: ED_DOCS <- contenido ficticio de la app demo (mocks/mockData.ts §9); no viene de CyberShield. */
+ import { useMemo, useState } from "react";
+ import { ED_DOCS } from "../../empresademo/fixtures";
+ 
+
+--- a/frontend/src/pages/empresademo/EDInicio.tsx	2026-10-29 23:40:12.691126109 -0600
++++ b/frontend/src/pages/empresademo/EDInicio.tsx	2026-10-29 23:39:52.451655309 -0600
+@@ -1,3 +1,4 @@
++/* BACKEND_GISS: ED_ACTIVITY / ED_DOCS / ED_PROFILE / ED_DATE_LABEL <- contenido ficticio de la app demo (mocks/mockData.ts §9). ED_PROFILE.session <- id de sesión de CyberShield. */
+ import { FileText } from "lucide-react";
+ import { Link } from "react-router-dom";
+ import { ED_ACTIVITY, ED_DATE_LABEL, ED_DOCS, ED_PROFILE } from "../../empresademo/fixtures";
+
+--- a/frontend/src/pages/empresademo/EDLogin.tsx	2026-10-29 23:40:12.691211347 -0600
++++ b/frontend/src/pages/empresademo/EDLogin.tsx	2026-10-29 23:39:52.451901036 -0600
+@@ -1,3 +1,4 @@
++/* BACKEND_GISS: ED_DEVICES[].trusted <- decisión de confianza del dispositivo (Device Trust) del backend; define si entra a inicio o a acceso restringido. */
+ import { useState } from "react";
+ import { Info, Layers } from "lucide-react";
+ import { useNavigate } from "react-router-dom";
+
+--- a/frontend/src/pages/empresademo/EDPerfil.tsx	2026-10-29 23:40:12.691239352 -0600
++++ b/frontend/src/pages/empresademo/EDPerfil.tsx	2026-10-29 23:39:52.452091566 -0600
+@@ -1,3 +1,4 @@
++/* BACKEND_GISS: ED_PROFILE.{alias,user,org,role,session} <- usuario/sesión del backend (mocks/mockData.ts §9). */
+ import { Info } from "lucide-react";
+ import { useState } from "react";
+ import { useNavigate } from "react-router-dom";
+
+--- a/frontend/src/pages/empresademo/EDReportes.tsx	2026-10-29 23:40:12.691262881 -0600
++++ b/frontend/src/pages/empresademo/EDReportes.tsx	2026-10-29 23:39:52.452276384 -0600
+@@ -1,3 +1,4 @@
++/* BACKEND_GISS: ED_REPORTS / ED_BARS <- contenido ficticio de la app demo (mocks/mockData.ts §9); no viene de CyberShield. */
+ import { ED_BARS, ED_REPORTS } from "../../empresademo/fixtures";
+ 
+ export default function EDReportes() {
+
+--- a/frontend/src/pages/empresademo/EDRestringido.tsx	2026-10-29 23:40:12.691312194 -0600
++++ b/frontend/src/pages/empresademo/EDRestringido.tsx	2026-10-29 23:39:52.452875433 -0600
+@@ -1,3 +1,4 @@
++/* BACKEND_GISS: el dispositivo (edGetDevice) y su estado "no confiable" <- decisión de Device Trust del backend. */
+ import { Laptop } from "lucide-react";
+ import { useState } from "react";
+ import { useNavigate } from "react-router-dom";
+
+--- a/frontend/src/services/management.ts	2026-10-29 23:40:12.690339765 -0600
++++ b/frontend/src/services/management.ts	2026-10-29 23:38:50.881197468 -0600
+@@ -1,113 +1,26 @@
+-import { api, isMissing, isNet, normalizeMitre } from "../api/client";
+-import { PENDING_ENDPOINTS as E } from "../api/endpoints";
+-import { MOCK_ACTIONS, MOCK_DEVICES, MOCK_PROTECTIONS, MOCK_SCENARIOS, MOCK_SESSIONS } from "../mocks/management";
+-import type { ActionItem, Device, LabScenario, Protection, SessionItem, SourceMode } from "../types";
++/* Servicio de Dispositivos, Sesiones, Acciones, Protecciones y Laboratorio (D4, frontend desacoplado).
++   NO hace peticiones de red: devuelve los datos de src/mocks/mockData.ts marcados como source:"mock" (las pantallas muestran "DATOS SIMULADOS").
++   Giss: reemplaza el cuerpo de cada getXxx por la lectura real del backend y devuelve { data, source: "api" }.
++   Si el JSON real nombra distinto algún campo, normalízalo aquí (los tipos de salida están en src/types/index.ts). */
++import { MOCK_ACTIONS, MOCK_DEVICES, MOCK_PROTECTIONS, MOCK_SCENARIOS, MOCK_SESSIONS } from "../mocks/mockData";
+ 
+ export type Source = "api" | "mock";
+ export interface Loaded<T> { data: T; source: Source; reason?: string }
+ 
+-const pick = (o: any, ...k: string[]) => { for (const x of k) if (o?.[x] != null) return o[x]; return undefined; };
+-const modeOf = (v: unknown): SourceMode => {
+-  const mode = String(v ?? "").toLowerCase();
+-  if (mode.startsWith("pend")) return "pending";
+-  if (mode.startsWith("sim")) return "simulated";
+-  return "integrated";
+-};
+-const oneOf = <T extends string>(v: unknown, list: T[], fallback: T): T => (list.includes(String(v).toLowerCase() as T) ? (String(v).toLowerCase() as T) : fallback);
+-
+-/* Carga una lista. Si la ruta aún es null / no existe / el backend no responde -> devuelve el mock marcado como source:"mock". */
+-async function loadList<T>(path: string | null, normalize: (r: any) => T, mock: T[], signal?: AbortSignal): Promise<Loaded<T[]>> {
+-  if (!path) return { data: mock, source: "mock", reason: "Endpoint pendiente de definir (src/api/endpoints.ts)" };
+-  try { return { data: (await api<any[]>(path, "GET", undefined, signal)).map(normalize), source: "api" }; }
+-  catch (e) {
+-    if (isMissing(e)) return { data: mock, source: "mock", reason: `GET ${path} aún no existe en el backend` };
+-    if (isNet(e)) return { data: mock, source: "mock", reason: "Backend sin conexión" };
+-    throw e;
+-  }
++const REASON = "Frontend desacoplado: datos del mock local (src/mocks/mockData.ts)";
++const wait = (ms = 120) => new Promise<void>((r) => setTimeout(r, ms));
++async function fromMock<T>(mock: T[]): Promise<Loaded<T[]>> {
++  await wait();
++  return { data: JSON.parse(JSON.stringify(mock)) as T[], source: "mock", reason: REASON };
+ }
+ 
+-/* PROVISIONAL: normalizadores tolerantes. Ajustar con el JSON real. */
+-const nDevice = (r: any): Device => {
+-  const rawStatus = String(pick(r, "status") ?? "").toLowerCase();
+-
+-  const status: Device["status"] =
+-    rawStatus === "trusted"
+-      ? "trusted"
+-      : rawStatus === "untrusted" || rawStatus === "revoked"
+-        ? "unauthorized"
+-        : "unknown";
+-
+-  return {
+-    id: String(pick(r, "id") ?? ""),
+-    name: String(
+-      pick(r, "device_name", "name", "hostname", "device_uuid") ?? "—"
+-    ),
+-    user: pick(r, "user", "username") ?? null,
+-    os: pick(r, "platform", "os") ?? null,
+-    status,
+-    last_seen: pick(r, "last_seen") ?? null,
+-    mode: modeOf(pick(r, "source_mode", "mode")),
+-  };
+-};
+-const nSession = (r: any): SessionItem => ({
+-  id: String(pick(r, "id") ?? ""),
+-
+-  user:
+-    pick(r, "user", "username") ??
+-    (pick(r, "user_id") != null
+-      ? `Usuario #${pick(r, "user_id")}`
+-      : "—"),
+-
+-  device:
+-    pick(r, "device", "device_name") ??
+-    (pick(r, "device_id") != null
+-      ? `Dispositivo #${pick(r, "device_id")}`
+-      : null),
+-
+-  ip: pick(r, "ip", "ip_address", "source_ip") ?? null,
+-
+-  started_at:
+-    pick(r, "started_at", "created_at") ?? null,
+-
+-  status: oneOf(
+-    pick(r, "status"),
+-    ["active", "revoked", "expired"],
+-    "active"
+-  ),
+-
+-  mode: modeOf(pick(r, "source_mode", "mode")),
+-});
+-const nAction = (r: any): ActionItem => {
+-  const rawStatus = String(pick(r, "status") ?? "").toLowerCase();
+-
+-  const status: ActionItem["status"] =
+-    rawStatus === "executed"
+-      ? "executed"
+-      : rawStatus === "rolled_back"
+-        ? "reverted"
+-        : rawStatus === "failed"
+-          ? "failed"
+-          : "pending";
+-
+-  return {
+-    id: String(pick(r, "id") ?? ""),
+-    type: String(
+-      pick(r, "type", "action", "action_type") ?? "—"
+-    ),
+-    target: pick(r, "target") ?? null,
+-    status,
+-    incident_id: pick(r, "incident_id") ?? null,
+-    created_at: pick(r, "created_at") ?? null,
+-    reversible: pick(r, "reversible") !== false,
+-    mode: modeOf(pick(r, "source_mode", "mode")),
+-  };
+-};
+-const nProtection = (r: any): Protection => ({ id: String(pick(r, "id") ?? ""), name: String(pick(r, "name", "control") ?? "—"), sensor: String(pick(r, "sensor") ?? "—"), description: pick(r, "description") ?? null, mode: modeOf(pick(r, "source_mode", "mode")), mitre: normalizeMitre(pick(r, "mitre_techniques", "mitre")) });
+-const nScenario = (r: any): LabScenario => ({ id: String(pick(r, "id") ?? ""), name: String(pick(r, "name") ?? "—"), control: String(pick(r, "control", "control_name") ?? "—"), description: pick(r, "description") ?? null,
+-  event_source: pick(r, "event_source", "source") ?? null, mode: modeOf(pick(r, "source_mode", "mode")), mitre: normalizeMitre(pick(r, "mitre_techniques", "mitre")) });
+-
+-export const getDevices = (s?: AbortSignal) => loadList(E.devices, nDevice, MOCK_DEVICES, s);
+-export const getSessions = (s?: AbortSignal) => loadList(E.sessions, nSession, MOCK_SESSIONS, s);
+-export const getActions = (s?: AbortSignal) => loadList(E.actions, nAction, MOCK_ACTIONS, s);
+-export const getProtections = (s?: AbortSignal) => loadList(E.protections, nProtection, MOCK_PROTECTIONS, s);
+-export const getLabScenarios = (s?: AbortSignal) => loadList(E.labScenarios, nScenario, MOCK_SCENARIOS, s);
++/* BACKEND_GISS: getDevices <- dispositivos del backend: device.{id, device_name|name, user, platform|os, status (trusted|untrusted|revoked), last_seen, source_mode} */
++export const getDevices = (_s?: AbortSignal) => fromMock(MOCK_DEVICES);
++/* BACKEND_GISS: getSessions <- sesiones del backend: session.{id, user, device, ip, started_at, status (active|revoked|expired), source_mode} */
++export const getSessions = (_s?: AbortSignal) => fromMock(MOCK_SESSIONS);
++/* BACKEND_GISS: getActions <- acciones de respuesta: action.{id, action_type|type, target, status (executed|rolled_back|failed|pending), incident_id, created_at, reversible, source_mode} */
++export const getActions = (_s?: AbortSignal) => fromMock(MOCK_ACTIONS);
++/* BACKEND_GISS: getProtections <- controles de protección: control.{id, name, sensor, description, source_mode (integrated|simulated|pending), mitre_techniques[]} */
++export const getProtections = (_s?: AbortSignal) => fromMock(MOCK_PROTECTIONS);
++/* BACKEND_GISS: getLabScenarios <- escenarios de laboratorio: scenario.{id, name, control, description, event_source, source_mode, mitre_techniques[]} */
++export const getLabScenarios = (_s?: AbortSignal) => fromMock(MOCK_SCENARIOS);
