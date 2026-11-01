@@ -473,17 +473,45 @@ export async function getIncidents(): Promise<Incidente[]> {
     const candidateQuality =
       qualityOf(item);
 
-    // Conservamos el registro con
-    // mejor respuesta/evidencia.
-    // En empate conservamos el más reciente.
+    const currentCorrelated =
+      Math.max(
+        1,
+        Number(
+          current.best.correlated_events_count ?? 1
+        ),
+      );
+
+    const candidateCorrelated =
+      Math.max(
+        1,
+        Number(
+          item.correlated_events_count ?? 1
+        ),
+      );
+
+    // Primero preferimos el incidente que tenga
+    // más eventos realmente correlacionados por backend.
+    //
+    // Si ambos tienen el mismo conteo, conservamos
+    // el que tenga mejor respuesta/evidencia.
+    //
+    // En empate total, conservamos el más reciente.
     if (
-      candidateQuality >
-        currentQuality ||
+      candidateCorrelated >
+        currentCorrelated ||
       (
-        candidateQuality ===
-          currentQuality &&
-        Number(item.id) >
-          Number(current.best.id)
+        candidateCorrelated ===
+          currentCorrelated &&
+        (
+          candidateQuality >
+            currentQuality ||
+          (
+            candidateQuality ===
+              currentQuality &&
+            Number(item.id) >
+              Number(current.best.id)
+          )
+        )
       )
     ) {
       current.best = item;

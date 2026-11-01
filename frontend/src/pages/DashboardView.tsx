@@ -123,7 +123,11 @@ export function DashboardView({ d, simulate }: { d: any; simulate: () => void })
             <div className="notification-row" key={n.id}>
               <SeverityBadge value={n.severity} />
               <div className="notification-message"><b>{n.message}</b><small className="mu">Incidente {n.incident_id} · {timeAgo(n.created_at)}</small></div>
-              <span className={`sv ${n.status === "pending" ? "wn" : "ok"}`}>{n.status}</span>
+              <span className={`sv ${n.status === "pending"
+                      ? "wn"
+                      : n.status === "failed"
+                        ? "er"
+                        : "ok"}`}>{n.status}</span>
             </div>
           ))}
           {!notifications.length && <div className="mu"><WifiOff size={14} style={{ verticalAlign: -2 }} /> No hay notificaciones registradas.</div>}

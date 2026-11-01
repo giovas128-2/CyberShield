@@ -119,6 +119,12 @@ def list_incidents(
                 if event.source_ip
                 else None
             ),
+            "server_id": event.server_id,
+            "user": (
+                (event.details or {}).get("user")
+                or (event.details or {}).get("destination_user")
+                or (event.details or {}).get("srcuser")
+            ),
             "severity": incident.severity,
             "status": incident.status,
             "created_at": incident.created_at,

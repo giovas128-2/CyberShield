@@ -32,7 +32,7 @@ def get_actions(status):
             "[EXFIL-BRIDGE] Error API:",
             exc,
         )
-        return []
+        return None
 
 
 def patch_action(
@@ -259,9 +259,33 @@ def main():
         "CyberShield Exfil Response Bridge iniciado"
     )
 
+    # No construimos el estado inicial hasta tener
+    # una lectura REAL y completa del backend.
+    while True:
+        pending_existing = get_actions(
+            "pending"
+        )
+
+        executed_existing = get_actions(
+            "executed"
+        )
+
+        if (
+            pending_existing is not None
+            and executed_existing is not None
+        ):
+            break
+
+        print(
+            "[EXFIL-BRIDGE] Backend no disponible. "
+            "Esperando antes de recuperar acciones..."
+        )
+
+        time.sleep(2)
+
     existing = (
-        get_actions("pending")
-        + get_actions("executed")
+        pending_existing
+        + executed_existing
     )
 
     floor = max(
@@ -273,23 +297,145 @@ def main():
     )
 
     print(
-        "[EXFIL-BRIDGE] Inicio limpio desde action_id:",
+        "[EXFIL-BRIDGE] Inicio desde action_id:",
         floor,
     )
 
     cursor = floor
     owned = set()
 
+    # IDs cuya acción local pudo ejecutarse pero cuyo
+    # resultado todavía no pudo confirmarse al backend.
+    retry_pending = set()
+
+    # =========================================================
+    # RECUPERACIÓN SEGURA
+    #
+    # Al iniciar solo adoptamos LA ACCIÓN MÁS RECIENTE
+    # de cada destino permitido, sin importar si está
+    # pending o executed.
+    #
+    # Esto evita ejecutar acciones históricas antiguas
+    # y también evita que un rollback viejo retire una
+    # protección perteneciente a una acción más nueva.
+    # =========================================================
+
+    latest_by_target = {}
+
+    for action in existing:
+        target = str(
+            action.get("target") or ""
+        )
+
+        if target not in ALLOWED_DESTINATIONS:
+            continue
+
+        current = latest_by_target.get(
+            target
+        )
+
+        if (
+            current is None
+            or int(action["id"])
+            > int(current["id"])
+        ):
+            latest_by_target[target] = action
+
+    for action in sorted(
+        latest_by_target.values(),
+        key=lambda item: int(item["id"]),
+    ):
+        action_id = int(
+            action["id"]
+        )
+
+        target = str(
+            action.get("target") or ""
+        )
+
+        status = str(
+            action.get("status") or ""
+        ).lower()
+
+        if status == "pending":
+            print(
+                "[EXFIL-BRIDGE] Recuperando "
+                "acción pendiente:",
+                action_id,
+                target,
+            )
+
+            if apply_restriction(
+                action
+            ):
+                owned.add(
+                    action_id
+                )
+
+                retry_pending.discard(
+                    action_id
+                )
+
+            else:
+                print(
+                    "[EXFIL-BRIDGE] Resultado no "
+                    "confirmado. Se reintentará:",
+                    action_id,
+                )
+
+                retry_pending.add(
+                    action_id
+                )
+
+        elif status == "executed":
+            if rollback_due(
+                action
+            ):
+                print(
+                    "[EXFIL-BRIDGE] Rollback pendiente "
+                    "al recuperar:",
+                    action_id,
+                )
+
+                rollback_restriction(
+                    action
+                )
+
+            elif is_blocked(
+                target
+            ):
+                print(
+                    "[EXFIL-BRIDGE] Adoptando "
+                    "protección activa:",
+                    action_id,
+                    target,
+                )
+
+                owned.add(
+                    action_id
+                )
+
     while True:
         pending = get_actions(
             "pending"
         )
 
+        if pending is None:
+            print(
+                "[EXFIL-BRIDGE] No se pudo consultar "
+                "PENDING. Reintentando..."
+            )
+            time.sleep(1)
+            continue
+
         new_actions = sorted(
             (
                 action
                 for action in pending
-                if int(action["id"]) > cursor
+                if (
+                    int(action["id"]) > cursor
+                    or int(action["id"]) in retry_pending
+                )
             ),
             key=lambda action: int(
                 action["id"]
@@ -314,6 +460,21 @@ def main():
                     action_id
                 )
 
+                retry_pending.discard(
+                    action_id
+                )
+
+            else:
+                print(
+                    "[EXFIL-BRIDGE] Resultado no "
+                    "confirmado. Se reintentará:",
+                    action_id,
+                )
+
+                retry_pending.add(
+                    action_id
+                )
+
             cursor = max(
                 cursor,
                 action_id,
@@ -323,10 +484,60 @@ def main():
             "executed"
         )
 
+        if executed is None:
+            print(
+                "[EXFIL-BRIDGE] No se pudo consultar "
+                "EXECUTED. Reintentando..."
+            )
+            time.sleep(1)
+            continue
+
         for action in executed:
             action_id = int(
                 action["id"]
             )
+
+            # =================================================
+            # RECONCILIACIÓN DE PATCH
+            #
+            # Puede ocurrir que el backend sí haya recibido
+            # execution-result y cambiado la acción a
+            # "executed", pero la respuesta HTTP se haya
+            # perdido. En ese caso ya no aparecerá en
+            # PENDING, aunque localmente la protección exista.
+            # =================================================
+
+            if action_id in retry_pending:
+                target = str(
+                    action.get("target") or ""
+                )
+
+                if (
+                    target in ALLOWED_DESTINATIONS
+                    and is_blocked(target)
+                ):
+                    print(
+                        "[EXFIL-BRIDGE] Acción reconciliada "
+                        "desde EXECUTED:",
+                        action_id,
+                        target,
+                    )
+
+                    owned.add(
+                        action_id
+                    )
+
+                    retry_pending.discard(
+                        action_id
+                    )
+
+                else:
+                    print(
+                        "[EXFIL-BRIDGE] AVISO: backend marca "
+                        "EXECUTED pero no se verificó la "
+                        "protección local:",
+                        action_id,
+                    )
 
             if action_id not in owned:
                 continue

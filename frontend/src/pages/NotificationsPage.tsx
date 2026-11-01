@@ -57,7 +57,9 @@ export default function NotificationsPage() {
                   className={`sv ${
                     n.status === "pending"
                       ? "wn"
-                      : "ok"
+                      : n.status === "failed"
+                        ? "er"
+                        : "ok"
                   }`}
                 >
                   {n.status}

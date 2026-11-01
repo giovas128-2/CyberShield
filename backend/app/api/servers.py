@@ -24,18 +24,44 @@ def get_servers(
         .all()
     )
 
-    return [
-        {
+    now = datetime.now(timezone.utc)
+
+    heartbeat_timeout_seconds = 90
+
+    result = []
+
+    for server in servers:
+        effective_status = server.status
+
+        if server.last_seen is not None:
+            last_seen = server.last_seen
+
+            # PostgreSQL TIMESTAMPTZ normalmente devuelve
+            # datetime con zona horaria. Este fallback evita
+            # errores si alguna instalación entrega uno naive.
+            if last_seen.tzinfo is None:
+                last_seen = last_seen.replace(
+                    tzinfo=timezone.utc
+                )
+
+            age_seconds = (
+                now - last_seen
+            ).total_seconds()
+
+            if age_seconds > heartbeat_timeout_seconds:
+                effective_status = "offline"
+
+        result.append({
             "id": server.id,
             "name": server.name,
             "ip_address": str(server.ip_address),
-            "status": server.status,
+            "status": effective_status,
             "agent": server.agent,
             "created_at": server.created_at,
             "last_seen": server.last_seen
-        }
-        for server in servers
-    ]
+        })
+
+    return result
 
 
 @router.post("")

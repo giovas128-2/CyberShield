@@ -26,7 +26,7 @@ const emptyStats: Stats = {
 };
 
 export function useCyberShieldData(user: User) {
-  const [demo, setDemo] = useState(false);
+  const [demo, setDemo] = useState(true);
   const [stale, setStale] = useState(false);
   const hasRealData = useRef(false);
   const [stats, setStats] = useState<Stats>(emptyStats);
@@ -45,11 +45,6 @@ export function useCyberShieldData(user: User) {
   const load = useCallback(async () => {
     try {
       const events = await getEvents();
-      setLista(events);
-      hasRealData.current = true;
-      setDemo(false);
-      setStale(false);
-      setUpdatedAt(new Date());
 
       const [summary, incidents, serverList] = await Promise.all([
         getDashboard(),
@@ -70,6 +65,10 @@ export function useCyberShieldData(user: User) {
       const online = serverList.filter((s) => s.status === "online").length;
       const offline = serverList.filter((s) => s.status === "offline").length;
       const critical = open.filter((i) => i.severidad === "CRITICAL").length;
+
+      // Solo publicamos datos como REALES cuando
+      // todos los endpoints principales respondieron bien.
+      setLista(events);
 
       setStats({
         ...summary,
@@ -95,12 +94,32 @@ export function useCyberShieldData(user: User) {
       setUpdatedAt(new Date());
     } catch (err) {
       setLoading(false);
-      if (isNet(err)) {
-        if (hasRealData.current) setStale(true);
-        else setDemo(true);
-      } else {
-        console.error("No se pudo actualizar CyberShield:", err);
-        setToast({ kind: "err", text: "No se pudo actualizar uno de los endpoints principales." });
+
+      console.error(
+        "No se pudo actualizar CyberShield:",
+        err
+      );
+
+      // Si ya recibimos información real anteriormente,
+      // la conservamos pero la marcamos como desactualizada.
+      if (hasRealData.current) {
+        setDemo(false);
+        setStale(true);
+      }
+
+      // Si nunca hubo una carga real completa,
+      // los datos iniciales son MOCK y deben identificarse
+      // explícitamente como simulados.
+      else {
+        setDemo(true);
+        setStale(false);
+      }
+
+      if (!isNet(err)) {
+        setToast({
+          kind: "err",
+          text: "El backend respondió con un error. Se conservaron datos seguros para visualización.",
+        });
       }
     }
   }, []);

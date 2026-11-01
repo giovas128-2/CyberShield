@@ -94,3 +94,12 @@ coverage/
 # Respaldos locales CyberShield
 *RESPALDO*
 frontend_RESPALDOS_OLA4/
+
+# Backups y dumps locales
+*.bak_*
+*.backup.*
+*.dump
+
+# Entregas y carpetas de trabajo locales
+frontend_OLA4_trabajo/
+jacobo_D4/

@@ -27,7 +27,7 @@ def get_actions(status):
         return response.json()
     except Exception as exc:
         print("[LATERAL] Error API:", exc)
-        return []
+        return None
 
 
 def patch_action(action_id, endpoint, success, result):
@@ -206,13 +206,29 @@ def main():
         "CyberShield Lateral Response Bridge iniciado"
     )
 
-    pending_existing = get_actions(
-        "pending"
-    )
+    # No construimos el estado inicial hasta tener
+    # una lectura REAL y completa del backend.
+    while True:
+        pending_existing = get_actions(
+            "pending"
+        )
 
-    executed_existing = get_actions(
-        "executed"
-    )
+        executed_existing = get_actions(
+            "executed"
+        )
+
+        if (
+            pending_existing is not None
+            and executed_existing is not None
+        ):
+            break
+
+        print(
+            "[LATERAL] Backend no disponible. "
+            "Esperando antes de recuperar acciones..."
+        )
+
+        time.sleep(2)
 
     existing = (
         pending_existing
@@ -235,18 +251,23 @@ def main():
     cursor = floor
     owned = set()
 
+    # IDs cuya acción local pudo ejecutarse pero cuyo
+    # resultado todavía no pudo confirmarse al backend.
+    retry_pending = set()
+
     # =========================================================
-    # RECUPERACIÓN SEGURA AL ARRANQUE
+    # RECUPERACIÓN SEGURA
     #
-    # Solo recuperamos la acción PENDING MÁS RECIENTE
-    # por objetivo/IP.
+    # Solo adoptamos la acción MÁS RECIENTE
+    # de cada IP permitida.
     #
-    # Acciones históricas antiguas no se vuelven a ejecutar.
+    # Esto evita que una acción ejecutada antigua
+    # haga rollback sobre una protección nueva.
     # =========================================================
 
-    pending_by_target = {}
+    latest_by_target = {}
 
-    for action in pending_existing:
+    for action in existing:
         target = str(
             action.get("target") or ""
         )
@@ -254,7 +275,7 @@ def main():
         if target not in ALLOWED_IPS:
             continue
 
-        current = pending_by_target.get(
+        current = latest_by_target.get(
             target
         )
 
@@ -263,10 +284,10 @@ def main():
             or int(action["id"])
             > int(current["id"])
         ):
-            pending_by_target[target] = action
+            latest_by_target[target] = action
 
     for action in sorted(
-        pending_by_target.values(),
+        latest_by_target.values(),
         key=lambda item: int(item["id"]),
     ):
         action_id = int(
@@ -277,79 +298,100 @@ def main():
             action.get("target") or ""
         )
 
-        print(
-            "[LATERAL] Recuperando última "
-            "acción pendiente:",
-            action_id,
-            target,
-        )
+        status = str(
+            action.get("status") or ""
+        ).lower()
 
-        if block_ip(action):
-            owned.add(action_id)
-
-    # =========================================================
-    # RECUPERACIÓN DE ROLLBACK
-    #
-    # Solo adoptamos la acción EXECUTED más reciente
-    # de cada IP.
-    # =========================================================
-
-    executed_by_target = {}
-
-    for action in executed_existing:
-        target = str(
-            action.get("target") or ""
-        )
-
-        if target not in ALLOWED_IPS:
-            continue
-
-        current = executed_by_target.get(
-            target
-        )
-
-        if (
-            current is None
-            or int(action["id"])
-            > int(current["id"])
-        ):
-            executed_by_target[target] = action
-
-    for action in executed_by_target.values():
-        action_id = int(
-            action["id"]
-        )
-
-        target = str(
-            action.get("target") or ""
-        )
-
-        if rollback_due(action):
+        if status == "pending":
             print(
-                "[LATERAL] Rollback pendiente "
-                "al recuperar:",
+                "[LATERAL] Recuperando "
+                "acción pendiente:",
                 action_id,
+                target,
             )
 
-            unblock_ip(action)
+            if block_ip(
+                action
+            ):
+                owned.add(
+                    action_id
+                )
 
-        elif is_blocked(target):
-            owned.add(action_id)
+                retry_pending.discard(
+                    action_id
+                )
+
+            else:
+                print(
+                    "[LATERAL] Resultado no confirmado. "
+                    "Se reintentará:",
+                    action_id,
+                )
+
+                retry_pending.add(
+                    action_id
+                )
+
+        elif status == "executed":
+            if rollback_due(
+                action
+            ):
+                print(
+                    "[LATERAL] Rollback pendiente "
+                    "al recuperar:",
+                    action_id,
+                )
+
+                unblock_ip(
+                    action
+                )
+
+            elif is_blocked(
+                target
+            ):
+                print(
+                    "[LATERAL] Adoptando "
+                    "protección activa:",
+                    action_id,
+                    target,
+                )
+
+                owned.add(
+                    action_id
+                )
 
     while True:
-        pending = get_actions("pending")
+        pending = get_actions(
+            "pending"
+        )
+
+        if pending is None:
+            print(
+                "[LATERAL] No se pudo consultar "
+                "PENDING. Reintentando..."
+            )
+
+            time.sleep(1)
+            continue
 
         new_actions = sorted(
             (
                 action
                 for action in pending
-                if int(action["id"]) > cursor
+                if (
+                    int(action["id"]) > cursor
+                    or int(action["id"]) in retry_pending
+                )
             ),
-            key=lambda action: int(action["id"]),
+            key=lambda action: int(
+                action["id"]
+            ),
         )
 
         for action in new_actions:
-            action_id = int(action["id"])
+            action_id = int(
+                action["id"]
+            )
 
             print(
                 "[LATERAL] NUEVA acción:",
@@ -357,25 +399,108 @@ def main():
                 action.get("target"),
             )
 
-            if block_ip(action):
-                owned.add(action_id)
+            if block_ip(
+                action
+            ):
+                owned.add(
+                    action_id
+                )
 
-            cursor = max(cursor, action_id)
+                retry_pending.discard(
+                    action_id
+                )
 
-        for action in get_actions("executed"):
-            action_id = int(action["id"])
+            else:
+                print(
+                    "[LATERAL] Resultado no confirmado. "
+                    "Se reintentará:",
+                    action_id,
+                )
+
+                retry_pending.add(
+                    action_id
+                )
+
+            cursor = max(
+                cursor,
+                action_id,
+            )
+
+        executed = get_actions(
+            "executed"
+        )
+
+        if executed is None:
+            print(
+                "[LATERAL] No se pudo consultar "
+                "EXECUTED. Reintentando..."
+            )
+
+            time.sleep(1)
+            continue
+
+        for action in executed:
+            action_id = int(
+                action["id"]
+            )
+
+            # =================================================
+            # RECONCILIACIÓN DE PATCH
+            #
+            # El backend pudo recibir execution-result
+            # y marcar la acción como executed aunque
+            # la respuesta HTTP al bridge se haya perdido.
+            # =================================================
+
+            if action_id in retry_pending:
+                target = str(
+                    action.get("target") or ""
+                )
+
+                if (
+                    target in ALLOWED_IPS
+                    and is_blocked(target)
+                ):
+                    print(
+                        "[LATERAL] Acción reconciliada "
+                        "desde EXECUTED:",
+                        action_id,
+                        target,
+                    )
+
+                    owned.add(
+                        action_id
+                    )
+
+                    retry_pending.discard(
+                        action_id
+                    )
+
+                else:
+                    print(
+                        "[LATERAL] AVISO: backend marca "
+                        "EXECUTED pero no se verificó "
+                        "el bloqueo SSH local:",
+                        action_id,
+                    )
 
             if action_id not in owned:
                 continue
 
-            if rollback_due(action):
+            if rollback_due(
+                action
+            ):
                 print(
                     "[LATERAL] Rollback:",
                     action_id,
                 )
 
-                if unblock_ip(action):
-                    owned.discard(action_id)
+                if unblock_ip(
+                    action
+                ):
+                    owned.discard(
+                        action_id
+                    )
 
         time.sleep(1)
 

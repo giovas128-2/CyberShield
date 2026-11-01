@@ -57,7 +57,7 @@ def api_get_actions(status):
             "[LAB-BRIDGE] Error consultando acciones:",
             exc,
         )
-        return []
+        return None
 
 
 def api_patch(action_id, endpoint, success, result):
@@ -623,7 +623,9 @@ def rollback_due(action):
 
 
 def rollback_containment(action):
-    action_id = action["id"]
+    action_id = int(
+        action["id"]
+    )
 
     sf = state_file(
         action_id
@@ -647,6 +649,14 @@ def rollback_containment(action):
             )
         )
 
+        # =====================================================
+        # RESTAURACIÓN LOCAL
+        #
+        # Restaurar permisos es idempotente: si el PATCH al
+        # backend falla, podemos volver a ejecutar este bloque
+        # utilizando el mismo state file.
+        # =====================================================
+
         restore_permissions(
             state["permissions"]
         )
@@ -655,20 +665,40 @@ def rollback_containment(action):
             missing_ok=True
         )
 
-        sf.unlink(
-            missing_ok=True
+        message = (
+            "Permisos del laboratorio restaurados. "
+            "LOCKDOWN local retirado. "
+            "El simulador NO se reinició."
         )
 
-        return api_patch(
+        # =====================================================
+        # CONFIRMACIÓN DEL ROLLBACK
+        #
+        # NO eliminamos el state file antes de confirmar
+        # rollback-result. Si la API falla, la evidencia
+        # necesaria para reintentar permanece disponible.
+        # =====================================================
+
+        reported = api_patch(
             action_id,
             "rollback-result",
             True,
-            (
-                "Permisos del laboratorio restaurados. "
-                "LOCKDOWN local retirado. "
-                "El simulador NO se reinició."
-            ),
+            message,
         )
+
+        if reported:
+            sf.unlink(
+                missing_ok=True
+            )
+        else:
+            print(
+                "[LAB-BRIDGE] Rollback local aplicado "
+                "pero no confirmado por backend. "
+                "Se conserva state file:",
+                action_id,
+            )
+
+        return reported
 
     except Exception as exc:
         return api_patch(
@@ -711,12 +741,33 @@ def load_cursor():
             pass
 
     # Primera ejecución:
-    # consideramos históricas todas las acciones
-    # que ya existían antes de arrancar el bridge.
-    actions = (
-        api_get_actions("pending")
-        + api_get_actions("executed")
-    )
+    # no inicializamos el cursor hasta obtener
+    # una lectura REAL y completa del backend.
+    while True:
+        pending = api_get_actions(
+            "pending"
+        )
+
+        executed = api_get_actions(
+            "executed"
+        )
+
+        if (
+            pending is not None
+            and executed is not None
+        ):
+            actions = (
+                pending
+                + executed
+            )
+            break
+
+        print(
+            "[LAB-BRIDGE] Backend no disponible "
+            "al inicializar cursor. Reintentando..."
+        )
+
+        time.sleep(2)
 
     cursor = max(
         (
@@ -771,15 +822,33 @@ def main():
 
     cursor = load_cursor()
 
-    # =========================================================
-    # PUNTO DE INICIO DE ESTA SESIÓN
-    # =========================================================
-    # Todo lo que ya exista cuando se enciende el bridge
-    # se considera histórico y NO debe ejecutarse ni hacer
-    # rollback durante esta sesión.
+    # Esperamos una lectura válida del backend antes
+    # de reconstruir el estado de recuperación.
+    while True:
+        pending_existing = api_get_actions(
+            "pending"
+        )
+
+        executed_existing = api_get_actions(
+            "executed"
+        )
+
+        if (
+            pending_existing is not None
+            and executed_existing is not None
+        ):
+            break
+
+        print(
+            "[LAB-BRIDGE] Backend no disponible. "
+            "Esperando antes de recuperar acciones..."
+        )
+
+        time.sleep(2)
+
     existing = (
-        api_get_actions("pending")
-        + api_get_actions("executed")
+        pending_existing
+        + executed_existing
     )
 
     existing_ids = [
@@ -787,36 +856,178 @@ def main():
         for action in existing
     ]
 
-    session_floor = max(
+    floor = max(
         [cursor, *existing_ids],
         default=0,
     )
 
-    cursor = session_floor
+    cursor = floor
 
     save_cursor(
         cursor
     )
 
-    cleanup_historical_state_files(
-        session_floor
-    )
+    owned = set()
+
+    # IDs cuya contención local pudo aplicarse pero cuyo
+    # resultado todavía no pudo confirmarse al backend.
+    retry_pending = set()
 
     print(
-        "[LAB-BRIDGE] Inicio limpio desde action_id:",
-        session_floor,
+        "[LAB-BRIDGE] Inicio desde action_id:",
+        floor,
     )
+
+    # =========================================================
+    # RECUPERACIÓN SEGURA
+    #
+    # No eliminamos archivos de estado al arrancar.
+    # Esos archivos contienen los permisos originales
+    # necesarios para restaurar el laboratorio.
+    #
+    # Solo consideramos LA ACCIÓN MÁS RECIENTE
+    # de cada target permitido.
+    # =========================================================
+
+    latest_by_target = {}
+
+    for action in existing:
+        target = str(
+            action.get("target") or ""
+        )
+
+        if target not in ALLOWED_TARGETS:
+            continue
+
+        current = latest_by_target.get(
+            target
+        )
+
+        if (
+            current is None
+            or int(action["id"])
+            > int(current["id"])
+        ):
+            latest_by_target[target] = action
+
+    for action in sorted(
+        latest_by_target.values(),
+        key=lambda item: int(item["id"]),
+    ):
+        action_id = int(
+            action["id"]
+        )
+
+        target = str(
+            action.get("target") or ""
+        )
+
+        status = str(
+            action.get("status") or ""
+        ).lower()
+
+        if status == "pending":
+            print(
+                "[LAB-BRIDGE] Recuperando "
+                "acción pendiente:",
+                action_id,
+                target,
+            )
+
+            if apply_containment(
+                action
+            ):
+                owned.add(
+                    action_id
+                )
+
+                retry_pending.discard(
+                    action_id
+                )
+
+            else:
+                print(
+                    "[LAB-BRIDGE] Resultado no "
+                    "confirmado. Se reintentará:",
+                    action_id,
+                )
+
+                retry_pending.add(
+                    action_id
+                )
+
+        elif status == "executed":
+            sf = state_file(
+                action_id
+            )
+
+            # Una acción ejecutada solo se adopta
+            # si existe evidencia local de que este
+            # bridge aplicó realmente la contención.
+            if not sf.exists():
+                continue
+
+            if rollback_due(
+                action
+            ):
+                print(
+                    "[LAB-BRIDGE] Rollback pendiente "
+                    "al recuperar:",
+                    action_id,
+                )
+
+                rollback_containment(
+                    action
+                )
+
+            else:
+                verified, verification = (
+                    verify_containment()
+                )
+
+                if verified:
+                    print(
+                        "[LAB-BRIDGE] Adoptando "
+                        "contención activa:",
+                        action_id,
+                        target,
+                    )
+
+                    owned.add(
+                        action_id
+                    )
+
+                else:
+                    print(
+                        "[LAB-BRIDGE] AVISO: existe "
+                        "estado local pero la contención "
+                        "no está activa:",
+                        action_id,
+                        verification,
+                    )
 
     while True:
         pending = api_get_actions(
             "pending"
         )
 
+        if pending is None:
+            print(
+                "[LAB-BRIDGE] No se pudo consultar "
+                "PENDING. Reintentando..."
+            )
+
+            time.sleep(1)
+            continue
+
         new_actions = sorted(
             (
                 action
                 for action in pending
-                if int(action["id"]) > cursor
+                if (
+                    int(action["id"]) > cursor
+                    or int(action["id"]) in retry_pending
+                )
             ),
             key=lambda action: int(
                 action["id"]
@@ -834,9 +1045,27 @@ def main():
                 action.get("target"),
             )
 
-            apply_containment(
+            if apply_containment(
                 action
-            )
+            ):
+                owned.add(
+                    action_id
+                )
+
+                retry_pending.discard(
+                    action_id
+                )
+
+            else:
+                print(
+                    "[LAB-BRIDGE] Resultado no "
+                    "confirmado. Se reintentará:",
+                    action_id,
+                )
+
+                retry_pending.add(
+                    action_id
+                )
 
             cursor = max(
                 cursor,
@@ -851,21 +1080,84 @@ def main():
             "executed"
         )
 
+        if executed is None:
+            print(
+                "[LAB-BRIDGE] No se pudo consultar "
+                "EXECUTED. Reintentando..."
+            )
+
+            time.sleep(1)
+            continue
+
         for action in executed:
             action_id = int(
                 action["id"]
             )
 
-            # Nunca hacemos rollback de una acción
-            # que ya existía antes de esta sesión.
-            if action_id <= session_floor:
+            # =================================================
+            # RECONCILIACIÓN DE PATCH
+            #
+            # El backend pudo recibir execution-result y
+            # marcar la acción como executed aunque la
+            # respuesta HTTP al bridge se haya perdido.
+            # =================================================
+
+            if action_id in retry_pending:
+                target = str(
+                    action.get("target") or ""
+                )
+
+                sf = state_file(
+                    action_id
+                )
+
+                verified = False
+                verification = (
+                    "Sin evidencia local de contención."
+                )
+
+                if (
+                    target in ALLOWED_TARGETS
+                    and sf.exists()
+                ):
+                    verified, verification = (
+                        verify_containment()
+                    )
+
+                if verified:
+                    print(
+                        "[LAB-BRIDGE] Acción reconciliada "
+                        "desde EXECUTED:",
+                        action_id,
+                        target,
+                    )
+
+                    owned.add(
+                        action_id
+                    )
+
+                    retry_pending.discard(
+                        action_id
+                    )
+
+                else:
+                    print(
+                        "[LAB-BRIDGE] AVISO: backend marca "
+                        "EXECUTED pero no se verificó "
+                        "la contención local:",
+                        action_id,
+                        verification,
+                    )
+
+            if action_id not in owned:
                 continue
 
-            # Y únicamente gestionamos acciones
-            # ejecutadas realmente por este bridge.
             if not state_file(
                 action_id
             ).exists():
+                owned.discard(
+                    action_id
+                )
                 continue
 
             if rollback_due(
@@ -876,9 +1168,12 @@ def main():
                     action_id,
                 )
 
-                rollback_containment(
+                if rollback_containment(
                     action
-                )
+                ):
+                    owned.discard(
+                        action_id
+                    )
 
         time.sleep(1)
 

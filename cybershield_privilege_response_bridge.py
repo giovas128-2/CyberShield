@@ -39,7 +39,7 @@ def get_actions(status):
             exc,
         )
 
-        return []
+        return None
 
 
 def patch_action(
@@ -143,6 +143,15 @@ def lock_account(action):
             "Cuenta fuera de la allowlist.",
         )
 
+    STATE_DIR.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    sf = state_file(
+        action_id
+    )
+
     status_before, raw_before = (
         account_status(username)
     )
@@ -158,32 +167,49 @@ def lock_account(action):
             ),
         )
 
-    # Guardamos el estado anterior para rollback.
-    STATE_DIR.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
+    # =====================================================
+    # IDEMPOTENCIA
+    #
+    # Si ya existe evidencia local de esta misma acción,
+    # NO sobrescribimos el estado original de la cuenta.
+    # Esto es importante para poder hacer rollback.
+    # =====================================================
 
-    sf = state_file(
-        action_id
-    )
+    state_created_now = False
 
-    sf.write_text(
-        json.dumps(
-            {
-                "action_id": action_id,
-                "username": username,
-                "status_before": status_before,
-                "created_at": (
-                    datetime.now(
-                        timezone.utc
-                    ).isoformat()
+    if sf.exists():
+        if status_before == "L":
+            return patch_action(
+                action_id,
+                "execution-result",
+                True,
+                (
+                    "TEMPORARY_ACCOUNT_LOCK ya estaba "
+                    "aplicado localmente. "
+                    f"La cuenta {username} continúa "
+                    "bloqueada y fue verificada."
                 ),
-            },
-            indent=2,
-        ),
-        encoding="utf-8",
-    )
+            )
+
+    else:
+        sf.write_text(
+            json.dumps(
+                {
+                    "action_id": action_id,
+                    "username": username,
+                    "status_before": status_before,
+                    "created_at": (
+                        datetime.now(
+                            timezone.utc
+                        ).isoformat()
+                    ),
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+
+        state_created_now = True
 
     code, stdout, stderr = run_command(
         [
@@ -194,9 +220,12 @@ def lock_account(action):
     )
 
     if code != 0:
-        sf.unlink(
-            missing_ok=True
-        )
+        # Solo borramos el estado si fue creado
+        # durante este intento.
+        if state_created_now:
+            sf.unlink(
+                missing_ok=True
+            )
 
         return patch_action(
             action_id,
@@ -212,12 +241,16 @@ def lock_account(action):
         account_status(username)
     )
 
-    # passwd -S devuelve L cuando está bloqueada.
     verified = (
         status_after == "L"
     )
 
     if not verified:
+        if state_created_now:
+            sf.unlink(
+                missing_ok=True
+            )
+
         return patch_action(
             action_id,
             "execution-result",
@@ -311,9 +344,9 @@ def unlock_account(action):
         )
     )
 
-    username = state[
-        "username"
-    ]
+    username = str(
+        state.get("username") or ""
+    )
 
     if username not in ALLOWED_USERS:
         return patch_action(
@@ -323,53 +356,152 @@ def unlock_account(action):
             "Cuenta fuera de allowlist.",
         )
 
-    code, stdout, stderr = run_command(
-        [
-            "usermod",
-            "-U",
-            username,
-        ]
+    # =====================================================
+    # RESTAURAR EL ESTADO ORIGINAL
+    #
+    # No asumimos que la cuenta estaba desbloqueada antes
+    # de la respuesta automática. Si ya estaba bloqueada,
+    # CyberShield debe preservar ese estado.
+    # =====================================================
+
+    status_before = str(
+        state.get("status_before") or ""
     )
 
-    if code != 0:
-        return patch_action(
-            action_id,
-            "rollback-result",
-            False,
-            (
-                "No se pudo desbloquear la cuenta: "
-                + stderr
-            ),
-        )
-
-    status_after, raw_after = (
+    current_status, raw_current = (
         account_status(username)
     )
 
-    if status_after == "L":
+    if current_status is None:
         return patch_action(
             action_id,
             "rollback-result",
             False,
             (
-                "La cuenta continúa bloqueada: "
-                + raw_after
+                "No se pudo consultar el estado actual "
+                "de la cuenta: "
+                + raw_current
             ),
         )
 
-    sf.unlink(
-        missing_ok=True
-    )
+    if status_before == "L":
+        # La cuenta ya estaba bloqueada antes de que
+        # CyberShield actuara. El rollback debe dejarla
+        # bloqueada.
 
-    return patch_action(
+        if current_status != "L":
+            code, stdout, stderr = run_command(
+                [
+                    "usermod",
+                    "-L",
+                    username,
+                ]
+            )
+
+            if code != 0:
+                return patch_action(
+                    action_id,
+                    "rollback-result",
+                    False,
+                    (
+                        "No se pudo restaurar el bloqueo "
+                        "original de la cuenta: "
+                        + stderr
+                    ),
+                )
+
+            current_status, raw_current = (
+                account_status(username)
+            )
+
+            if current_status != "L":
+                return patch_action(
+                    action_id,
+                    "rollback-result",
+                    False,
+                    (
+                        "No se pudo verificar el bloqueo "
+                        "original de la cuenta: "
+                        + raw_current
+                    ),
+                )
+
+        message = (
+            f"Cuenta {username} restaurada a su "
+            "estado original: ya estaba bloqueada "
+            "antes de la respuesta CyberShield."
+        )
+
+    else:
+        # La cuenta no estaba bloqueada antes de la
+        # respuesta automática. Solo la desbloqueamos
+        # si actualmente continúa bloqueada.
+
+        if current_status == "L":
+            code, stdout, stderr = run_command(
+                [
+                    "usermod",
+                    "-U",
+                    username,
+                ]
+            )
+
+            if code != 0:
+                return patch_action(
+                    action_id,
+                    "rollback-result",
+                    False,
+                    (
+                        "No se pudo desbloquear la cuenta: "
+                        + stderr
+                    ),
+                )
+
+            current_status, raw_current = (
+                account_status(username)
+            )
+
+            if current_status == "L":
+                return patch_action(
+                    action_id,
+                    "rollback-result",
+                    False,
+                    (
+                        "La cuenta continúa bloqueada: "
+                        + raw_current
+                    ),
+                )
+
+        message = (
+            f"Cuenta {username} restaurada a su "
+            "estado anterior. Protección temporal "
+            "retirada."
+        )
+
+    # =====================================================
+    # CONFIRMACIÓN DEL ROLLBACK
+    #
+    # El estado local NO se elimina antes de confirmar
+    # que el backend recibió rollback-result.
+    #
+    # Si el PATCH falla, el siguiente ciclo puede volver
+    # a intentar el reporte sin perder la evidencia del
+    # estado original.
+    # =====================================================
+
+    reported = patch_action(
         action_id,
         "rollback-result",
         True,
-        (
-            f"Cuenta {username} desbloqueada. "
-            "Protección temporal retirada."
-        ),
+        message,
     )
+
+    if reported:
+        sf.unlink(
+            missing_ok=True
+        )
+
+    return reported
 
 
 def main():
@@ -377,14 +509,36 @@ def main():
         "CyberShield Privilege Response Bridge iniciado"
     )
 
-    # Todo lo que existía antes de arrancar
-    # se considera histórico.
+    # No construimos el estado inicial hasta tener
+    # una lectura REAL y completa del backend.
+    while True:
+        pending_existing = get_actions(
+            "pending"
+        )
+
+        executed_existing = get_actions(
+            "executed"
+        )
+
+        if (
+            pending_existing is not None
+            and executed_existing is not None
+        ):
+            break
+
+        print(
+            "[PRIV-BRIDGE] Backend no disponible. "
+            "Esperando antes de recuperar acciones..."
+        )
+
+        time.sleep(2)
+
     existing = (
-        get_actions("pending")
-        + get_actions("executed")
+        pending_existing
+        + executed_existing
     )
 
-    session_floor = max(
+    floor = max(
         (
             int(action["id"])
             for action in existing
@@ -393,22 +547,168 @@ def main():
     )
 
     print(
-        "[PRIV-BRIDGE] Inicio limpio desde action_id:",
-        session_floor,
+        "[PRIV-BRIDGE] Inicio desde action_id:",
+        floor,
     )
 
-    cursor = session_floor
+    cursor = floor
+    owned = set()
+
+    # IDs cuya acción local pudo ejecutarse pero cuyo
+    # resultado todavía no pudo confirmarse al backend.
+    retry_pending = set()
+
+    # =========================================================
+    # RECUPERACIÓN SEGURA
+    #
+    # Solo consideramos LA ACCIÓN MÁS RECIENTE
+    # de cada usuario permitido.
+    #
+    # Nunca ejecutamos múltiples acciones históricas
+    # sobre una misma cuenta al reiniciar el bridge.
+    # =========================================================
+
+    latest_by_target = {}
+
+    for action in existing:
+        target = str(
+            action.get("target") or ""
+        )
+
+        if target not in ALLOWED_USERS:
+            continue
+
+        current = latest_by_target.get(
+            target
+        )
+
+        if (
+            current is None
+            or int(action["id"])
+            > int(current["id"])
+        ):
+            latest_by_target[target] = action
+
+    for action in sorted(
+        latest_by_target.values(),
+        key=lambda item: int(item["id"]),
+    ):
+        action_id = int(
+            action["id"]
+        )
+
+        target = str(
+            action.get("target") or ""
+        )
+
+        status = str(
+            action.get("status") or ""
+        ).lower()
+
+        if status == "pending":
+            print(
+                "[PRIV-BRIDGE] Recuperando "
+                "acción pendiente:",
+                action_id,
+                target,
+            )
+
+            if lock_account(
+                action
+            ):
+                owned.add(
+                    action_id
+                )
+
+                retry_pending.discard(
+                    action_id
+                )
+
+            else:
+                print(
+                    "[PRIV-BRIDGE] Resultado no "
+                    "confirmado. Se reintentará:",
+                    action_id,
+                )
+
+                retry_pending.add(
+                    action_id
+                )
+
+        elif status == "executed":
+            sf = state_file(
+                action_id
+            )
+
+            # Solo adoptamos una acción ejecutada
+            # si este equipo conserva evidencia local
+            # de haber aplicado ese bloqueo.
+            if not sf.exists():
+                continue
+
+            if rollback_due(
+                action
+            ):
+                print(
+                    "[PRIV-BRIDGE] Rollback pendiente "
+                    "al recuperar:",
+                    action_id,
+                )
+
+                unlock_account(
+                    action
+                )
+
+            else:
+                current_status, _ = (
+                    account_status(
+                        target
+                    )
+                )
+
+                if current_status == "L":
+                    print(
+                        "[PRIV-BRIDGE] Adoptando "
+                        "bloqueo activo:",
+                        action_id,
+                        target,
+                    )
+
+                    owned.add(
+                        action_id
+                    )
+
+                else:
+                    print(
+                        "[PRIV-BRIDGE] AVISO: existe "
+                        "estado local pero la cuenta "
+                        "no está bloqueada:",
+                        action_id,
+                        target,
+                    )
 
     while True:
         pending = get_actions(
             "pending"
         )
 
+        if pending is None:
+            print(
+                "[PRIV-BRIDGE] No se pudo consultar "
+                "PENDING. Reintentando..."
+            )
+
+            time.sleep(1)
+            continue
+
         new_actions = sorted(
             (
                 action
                 for action in pending
-                if int(action["id"]) > cursor
+                if (
+                    int(action["id"]) > cursor
+                    or int(action["id"]) in retry_pending
+                )
             ),
             key=lambda item: int(
                 item["id"]
@@ -426,9 +726,27 @@ def main():
                 action.get("target"),
             )
 
-            lock_account(
+            if lock_account(
                 action
-            )
+            ):
+                owned.add(
+                    action_id
+                )
+
+                retry_pending.discard(
+                    action_id
+                )
+
+            else:
+                print(
+                    "[PRIV-BRIDGE] Resultado no "
+                    "confirmado. Se reintentará:",
+                    action_id,
+                )
+
+                retry_pending.add(
+                    action_id
+                )
 
             cursor = max(
                 cursor,
@@ -439,17 +757,81 @@ def main():
             "executed"
         )
 
+        if executed is None:
+            print(
+                "[PRIV-BRIDGE] No se pudo consultar "
+                "EXECUTED. Reintentando..."
+            )
+
+            time.sleep(1)
+            continue
+
         for action in executed:
             action_id = int(
                 action["id"]
             )
 
-            if action_id <= session_floor:
+            # =================================================
+            # RECONCILIACIÓN DE PATCH
+            #
+            # El backend pudo recibir execution-result
+            # y marcar la acción como executed aunque
+            # la respuesta HTTP al bridge se haya perdido.
+            # =================================================
+
+            if action_id in retry_pending:
+                target = str(
+                    action.get("target") or ""
+                )
+
+                sf = state_file(
+                    action_id
+                )
+
+                current_status, _ = (
+                    account_status(
+                        target
+                    )
+                )
+
+                if (
+                    target in ALLOWED_USERS
+                    and sf.exists()
+                    and current_status == "L"
+                ):
+                    print(
+                        "[PRIV-BRIDGE] Acción reconciliada "
+                        "desde EXECUTED:",
+                        action_id,
+                        target,
+                    )
+
+                    owned.add(
+                        action_id
+                    )
+
+                    retry_pending.discard(
+                        action_id
+                    )
+
+                else:
+                    print(
+                        "[PRIV-BRIDGE] AVISO: backend marca "
+                        "EXECUTED pero no se verificó "
+                        "el bloqueo local:",
+                        action_id,
+                        target,
+                    )
+
+            if action_id not in owned:
                 continue
 
             if not state_file(
                 action_id
             ).exists():
+                owned.discard(
+                    action_id
+                )
                 continue
 
             if rollback_due(
@@ -460,9 +842,12 @@ def main():
                     action_id,
                 )
 
-                unlock_account(
+                if unlock_account(
                     action
-                )
+                ):
+                    owned.discard(
+                        action_id
+                    )
 
         time.sleep(1)
 

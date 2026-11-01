@@ -260,6 +260,8 @@ def run_lab_scenario(
             details={
                 "bytes_toserver_total": 60_000_000,
                 "bytes_toclient_total": 5_000_000,
+                "destination_ip": "172.25.176.1",
+                "destination_port": 8765,
                 "dest_class": "external",
                 "bulk_data_access": True,
                 "prior_open_incident": False,
