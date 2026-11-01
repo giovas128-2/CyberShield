@@ -11,7 +11,7 @@ export const MOCK_EVENTS: Evento[] = [
 
 export const MOCK_INC: Incidente[] = [
   {
-    id: "INC-003", backendId: 3, eventType: "authentication_burst",
+    id: "INC-003", backendId: 3, eventType: "authentication_burst", correlatedEventsCount: 1,
     titulo: "Patrón sospechoso de autenticación",
     resumen: "Actividad de autenticación contra varias cuentas en una ventana corta.",
     severidad: "HIGH", estado: "Investigando", status: "investigating",

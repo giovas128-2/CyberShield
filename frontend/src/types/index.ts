@@ -21,6 +21,7 @@ export interface Incidente {
   backendId: number;
   eventId?: number;
   eventType?: string;
+  correlatedEventsCount: number;
   titulo: string;
   resumen: string;
   severidad: Severidad;

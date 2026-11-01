@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
@@ -29,6 +30,45 @@ def list_incidents(
         .order_by(Incident.id.desc())
         .all()
     )
+
+    # -----------------------------------------------------
+    # EVENTOS CORRELACIONADOS
+    #
+    # event_service guarda correlated_incident_id dentro
+    # de Event.details para el evento primario y todos los
+    # eventos relacionados con el mismo incidente.
+    #
+    # Se calcula de forma agregada para evitar una consulta
+    # adicional por cada incidente.
+    # -----------------------------------------------------
+
+    correlation_id = Event.details.op("->>")(
+        "correlated_incident_id"
+    )
+
+    correlation_rows = (
+        db.query(
+            correlation_id.label("incident_id"),
+            func.count(Event.id).label("count"),
+        )
+        .filter(
+            correlation_id.isnot(None)
+        )
+        .group_by(
+            correlation_id
+        )
+        .all()
+    )
+
+    correlation_counts = {}
+
+    for row in correlation_rows:
+        try:
+            correlation_counts[
+                int(row.incident_id)
+            ] = int(row.count)
+        except (TypeError, ValueError):
+            continue
 
     result = []
 
@@ -65,6 +105,13 @@ def list_incidents(
         result.append({
             "id": incident.id,
             "event_id": incident.event_id,
+            "correlated_events_count": max(
+                1,
+                correlation_counts.get(
+                    incident.id,
+                    0,
+                ),
+            ),
             "event_type": event.event_type,
             "source": event.source,
             "source_ip": (

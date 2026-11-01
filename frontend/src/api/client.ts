@@ -523,6 +523,12 @@ export async function getIncidents(): Promise<Incidente[]> {
       backendId,
       eventId: i.event_id != null ? Number(i.event_id) : undefined,
       eventType,
+      correlatedEventsCount: Math.max(
+        1,
+        Number(
+          i.correlated_events_count ?? 1
+        ),
+      ),
       titulo: eventTitle(eventType),
       resumen: eventSummary(eventType),
       severidad: toSeverity(i.severity),

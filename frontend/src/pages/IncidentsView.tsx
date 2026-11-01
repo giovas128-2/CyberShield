@@ -92,6 +92,19 @@ export function IncidentsView({
               </div>
               <b style={{ display: "block", margin: "8px 0 2px" }}>{i.titulo}</b>
               <div className="mu" style={{ fontSize: 13 }}>{i.resumen}</div>
+
+              {i.correlatedEventsCount > 1 && (
+                <div
+                  className="mu"
+                  style={{
+                    fontSize: 12,
+                    marginTop: 6,
+                  }}
+                >
+                  ↳ {i.correlatedEventsCount} eventos correlacionados
+                </div>
+              )}
+
               <div className="row" style={{ padding: "8px 0 0" }}>
                 <span className="mono">⌖ {i.origen}</span>
                 <span className={`sv ${statusClass(i.estado)}`}>● {i.estado}</span>
@@ -111,6 +124,19 @@ export function IncidentsView({
             <h2 style={{ margin: "10px 0" }}>{sel.titulo}</h2>
             <span className={`sv ${statusClass(sel.estado)}`}>● {sel.estado}</span>
             <p className="mu">{sel.resumen}</p>
+
+            <div
+              className="mu"
+              style={{
+                fontSize: 13,
+                marginBottom: 12,
+              }}
+            >
+              ↳ {sel.correlatedEventsCount}{" "}
+              {sel.correlatedEventsCount === 1
+                ? "evento asociado"
+                : "eventos correlacionados"}
+            </div>
 
             <div className="kv">
               {[
