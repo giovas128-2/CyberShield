@@ -1,46 +1,42 @@
 import { useState } from "react";
-import { Info, Layers } from "lucide-react";
+import { Building2, Check, Lock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import "../../empresademo/empresademo.css";
-import { ED_DEVICES, ED_PROFILE, edSetDevice } from "../../empresademo/fixtures";
+import { ED_USER } from "../../empresademo/data";
+import { edSetDevice } from "../../empresademo/fixtures";
 
 export default function EDLogin() {
   const nav = useNavigate();
-  const [device, setDevice] = useState("demo-equipo-01");
-  const enter = () => { edSetDevice(device); nav(ED_DEVICES[device].trusted ? "/empresa-demo/inicio" : "/empresa-demo/acceso-restringido"); };
+  const [user, setUser] = useState(ED_USER.email);
+  const [pass, setPass] = useState("demo-clave-01");
+  const enter = () => { edSetDevice("demo-equipo-01"); nav("/empresa-demo/inicio"); };
   return (
     <div className="ed">
       <div className="ed-login">
         <div className="ed-login-l">
-          <div className="ed-brand" style={{ padding: 0 }}><Layers size={22} />EmpresaDemo</div>
-          <div style={{ marginTop: 40 }}><span className="ed-tag">Espacio de demostración</span></div>
-          <h1>Un buen día empieza con claridad.</h1>
-          <p className="ed-sub" style={{ margin: 0 }}>Clientes, documentos y reportes en un espacio pensado para tu equipo.</p>
-          <div>
-            <label htmlFor="ed-org">Organización de muestra</label>
-            <select id="ed-org" className="ed-in" disabled style={{ width: "100%" }}><option>{ED_PROFILE.org}</option></select>
-            <label htmlFor="ed-prof">Perfil de demostración</label>
-            <input id="ed-prof" className="ed-in" style={{ width: "100%" }} readOnly value={`${ED_PROFILE.alias} · ${ED_PROFILE.user}`} />
-            <label htmlFor="ed-dev">Equipo de demostración</label>
-            <select id="ed-dev" className="ed-in" style={{ width: "100%" }} value={device} onChange={(e) => setDevice(e.target.value)}>
-              <option value="demo-equipo-01">demo-equipo-01 · equipo de confianza</option>
-              <option value="demo-equipo-06">demo-equipo-06 · equipo sin autorización</option>
-            </select>
+          <div className="ed-brand" style={{ padding: 0 }}><Building2 size={24} />EmpresaDemo</div>
+          <div style={{ marginTop: 40 }} className="ed-eyebrow">Portal del empleado</div>
+          <h1>Su operación.<br />En un solo espacio.</h1>
+          <p>Acceda a clientes, documentos, reportes y funciones disponibles según su rol.</p>
+          <div className="ed-lcard">
+            <div style={{ display: "flex", gap: 10, alignItems: "center" }}><Building2 size={20} /><div><b>Acceso corporativo</b><div style={{ fontSize: 12, color: "#9fb0cc" }}>Cuenta · Información · Permisos</div></div></div>
+            <hr />
+            <ul>{["Identidad y sesiones", "Recursos de la empresa", "Acciones según su rol"].map((t) => <li key={t}><Check size={14} />{t}</li>)}</ul>
           </div>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button className="ed-btn pri" onClick={enter}>Entrar a la demostración →</button>
-            <button className="ed-btn" onClick={() => nav("/login")}>← Cambiar tipo de acceso</button>
-          </div>
-          <small className="ed-foot-note">Acceso ilustrativo sin contraseña. No introduzcas credenciales ni datos personales reales.</small>
-          <div className="ed-note"><Info size={16} style={{ flex: "none", marginTop: 2 }} /><div><b>Tu información está fuera de esta demo</b>Todos los nombres, organizaciones, documentos y cifras son ficticios. No se realizará ninguna autenticación real.</div></div>
-          <small className="ed-foot-note" style={{ marginTop: "auto" }}>Origen: DEMO · Empresa ficticia protegida por CyberShield</small>
+          <small style={{ marginTop: "auto", color: "#9fb0cc" }}>Entorno académico de demostración · Datos ficticios.</small>
         </div>
         <div className="ed-login-r">
-          <div className="ed-eyebrow">Espacio para lo importante</div>
-          <div className="ed-art" aria-hidden="true"><Layers size={72} strokeWidth={1} /></div>
-          <h2 className="serif">Todo tu trabajo, en su lugar.</h2>
-          <div className="ed-mu">Menos ruido. Más perspectiva.<br />Una forma más amable de llevar el día a día.</div>
-          <small className="ed-foot-note">Empresa ficticia · Ilustración genérica · Sin datos reales</small>
+          <div className="ed-login-top"><span className="ed-eyebrow">EmpresaDemo / Acceso</span><span className="ed-chip">Datos de muestra</span></div>
+          <form className="ed-form" onSubmit={(e) => { e.preventDefault(); enter(); }}>
+            <div><div style={{ color: "var(--ed-brand)", fontWeight: 600, fontSize: 13 }}>EmpresaDemo</div><h1>Bienvenido de nuevo</h1><div className="ed-sub">Acceso para personal autorizado</div></div>
+            <label>Usuario o correo electrónico<input className="ed-in" value={user} onChange={(e) => setUser(e.target.value)} autoComplete="off" /></label>
+            <label>Contraseña<input className="ed-in" type="password" value={pass} onChange={(e) => setPass(e.target.value)} autoComplete="off" /></label>
+            <div className="ed-row"><label style={{ display: "flex", gap: 8, fontWeight: 400, alignItems: "center" }}><input type="checkbox" />Recordar mi usuario</label><button type="button" className="ed-lnk">Recuperar contraseña</button></div>
+            <button className="ed-btn pri" type="submit" style={{ minHeight: 44 }}>Iniciar sesión</button>
+            <div className="ed-foot-note" style={{ textAlign: "center" }}><Lock size={12} style={{ verticalAlign: "-2px" }} /> Acceso corporativo</div>
+            <button type="button" className="ed-lnk" style={{ justifySelf: "center" }} onClick={() => nav("/login")}>← Cambiar tipo de acceso</button>
+          </form>
+          <div className="ed-foot-note" style={{ borderTop: "1px solid var(--ed-bd)", paddingTop: 12 }}>Utilice únicamente su cuenta corporativa. Nunca comparta sus credenciales ni códigos de verificación.<br />¿Necesita ayuda? Contacte al equipo de soporte interno.</div>
         </div>
       </div>
     </div>

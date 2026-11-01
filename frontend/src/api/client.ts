@@ -270,7 +270,250 @@ export async function getEvents(): Promise<Evento[]> {
 
 export async function getIncidents(): Promise<Incidente[]> {
   const res = await http.get(ROUTES.incidents);
-  const list = res.data ?? [];
+
+  const rawList: any[] =
+    Array.isArray(res.data)
+      ? res.data
+      : [];
+
+  console.log(
+  "[INCIDENTS] backend:",
+  rawList.length
+);
+
+  // ==========================================================
+  // DEDUPLICACIÓN VISUAL DE INCIDENTES HISTÓRICOS
+  //
+  // No elimina registros de PostgreSQL.
+  // Solo agrupa incidentes que representan la misma ráfaga:
+  //
+  // - misma familia/tipo de ataque
+  // - misma IP origen
+  // - mismo servidor
+  // - mismo usuario, cuando el backend lo proporciona
+  // - separados por menos de 5 minutos
+  //
+  // Los eventos originales siguen existiendo.
+  // ==========================================================
+
+  const AUTH_TYPES = new Set([
+    "authentication_failure",
+    "multiple_login_attempts",
+    "authentication_burst",
+  ]);
+
+  const familyOf = (item: any) => {
+    const type = String(
+      item.event_type ??
+      "security_incident"
+    );
+
+    if (AUTH_TYPES.has(type)) {
+      return "authentication_attack";
+    }
+
+    return type;
+  };
+
+  const userOf = (item: any) =>
+    String(
+      item.user ??
+      item.details?.user ??
+      item.event_details?.user ??
+      ""
+    );
+
+  const keyOf = (item: any) => [
+    familyOf(item),
+
+    String(
+      item.source_ip ??
+      "NO_SOURCE_IP"
+    ),
+
+    String(
+      item.server_id ??
+      "NO_SERVER"
+    ),
+
+    userOf(item),
+  ].join("|");
+
+  const timestampOf = (
+    item: any
+  ): number | null => {
+    if (!item.created_at) {
+      return null;
+    }
+
+    const value = Date.parse(
+      item.created_at
+    );
+
+    return Number.isFinite(value)
+      ? value
+      : null;
+  };
+
+  // Preferir el incidente que tenga
+  // la mejor evidencia defensiva.
+  const qualityOf = (item: any) => {
+    const actionStatus = String(
+      item.response_action?.status ?? ""
+    ).toLowerCase();
+
+    const incidentStatus = String(
+      item.status ?? ""
+    ).toLowerCase();
+
+    const actionRank: Record<
+      string,
+      number
+    > = {
+      rolled_back: 50,
+      executed: 40,
+      failed: 30,
+      pending: 20,
+      approved: 10,
+    };
+
+    const incidentRank: Record<
+      string,
+      number
+    > = {
+      resolved: 8,
+      investigating: 6,
+      escalated: 5,
+      open: 4,
+    };
+
+    return (
+      (actionRank[actionStatus] ?? 0) +
+      (incidentRank[incidentStatus] ?? 0)
+    );
+  };
+
+  const FIVE_MINUTES =
+    5 * 60 * 1000;
+
+  const ordered = [...rawList].sort(
+    (a, b) => {
+      const ta =
+        timestampOf(a) ?? 0;
+
+      const tb =
+        timestampOf(b) ?? 0;
+
+      return ta - tb;
+    }
+  );
+
+  const clusters = new Map<
+    string,
+    {
+      lastTimestamp: number;
+      best: any;
+    }
+  >();
+
+  const list: any[] = [];
+
+  for (const item of ordered) {
+    const timestamp =
+      timestampOf(item);
+
+    // Si no tenemos hora fiable,
+    // no lo agrupamos a ciegas.
+    if (timestamp == null) {
+      list.push(item);
+      continue;
+    }
+
+    const key = keyOf(item);
+
+    const current =
+      clusters.get(key);
+
+    // Primer incidente de esta familia.
+    if (!current) {
+      clusters.set(key, {
+        lastTimestamp: timestamp,
+        best: item,
+      });
+
+      continue;
+    }
+
+    const sameBurst =
+      timestamp -
+        current.lastTimestamp
+      <= FIVE_MINUTES;
+
+    // Si ya pasó la ventana,
+    // el anterior sí representa
+    // un incidente independiente.
+    if (!sameBurst) {
+      list.push(current.best);
+
+      clusters.set(key, {
+        lastTimestamp: timestamp,
+        best: item,
+      });
+
+      continue;
+    }
+
+    // Sigue siendo la misma ráfaga.
+    current.lastTimestamp =
+      timestamp;
+
+    const currentQuality =
+      qualityOf(current.best);
+
+    const candidateQuality =
+      qualityOf(item);
+
+    // Conservamos el registro con
+    // mejor respuesta/evidencia.
+    // En empate conservamos el más reciente.
+    if (
+      candidateQuality >
+        currentQuality ||
+      (
+        candidateQuality ===
+          currentQuality &&
+        Number(item.id) >
+          Number(current.best.id)
+      )
+    ) {
+      current.best = item;
+    }
+  }
+
+  for (const cluster of clusters.values()) {
+    list.push(cluster.best);
+  }
+
+  // Mostrar los incidentes más recientes primero.
+  list.sort((a, b) => {
+    const ta =
+      timestampOf(a) ??
+      Number(a.id) ??
+      0;
+
+    const tb =
+      timestampOf(b) ??
+      Number(b.id) ??
+      0;
+
+    return tb - ta;
+  });
+
+  console.log(
+  "[INCIDENTS] después de deduplicar:",
+  list.length
+);
+
   return list.map((i: any) => {
     const backendId = Number(i.id);
     const eventType = String(i.event_type ?? "security_incident");

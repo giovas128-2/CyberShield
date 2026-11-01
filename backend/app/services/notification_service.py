@@ -1,9 +1,55 @@
+from datetime import datetime, timezone
+
 from sqlalchemy.orm import Session
 
 from app.models.notification import Notification
 from app.services.telegram_service import (
     send_telegram_message,
 )
+
+def create_telegram_notification(
+    db: Session,
+    incident_id: int,
+    message: str,
+):
+    """
+    Envía Telegram y registra el resultado real
+    en la tabla notifications.
+
+    Telegram puede fallar sin detener CyberShield.
+    """
+
+    result = send_telegram_message(
+        message
+    )
+
+    sent = bool(
+        result.get("sent", False)
+    )
+
+    notification = Notification(
+        incident_id=incident_id,
+        recipient="security_engineer",
+        channel="telegram",
+        status=(
+            "sent"
+            if sent
+            else "failed"
+        ),
+        message=message,
+        sent_at=(
+            datetime.now(timezone.utc)
+            if sent
+            else None
+        ),
+    )
+
+    db.add(notification)
+    db.commit()
+    db.refresh(notification)
+
+    return notification
+
 
 def create_incident_notification(
     db: Session,
@@ -64,11 +110,95 @@ def create_incident_notification(
         "y respuesta defensiva."
     )
 
-    send_telegram_message(
-        telegram_message
+    create_telegram_notification(
+        db=db,
+        incident_id=incident_id,
+        message=telegram_message,
     )
 
     return notification
+
+
+def create_response_notification(
+    db: Session,
+    incident_id: int,
+    success: bool,
+    action_type: str,
+    target: str | None,
+):
+    """
+    Registra el resultado de la respuesta defensiva
+    en dashboard y Telegram.
+    """
+
+    now = datetime.now(
+        timezone.utc
+    )
+
+    if success:
+        dashboard_message = (
+            f"Ataque contenido: "
+            f"{action_type} ejecutado correctamente."
+        )
+
+        telegram_message = (
+            "✅ CYBERSHIELD - ATAQUE CONTENIDO\n\n"
+            f"Incidente: {incident_id}\n"
+            f"Acción: {action_type}\n"
+            f"Objetivo: {target or 'N/D'}\n"
+            "Estado: CONTENIDO\n\n"
+            "La respuesta defensiva fue ejecutada "
+            "y verificada correctamente."
+        )
+
+    else:
+        dashboard_message = (
+            f"Ataque NO contenido: "
+            f"{action_type}. "
+            "Se requiere intervención."
+        )
+
+        telegram_message = (
+            "⚠️ CYBERSHIELD - ATAQUE NO CONTENIDO\n\n"
+            f"Incidente: {incident_id}\n"
+            f"Acción: {action_type}\n"
+            f"Objetivo: {target or 'N/D'}\n"
+            "Estado: INTERVENCIÓN REQUERIDA\n\n"
+            "La respuesta defensiva no logró "
+            "contener el incidente."
+        )
+
+    dashboard_notification = Notification(
+        incident_id=incident_id,
+        recipient="security_engineer",
+        channel="dashboard",
+        status="sent",
+        message=dashboard_message,
+        sent_at=now,
+    )
+
+    db.add(
+        dashboard_notification
+    )
+    db.commit()
+    db.refresh(
+        dashboard_notification
+    )
+
+    telegram_notification = (
+        create_telegram_notification(
+            db=db,
+            incident_id=incident_id,
+            message=telegram_message,
+        )
+    )
+
+    return {
+        "dashboard":
+            dashboard_notification,
+        "telegram":
+            telegram_notification,
+    }
 
 
 def get_notifications(

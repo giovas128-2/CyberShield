@@ -20,6 +20,13 @@ export interface EvidenceMitre {
   reference_url: string | null;
 }
 
+export interface EvidenceTerminalLine {
+  kind: "command" | "output" | "blank";
+  level?: string | null;
+  timestamp?: string | null;
+  text: string;
+}
+
 export interface EvidenceResponse {
   id: number;
   action_type: string;
@@ -27,11 +34,22 @@ export interface EvidenceResponse {
   status: string;
   reversible: boolean;
   duration_seconds: number | null;
+
+  tool?: string | null;
+
+  command_display?: string | null;
+  verification_command?: string | null;
+  rollback_command?: string | null;
+
+  terminal_lines?: EvidenceTerminalLine[];
+
   reason: string | null;
   result: string | null;
+
   created_at: string | null;
   executed_at: string | null;
   rolled_back_at: string | null;
+
   failure_reason: string | null;
 }
 

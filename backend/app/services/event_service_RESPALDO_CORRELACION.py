@@ -49,7 +49,56 @@ def process_security_event(db: Session, data):
     response_action = None
     mitre = None
 
-    if analysis["create_incident"]:
+    correlated_incident = None
+
+    # ==========================================================
+    # CORRELACIÓN RANSOMWARE-LIKE
+    # ==========================================================
+    # Varios eventos FIM de la misma ráfaga representan
+    # un solo incidente, no un incidente por archivo.
+    if (
+        analysis["create_incident"]
+        and event.event_type == "possible_ransomware_behavior"
+        and bool(
+            (event.details or {}).get(
+                "sensor_confirmed_ransomware_like",
+                False,
+            )
+        )
+    ):
+        cutoff = (
+            datetime.now(timezone.utc)
+            - timedelta(seconds=30)
+        )
+
+        correlated_incident = (
+            db.query(Incident)
+            .join(
+                Event,
+                Incident.event_id == Event.id,
+            )
+            .filter(
+                Event.event_type
+                == "possible_ransomware_behavior",
+                Event.server_id == event.server_id,
+                Event.id != event.id,
+                Event.created_at >= cutoff,
+            )
+            .order_by(
+                Incident.id.desc()
+            )
+            .first()
+        )
+
+    if correlated_incident:
+        incident = correlated_incident
+
+        analysis["create_incident"] = False
+        analysis[
+            "correlated_to_incident_id"
+        ] = incident.id
+
+    elif analysis["create_incident"]:
         incident = Incident(
             event_id=event.id,
             severity=analysis["risk_level"],

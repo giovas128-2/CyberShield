@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 
 from app.models.incident import Incident
 from app.models.response_action import ResponseAction
-from app.services.telegram_service import (
-    send_telegram_message,
+from app.services.notification_service import (
+    create_response_notification,
 )
 
 def create_response_action(
@@ -173,35 +173,16 @@ def register_execution_result(
     db.refresh(incident)
 
     # =========================================================
-    # NOTIFICACIÓN MÓVIL DEL RESULTADO
+    # NOTIFICACIÓN DEL RESULTADO
+    # Dashboard + Telegram persistente
     # =========================================================
 
-    if success:
-        telegram_message = (
-            "✅ CYBERSHIELD - ATAQUE CONTENIDO\n\n"
-            f"Incidente: {incident.id}\n"
-            f"Acción: {action.action_type}\n"
-            f"Objetivo: {action.target or 'N/D'}\n"
-            f"Estado: {action.status}\n\n"
-            "La respuesta defensiva fue ejecutada "
-            "correctamente."
-        )
-
-    else:
-        telegram_message = (
-            "⚠️ CYBERSHIELD - ATAQUE NO CONTENIDO\n\n"
-            f"Incidente: {incident.id}\n"
-            f"Acción: {action.action_type}\n"
-            f"Objetivo: {action.target or 'N/D'}\n"
-            f"Estado: {action.status}\n\n"
-            "No fue posible completar la respuesta "
-            "defensiva.\n"
-            "Se requiere intervención del ingeniero "
-            "de seguridad."
-        )
-
-    send_telegram_message(
-        telegram_message
+    create_response_notification(
+        db=db,
+        incident_id=incident.id,
+        success=success,
+        action_type=action.action_type,
+        target=action.target,
     )
 
     return action

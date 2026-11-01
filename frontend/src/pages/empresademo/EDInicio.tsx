@@ -1,32 +1,55 @@
-import { FileText } from "lucide-react";
+import { FolderOpen, TrendingUp, Users } from "lucide-react";
 import { Link } from "react-router-dom";
-import { ED_ACTIVITY, ED_DATE_LABEL, ED_DOCS, ED_PROFILE } from "../../empresademo/fixtures";
+import { DEMO_ACTIVITY, DEMO_KPIS, ED_USER } from "../../empresademo/data";
+import { useIncident } from "../../empresademo/IncidentContext";
+import { EmployeeSummaryBanner } from "../../empresademo/IncidentUI";
+import { PageHead } from "../../empresademo/PageHead";
 
+function Availability({ label, status, tone = "" }: { label: string; status: string; tone?: string }) {
+  return <div className="ed-availability"><span>{label}</span><span className={`ed-chip ${tone}`}>{status}</span></div>;
+}
+
+/** Resumen inspirado en la propuesta visual de Alex: operación + disponibilidad, sin detalle técnico. */
 export default function EDInicio() {
+  const { state, locked } = useIncident();
+  const clientsLimited = locked("edit", "clientes") || locked("export", "clientes") || locked("delete", "clientes");
+  const docsLimited = locked("edit", "documentos") || locked("replace", "documentos") || locked("delete", "documentos") || locked("bulkUpload", "documentos");
+  const reportsLimited = locked("export", "reportes") || locked("download", "reportes") || locked("share", "reportes");
+  const accessLimited = locked("login", "accesos") || locked("changePassword", "perfil");
+
   return (
     <>
-      <div className="ed-h"><div><div className="ed-eyebrow">EmpresaDemo / Corporativo</div><h1>Hola, {ED_PROFILE.alias}.</h1><div className="ed-sub">Un vistazo a tu jornada. {ED_DATE_LABEL}.</div></div>
-        <Link className="ed-btn" to="/empresa-demo/documentos">Abrir documentos</Link></div>
-      <section className="ed-hero">
-        <div><span className="ed-tag">Dispositivo de confianza · DEMO</span><h2 className="serif">Todo listo para seguir avanzando.</h2>
-          <div className="ed-sub">Tu acceso de muestra está habilitado desde demo-equipo-01. Encuentra lo reciente y retoma lo importante.</div></div>
-        <div style={{ display: "grid", gap: 12, justifyItems: "end" }}><FileText size={36} strokeWidth={1.2} color="var(--ed-mu)" /><Link className="ed-btn pri" to="/empresa-demo/reportes">Ver actividad del equipo →</Link></div>
-      </section>
+      <PageHead title="Resumen de operaciones" sub={`Buen día, ${ED_USER.name.split(" ")[0]}. Este es el estado de su espacio de trabajo.`}>
+        <Link className="ed-btn" to="/empresa-demo/documentos"><FolderOpen size={14} />Ver documentos</Link>
+      </PageHead>
+      <EmployeeSummaryBanner />
       <div className="ed-grid4">
-        {[["Clientes de muestra", "24", "6 destacados en el directorio"], ["Documentos del espacio", "18", "3 actualizados hoy"], ["Reportes disponibles", "06", "Periodo · Octubre 2026"], ["Tareas del equipo", "04", "2 documentos por revisar"]].map(([l, v, h]) => (
-          <div className="ed-card ed-kpi" key={l}><small>{l}</small><b>{v}</b><small>{h}</small></div>))}
+        {DEMO_KPIS.map((k) => <div className="ed-card ed-kpi" key={k.label}><small>{k.label}</small><b>{k.value}</b><small>{k.hint}</small></div>)}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1.6fr)", gap: 16 }} className="ed-inicio-cols">
-        <div className="ed-card"><div className="ed-h"><h3>Tus documentos recientes</h3><Link to="/empresa-demo/documentos" className="ed-mu">Ver todos →</Link></div>
-          <div className="ed-tw" style={{ marginTop: 8 }}><table><thead><tr><th>Documento</th><th>Cliente</th><th>Actualizado</th></tr></thead>
-            <tbody>{ED_DOCS.slice(0, 3).map((d) => <tr key={d.id}><td>{d.title} · {d.code}</td><td>{d.client}</td><td>{d.when}</td></tr>)}</tbody></table></div>
-          <small className="ed-foot-note">Archivos de muestra. No contienen información de clientes reales.</small></div>
-        <div className="ed-card"><h3>Actividad del espacio</h3>
-          <div className="ed-list">{ED_ACTIVITY.map((a) => <div key={a.t}><small>{a.t}</small><div><b>{a.title}</b><br /><small>{a.meta}</small></div></div>)}</div></div>
+      <div className="ed-cols">
+        <section className="ed-card"><h3>Actividad reciente</h3>
+          <div className="ed-tw"><table><thead><tr><th>Actividad</th><th>Responsable</th><th>Momento</th></tr></thead>
+            <tbody>{DEMO_ACTIVITY.map((a) => <tr key={a.what}><td>{a.what}</td><td>{a.who}</td><td>{a.when}</td></tr>)}</tbody></table></div>
+        </section>
+        <section className="ed-card"><h3>Disponibilidad de funciones</h3><p className="ed-mu">Estado operativo para su cuenta.</p>
+          <div className="ed-availability-list">
+            <Availability label="Consulta de clientes" status={clientsLimited ? "Acciones limitadas" : "Disponible"} tone={clientsLimited ? "warn" : "ok"} />
+            <Availability label="Lectura de documentos" status="Disponible" tone="ok" />
+            <Availability label="Gestión de documentos" status={docsLimited ? "Restringida" : "Disponible"} tone={docsLimited ? "warn" : "ok"} />
+            <Availability label="Exportar reportes" status={reportsLimited ? "Restringida" : "Disponible"} tone={reportsLimited ? "warn" : "ok"} />
+            <Availability label="Cuenta y sesiones" status={accessLimited ? "Verificación requerida" : "Disponible"} tone={accessLimited ? "warn" : "ok"} />
+            <Availability label="Administración" status="Acceso limitado" />
+          </div>
+          <p className="ed-foot-note">Si una acción no está disponible, inténtelo nuevamente más tarde o contacte a soporte interno.</p>
+        </section>
       </div>
-      <div className="ed-card"><h3>Una organización de muestra, una experiencia completa</h3>
-        <div className="ed-fbar"><Link className="ed-btn" to="/empresa-demo/clientes">Explorar clientes →</Link><Link className="ed-btn" to="/empresa-demo/reportes">Consultar reportes →</Link><Link className="ed-btn" to="/empresa-demo/perfil">Mi perfil →</Link></div></div>
-      <small className="ed-foot-note">EmpresaDemo · Experiencia corporativa ficticia · Demostración · Sin integración real</small>
+      <section className="ed-card"><h3>Accesos rápidos</h3>
+        <div className="ed-fbar">
+          <Link className="ed-btn" to="/empresa-demo/clientes"><Users size={14} />Consultar clientes</Link>
+          <Link className="ed-btn" to="/empresa-demo/documentos"><FolderOpen size={14} />Abrir documentos</Link>
+          <Link className="ed-btn" to="/empresa-demo/reportes"><TrendingUp size={14} />Consultar reportes</Link>
+        </div>
+      </section>
     </>
   );
 }

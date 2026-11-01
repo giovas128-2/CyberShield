@@ -1,0 +1,44 @@
+/* Estados de incidente. Los colores son aproximados a la lámina 17 (ámbar, rojo, azul, verde):
+   ajústalos a los tokens exactos de Figma. Siempre llevan icono y texto: el color nunca va solo. */
+.ed{--inc-warn:#946013;--inc-warn-bg:#fdf3dc;--inc-bad:#b83842;--inc-bad-bg:#fbe9eb;--inc-info:#326945;--inc-info-bg:#e6eefa;--inc-ok:#217a51;--inc-ok-bg:#e3f4ec}
+
+.inc-banner{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:10px;border:1px solid transparent;font-size:13px}
+.inc-banner svg{flex:none;margin-top:2px}
+.inc-banner small{display:block;margin-top:4px;opacity:.75}
+.inc-banner.warn{background:var(--inc-warn-bg);color:var(--inc-warn);border-color:#ecd9a8}
+.inc-banner.bad{background:var(--inc-bad-bg);color:var(--inc-bad);border-color:#f0c4c8}
+.inc-banner.info{background:var(--inc-info-bg);color:#3265a5;border-color:#c3d6ee}
+.inc-banner.ok{background:var(--inc-ok-bg);color:var(--inc-ok);border-color:#b9e0cd}
+.inc-head{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.inc-tag{font:600 12px 'Work Sans',system-ui,sans-serif;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:6px;background:rgba(0,0,0,.07);white-space:nowrap}
+.inc-tag.bad{background:var(--inc-bad-bg);color:var(--inc-bad)}
+
+/* Botón bloqueado: candado + fondo gris, sin depender del color */
+.ed-btn.is-locked,.ed-btn:disabled.is-locked{background:#e3e8ee;color:#8793a3;border-color:#d4dbe3;cursor:not-allowed;display:inline-flex;align-items:center;gap:6px}
+
+/* Overlay de lockdown global */
+.inc-scrim{position:fixed;inset:0;background:rgba(17,28,48,.62);display:grid;place-items:center;padding:16px;z-index:50}
+.inc-modal{background:#fff;color:var(--ed-tx);border-radius:14px;max-width:800px;width:100%;padding:28px;display:grid;gap:14px;box-shadow:0 24px 60px rgba(0,0,0,.35)}
+.inc-modal h2{margin:0}
+.inc-modal p{margin:0;color:var(--ed-mu)}
+.inc-locks,.inc-actions{display:flex;flex-wrap:wrap;gap:8px}
+
+/* Panel de simulación */
+.inc-sim{position:fixed;right:16px;bottom:16px;width:290px;max-width:calc(100vw - 32px);background:#111c30;color:#e8edf5;border-radius:12px;padding:14px;display:grid;gap:8px;z-index:40;box-shadow:0 12px 32px rgba(0,0,0,.3)}
+.inc-sim small,.inc-sim label{font-size:12px;opacity:.85}
+.inc-sim .ed-in{width:100%}
+.inc-state{font-size:12px}
+.inc-btns{display:grid;gap:6px}
+.inc-btns .ed-btn{width:100%;justify-content:center}
+.ed-menu-x{background:none;border:0;color:inherit;cursor:pointer;min-width:28px;min-height:28px}
+.inc-fab{position:fixed;right:16px;bottom:16px;z-index:40}
+.inc-demo{display:grid;gap:6px;border-top:1px solid rgba(255,255,255,.12);padding-top:8px}
+.inc-demo .ed-btn{width:100%;justify-content:center}
+.inc-demo small[role]{color:#fff;opacity:1;font-size:12px}
+
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.ed tr.hl td{background:var(--inc-warn-bg)}
+
+/* La capa técnica de demostración queda separada de la interfaz normal del empleado. */
+.inc-sim .inc-tag{font-size:10px}
+.inc-modal{max-width:720px}

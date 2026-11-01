@@ -693,7 +693,7 @@ const timelineItems = [
             <div>
               <h2>
                 Pantalla 2 · Respuesta defensiva
-                asociado al incidente
+                asociada al incidente
               </h2>
 
               <p>
@@ -714,7 +714,13 @@ const timelineItems = [
                 ●{" "}
                 {failed
                   ? "Respuesta fallida"
-                  : "Respuesta registrada"}
+                  : response.status === "pending"
+                    ? "Respuesta pendiente"
+                    : response.status === "rolled_back"
+                      ? "Rollback completado"
+                      : response.status === "executed"
+                        ? "Respuesta ejecutada"
+                        : "Respuesta registrada"}
               </span>
             )}
           </div>
@@ -758,58 +764,189 @@ const timelineItems = [
 
               <div className="evidence-command-console">
 
+                {/* IDENTIFICACIÓN DE LA RESPUESTA */}
+
                 <div>
-                  <span>
-                    [ACTION]
-                  </span>{" "}
+                  <span>[ACTION]</span>{" "}
                   {response.action_type}
                 </div>
 
                 <div>
-                  <span>
-                    [TARGET]
-                  </span>{" "}
-                  {response.target ??
-                    "N/D"}
+                  <span>[TARGET]</span>{" "}
+                  {response.target ?? "N/D"}
                 </div>
 
                 <div>
-                  <span>
-                    [STATUS]
-                  </span>{" "}
+                  <span>[STATUS]</span>{" "}
                   {response.status}
                 </div>
 
                 <div>
-                  <span>
-                    [REVERSIBLE]
-                  </span>{" "}
+                  <span>[REVERSIBLE]</span>{" "}
                   {response.reversible
                     ? "YES"
                     : "NO"}
                 </div>
 
-                {response.duration_seconds && (
+                {response.duration_seconds != null && (
                   <div>
-                    <span>
-                      [TIMEOUT]
-                    </span>{" "}
+                    <span>[TIMEOUT]</span>{" "}
                     {response.duration_seconds}s
                   </div>
                 )}
+
+                {response.tool && (
+                  <div>
+                    <span>[TOOL]</span>{" "}
+                    {response.tool}
+                  </div>
+                )}
+
+                {response.executed_at && (
+                  <div>
+                    <span>[EXECUTED_AT]</span>{" "}
+                    {dateText(
+                      response.executed_at
+                    )}
+                  </div>
+                )}
+
+
+                {/* COMANDO DEFENSIVO */}
+
+                {response.command_display && (
+                  <>
+                    <br />
+
+                    <div>
+                      <span>
+                        {response.status === "pending"
+                          ? "[COMANDO PREPARADO]"
+                          : "[COMANDO EJECUTADO]"}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span>$</span>{" "}
+                      {response.command_display}
+                    </div>
+                  </>
+                )}
+
+
+                {/* VERIFICACIÓN */}
+
+                {response.verification_command && (
+                  <>
+                    <br />
+
+                    <div>
+                      <span>
+                        {response.status === "pending"
+                          ? "[VERIFICACIÓN PREPARADA]"
+                          : "[VERIFICACIÓN]"}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span>$</span>{" "}
+                      {
+                        response
+                          .verification_command
+                      }
+                    </div>
+                  </>
+                )}
+
+
+                {/* RESULTADO REAL */}
 
                 {response.result && (
                   <>
                     <br />
 
                     <div>
-                      <span>
-                        [RESULT]
-                      </span>{" "}
+                      <span>[RESULT]</span>
+                    </div>
+
+                    <div>
+                      {response.status ===
+                        "failed"
+                        ? "[ERROR] "
+                        : "[OK] "}
                       {response.result}
                     </div>
                   </>
                 )}
+
+
+                {/* ROLLBACK */}
+
+                {response.rollback_command && (
+                  <>
+                    <br />
+
+                    <div>
+                      <span>
+                        {response.rolled_back_at
+                          ? "[ROLLBACK EJECUTADO]"
+                          : "[ROLLBACK PREPARADO]"}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span>$</span>{" "}
+                      {
+                        response
+                          .rollback_command
+                      }
+                    </div>
+
+                    {response.rolled_back_at && (
+                      <div>
+                        <span>
+                          [ROLLED_BACK_AT]
+                        </span>{" "}
+                        {dateText(
+                          response
+                            .rolled_back_at
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+
+
+                {/* FALLBACK PARA OTROS TIPOS DE RESPUESTA */}
+
+                {!response.command_display &&
+                  response.terminal_lines &&
+                  response.terminal_lines
+                    .length > 0 && (
+                    <>
+                      <br />
+
+                      <div>
+                        <span>
+                          [EXECUTION TRACE]
+                        </span>
+                      </div>
+
+                      {response.terminal_lines.map(
+                        (line, index) => (
+                          <div key={index}>
+                            {line.kind === "command"
+                              ? "$ "
+                              : line.level
+                                ? `[${line.level}] `
+                                : ""}
+                            {line.text}
+                          </div>
+                        )
+                      )}
+                    </>
+                  )}
+
 
                 {failed && (
                   <>

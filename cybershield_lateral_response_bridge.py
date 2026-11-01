@@ -206,9 +206,17 @@ def main():
         "CyberShield Lateral Response Bridge iniciado"
     )
 
+    pending_existing = get_actions(
+        "pending"
+    )
+
+    executed_existing = get_actions(
+        "executed"
+    )
+
     existing = (
-        get_actions("pending")
-        + get_actions("executed")
+        pending_existing
+        + executed_existing
     )
 
     floor = max(
@@ -220,12 +228,113 @@ def main():
     )
 
     print(
-        "[LATERAL] Inicio limpio desde action_id:",
+        "[LATERAL] Inicio desde action_id:",
         floor,
     )
 
     cursor = floor
     owned = set()
+
+    # =========================================================
+    # RECUPERACIÓN SEGURA AL ARRANQUE
+    #
+    # Solo recuperamos la acción PENDING MÁS RECIENTE
+    # por objetivo/IP.
+    #
+    # Acciones históricas antiguas no se vuelven a ejecutar.
+    # =========================================================
+
+    pending_by_target = {}
+
+    for action in pending_existing:
+        target = str(
+            action.get("target") or ""
+        )
+
+        if target not in ALLOWED_IPS:
+            continue
+
+        current = pending_by_target.get(
+            target
+        )
+
+        if (
+            current is None
+            or int(action["id"])
+            > int(current["id"])
+        ):
+            pending_by_target[target] = action
+
+    for action in sorted(
+        pending_by_target.values(),
+        key=lambda item: int(item["id"]),
+    ):
+        action_id = int(
+            action["id"]
+        )
+
+        target = str(
+            action.get("target") or ""
+        )
+
+        print(
+            "[LATERAL] Recuperando última "
+            "acción pendiente:",
+            action_id,
+            target,
+        )
+
+        if block_ip(action):
+            owned.add(action_id)
+
+    # =========================================================
+    # RECUPERACIÓN DE ROLLBACK
+    #
+    # Solo adoptamos la acción EXECUTED más reciente
+    # de cada IP.
+    # =========================================================
+
+    executed_by_target = {}
+
+    for action in executed_existing:
+        target = str(
+            action.get("target") or ""
+        )
+
+        if target not in ALLOWED_IPS:
+            continue
+
+        current = executed_by_target.get(
+            target
+        )
+
+        if (
+            current is None
+            or int(action["id"])
+            > int(current["id"])
+        ):
+            executed_by_target[target] = action
+
+    for action in executed_by_target.values():
+        action_id = int(
+            action["id"]
+        )
+
+        target = str(
+            action.get("target") or ""
+        )
+
+        if rollback_due(action):
+            print(
+                "[LATERAL] Rollback pendiente "
+                "al recuperar:",
+                action_id,
+            )
+
+            unblock_ip(action)
+
+        elif is_blocked(target):
+            owned.add(action_id)
 
     while True:
         pending = get_actions("pending")

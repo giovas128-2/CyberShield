@@ -79,7 +79,7 @@ export function IncidentsView({
 
       <div className="inc">
         <div className="il">
-          <div className="mu">{shown.length} resultados</div>
+          <div className="mu"> {shown.length} incidentes · {abiertos} abiertos</div>
           {shown.map((i) => (
             <button
               key={i.id}

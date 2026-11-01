@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict
 
 NotificationChannel = Literal[
     "dashboard",
+    "telegram",
     "email",
     "webhook",
     "sms",

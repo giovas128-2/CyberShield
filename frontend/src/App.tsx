@@ -25,6 +25,7 @@ import EDDocumentos from "./pages/empresademo/EDDocumentos";
 import EDReportes from "./pages/empresademo/EDReportes";
 import EDPerfil from "./pages/empresademo/EDPerfil";
 import EDRestringido from "./pages/empresademo/EDRestringido";
+import EDAdministracion from "./pages/empresademo/EDAdministracion";
 import type { User } from "./types";
 
 const readUser = (): User | null => {
@@ -63,6 +64,7 @@ export default function App() {
             <Route path="/empresa-demo/documentos" element={<EDDocumentos />} />
             <Route path="/empresa-demo/reportes" element={<EDReportes />} />
             <Route path="/empresa-demo/perfil" element={<EDPerfil />} />
+            <Route path="/empresa-demo/administracion" element={<EDAdministracion />} />
             <Route path="/empresa-demo/acceso-restringido" element={<EDRestringido />} />
           </Route>
           <Route element={guard(<AppLayout user={user!} onLogout={logout} />)}>
