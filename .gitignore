@@ -91,3 +91,6 @@ coverage/
 
 # Opcional: archivos locales de configuración
 *.local
+# Respaldos locales CyberShield
+*RESPALDO*
+frontend_RESPALDOS_OLA4/
