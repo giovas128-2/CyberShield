@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
+import hashlib
 
-from sqlalchemy import func
+from sqlalchemy import func, text
 from sqlalchemy.orm import Session
 
 from app.models.event import Event
@@ -17,6 +18,91 @@ from app.services.response_action_service import (
 from app.services.incident_mitre_service import (
     create_automatic_incident_mitre,
 )
+
+AUTHENTICATION_CORRELATION_TYPES = (
+    "authentication_failure",
+    "multiple_login_attempts",
+    "authentication_burst",
+)
+
+
+def _correlation_family(
+    event_type: str,
+) -> str:
+    """
+    Los eventos de autenticación pertenecen a una misma
+    familia lógica para efectos de correlación.
+    """
+
+    if event_type in AUTHENTICATION_CORRELATION_TYPES:
+        return "authentication"
+
+    return event_type
+
+
+def _correlation_lock_key(
+    event_type: str,
+    source_ip: str | None,
+    server_id: int | None,
+) -> int:
+    """
+    Genera una clave BIGINT determinística para PostgreSQL.
+
+    Eventos de la misma familia + IP + servidor obtienen
+    la misma clave y, por tanto, se serializan únicamente
+    durante la correlación de incidentes.
+    """
+
+    family = _correlation_family(
+        event_type
+    )
+
+    identity = (
+        f"{family}|"
+        f"{source_ip or '<none>'}|"
+        f"{server_id if server_id is not None else '<none>'}"
+    )
+
+    digest = hashlib.blake2b(
+        identity.encode("utf-8"),
+        digest_size=8,
+    ).digest()
+
+    return int.from_bytes(
+        digest,
+        byteorder="big",
+        signed=True,
+    )
+
+
+def _acquire_correlation_lock(
+    db: Session,
+    event_type: str,
+    source_ip: str | None,
+    server_id: int | None,
+):
+    """
+    Lock transaccional de PostgreSQL.
+
+    Se libera automáticamente con COMMIT o ROLLBACK.
+    No bloquea familias/orígenes distintos.
+    """
+
+    lock_key = _correlation_lock_key(
+        event_type=event_type,
+        source_ip=source_ip,
+        server_id=server_id,
+    )
+
+    db.execute(
+        text(
+            "SELECT pg_advisory_xact_lock(:lock_key)"
+        ),
+        {
+            "lock_key": lock_key,
+        },
+    )
+
 
 def process_security_event(db: Session, data):
     analysis = analyze_security_event(data)
@@ -75,18 +161,38 @@ def process_security_event(db: Session, data):
 
         if analysis["create_incident"]:
 
-            authentication_types = (
-                "authentication_failure",
-                "multiple_login_attempts",
-                "authentication_burst",
-            )
-
-            if event.event_type in authentication_types:
-                correlation_types = authentication_types
+            if (
+                event.event_type
+                in AUTHENTICATION_CORRELATION_TYPES
+            ):
+                correlation_types = (
+                    AUTHENTICATION_CORRELATION_TYPES
+                )
             else:
                 correlation_types = (
                     event.event_type,
                 )
+
+            # --------------------------------------------------
+            # Evitar carrera:
+            # dos eventos simultáneos de la misma familia,
+            # origen y servidor no pueden hacer la búsqueda
+            # de correlación al mismo tiempo.
+            #
+            # El segundo espera hasta el COMMIT/ROLLBACK del
+            # primero y después vuelve a consultar la BD.
+            # --------------------------------------------------
+
+            _acquire_correlation_lock(
+                db=db,
+                event_type=event.event_type,
+                source_ip=(
+                    str(event.source_ip)
+                    if event.source_ip
+                    else None
+                ),
+                server_id=event.server_id,
+            )
 
             correlation_window_seconds = 300
 
