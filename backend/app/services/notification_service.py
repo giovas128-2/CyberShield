@@ -51,12 +51,53 @@ def create_telegram_notification(
     return notification
 
 
+def create_incident_telegram_notification(
+    db: Session,
+    incident_id: int,
+    severity: str,
+    event_type: str,
+    server_id: int | None = None,
+):
+    """
+    Envía únicamente la notificación móvil inicial
+    del incidente.
+
+    Se mantiene separada de la transacción principal
+    para que un fallo de Telegram no deshaga
+    el evento/incidente almacenado.
+    """
+
+    severity_upper = severity.upper()
+
+    if severity_upper not in ("HIGH", "CRITICAL"):
+        return None
+
+    telegram_message = (
+        "🚨 CYBERSHIELD - ATAQUE DETECTADO\n\n"
+        f"Incidente: {incident_id}\n"
+        f"Severidad: {severity_upper}\n"
+        f"Tipo: {event_type}\n"
+        f"Servidor: "
+        f"{server_id if server_id is not None else 'N/D'}\n\n"
+        "CyberShield inició el proceso de análisis "
+        "y respuesta defensiva."
+    )
+
+    return create_telegram_notification(
+        db=db,
+        incident_id=incident_id,
+        message=telegram_message,
+    )
+
+
 def create_incident_notification(
     db: Session,
     incident_id: int,
     severity: str,
     event_type: str,
     server_id: int | None = None,
+    commit: bool = True,
+    send_telegram: bool = True,
 ):
     """
     Crea una notificación para incidentes HIGH o CRITICAL.
@@ -88,8 +129,14 @@ def create_incident_notification(
     )
 
     db.add(notification)
-    db.commit()
-    db.refresh(notification)
+
+    if commit:
+        db.commit()
+        db.refresh(notification)
+    else:
+        # Se registra dentro de la transacción principal
+        # sin confirmarla todavía.
+        db.flush()
 
     # =========================================================
     # NOTIFICACIÓN MÓVIL TELEGRAM
@@ -99,22 +146,14 @@ def create_incident_notification(
     # ni la notificación del dashboard.
     # =========================================================
 
-    telegram_message = (
-        "🚨 CYBERSHIELD - ATAQUE DETECTADO\n\n"
-        f"Incidente: {incident_id}\n"
-        f"Severidad: {severity_upper}\n"
-        f"Tipo: {event_type}\n"
-        f"Servidor: "
-        f"{server_id if server_id is not None else 'N/D'}\n\n"
-        "CyberShield inició el proceso de análisis "
-        "y respuesta defensiva."
-    )
-
-    create_telegram_notification(
-        db=db,
-        incident_id=incident_id,
-        message=telegram_message,
-    )
+    if send_telegram:
+        create_incident_telegram_notification(
+            db=db,
+            incident_id=incident_id,
+            severity=severity,
+            event_type=event_type,
+            server_id=server_id,
+        )
 
     return notification
 

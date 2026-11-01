@@ -107,6 +107,7 @@ def create_automatic_incident_mitre(
     incident_id: int,
     event_type: str,
     details: dict | None = None,
+    commit: bool = True,
 ):
     details = details or {}
     if event_type == "privilege_escalation":
@@ -217,7 +218,15 @@ def create_automatic_incident_mitre(
     )
 
     db.add(mitre)
-    db.commit()
-    db.refresh(mitre)
+
+    if commit:
+        db.commit()
+        db.refresh(mitre)
+    else:
+        # flush() envía el INSERT a PostgreSQL dentro de
+        # la transacción actual, pero NO la confirma.
+        # Esto permite que event_service haga un único
+        # commit al terminar todo el incidente.
+        db.flush()
 
     return mitre

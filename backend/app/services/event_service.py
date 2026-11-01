@@ -9,6 +9,7 @@ from app.models.response_action import ResponseAction
 from app.cybersecurity.rules import analyze_security_event
 from app.services.notification_service import (
     create_incident_notification,
+    create_incident_telegram_notification,
 )
 from app.services.response_action_service import (
     create_automatic_response_action,
@@ -41,127 +42,70 @@ def process_security_event(db: Session, data):
         scope=scope,
     )
 
-    db.add(event)
-    db.commit()
-    db.refresh(event)
-
     incident = None
     notification = None
     response_action = None
     mitre = None
 
     correlated_incident = None
-    incident_reused = False
 
     # ==========================================================
-    # CORRELACIÓN GENERAL DE INCIDENTES
+    # TRANSACCIÓN PRINCIPAL
     # ==========================================================
     #
-    # OBJETIVO:
-    # Muchos eventos pueden pertenecer al MISMO incidente.
+    # Evento + incidente + MITRE + notificación dashboard +
+    # response_action se confirman juntos.
     #
-    # Ejemplo:
-    #   100 intentos SSH
-    #       -> 100 events
-    #       -> 1 incident
-    #       -> 1 notificación inicial
-    #       -> 1 response_action
+    # Si cualquiera falla antes del commit, se revierte todo.
     #
-    # Los eventos NO se eliminan.
-    # Cada uno conserva una referencia lógica al incidente
-    # mediante details.correlated_incident_id.
+    # Telegram se ejecuta DESPUÉS porque un servicio externo
+    # no debe invalidar un incidente correctamente almacenado.
     # ==========================================================
 
-    if analysis["create_incident"]:
+    db.add(event)
 
-        # ------------------------------------------------------
-        # Familia de autenticación:
-        # estos event_type representan el mismo fenómeno.
-        # ------------------------------------------------------
-        authentication_types = (
-            "authentication_failure",
-            "multiple_login_attempts",
-            "authentication_burst",
-        )
+    try:
+        # Necesitamos el ID del evento para crear/correlacionar
+        # el incidente, pero todavía NO confirmamos nada.
+        db.flush()
 
-        if event.event_type in authentication_types:
-            correlation_types = authentication_types
+        # ======================================================
+        # CORRELACIÓN GENERAL DE INCIDENTES
+        # ======================================================
 
-        else:
-            correlation_types = (
-                event.event_type,
+        if analysis["create_incident"]:
+
+            authentication_types = (
+                "authentication_failure",
+                "multiple_login_attempts",
+                "authentication_burst",
             )
 
-        # ------------------------------------------------------
-        # Ventana de deduplicación.
-        #
-        # También absorbe eventos que lleguen poco después
-        # de haber ejecutado la contención, evitando que logs
-        # retrasados creen nuevos incidentes.
-        # ------------------------------------------------------
-        correlation_window_seconds = 300
+            if event.event_type in authentication_types:
+                correlation_types = authentication_types
+            else:
+                correlation_types = (
+                    event.event_type,
+                )
 
-        cutoff = (
-            datetime.now(timezone.utc)
-            - timedelta(
-                seconds=correlation_window_seconds
-            )
-        )
+            correlation_window_seconds = 300
 
-        # ------------------------------------------------------
-        # 1. Buscar primero incidente ACTIVO.
-        # ------------------------------------------------------
-        correlated_incident = (
-            db.query(Incident)
-            .join(
-                Event,
-                Incident.event_id == Event.id,
+            cutoff = (
+                datetime.now(timezone.utc)
+                - timedelta(
+                    seconds=correlation_window_seconds
+                )
             )
-            .filter(
-                Event.event_type.in_(
-                    correlation_types
-                ),
-                Event.source_ip
-                == event.source_ip,
-                Event.server_id
-                == event.server_id,
-                Event.id != event.id,
-                Incident.status.in_(
-                    (
-                        "open",
-                        "investigating",
-                        "escalated",
-                    )
-                ),
-            )
-            .order_by(
-                Incident.id.desc()
-            )
-            .first()
-        )
 
-        # ------------------------------------------------------
-        # 2. Si acaba de resolverse, absorber eventos tardíos.
-        #
-        # Esto evita:
-        # INC-514
-        # INC-515
-        # INC-516
-        # INC-517
-        #
-        # por la misma ráfaga.
-        # ------------------------------------------------------
-        if correlated_incident is None:
+            # --------------------------------------------------
+            # 1. Buscar incidente activo.
+            # --------------------------------------------------
+
             correlated_incident = (
                 db.query(Incident)
                 .join(
                     Event,
                     Incident.event_id == Event.id,
-                )
-                .join(
-                    ResponseAction,
-                    ResponseAction.incident_id
-                    == Incident.id,
                 )
                 .filter(
                     Event.event_type.in_(
@@ -172,19 +116,13 @@ def process_security_event(db: Session, data):
                     Event.server_id
                     == event.server_id,
                     Event.id != event.id,
-                    Incident.status
-                    == "resolved",
-                    ResponseAction.status.in_(
+                    Incident.status.in_(
                         (
-                            "executed",
-                            "rolled_back",
+                            "open",
+                            "investigating",
+                            "escalated",
                         )
                     ),
-                    func.coalesce(
-                        ResponseAction.rolled_back_at,
-                        ResponseAction.executed_at,
-                        ResponseAction.created_at,
-                    ) >= cutoff,
                 )
                 .order_by(
                     Incident.id.desc()
@@ -192,162 +130,254 @@ def process_security_event(db: Session, data):
                 .first()
             )
 
-        # ======================================================
-        # INCIDENTE EXISTENTE
-        # ======================================================
-        if correlated_incident is not None:
-            incident = correlated_incident
-            incident_reused = True
-
-            analysis[
-                "incident_reused"
-            ] = True
-
-            analysis[
-                "correlated_to_incident_id"
-            ] = incident.id
-
             # --------------------------------------------------
-            # Registrar en ESTE evento a qué incidente pertenece.
-            # No se elimina ninguna evidencia.
+            # 2. Absorber eventos tardíos de un incidente
+            #    recién resuelto.
             # --------------------------------------------------
-            event_details = dict(
-                event.details or {}
-            )
 
-            event_details[
-                "correlated_incident_id"
-            ] = incident.id
-
-            event_details[
-                "correlation_role"
-            ] = "related"
-
-            event.details = event_details
-
-            # --------------------------------------------------
-            # Si el nuevo evento sube de severidad,
-            # elevar el incidente existente.
-            # --------------------------------------------------
-            severity_rank = {
-                "normal": 0,
-                "warning": 1,
-                "high": 2,
-                "critical": 3,
-            }
-
-            old_rank = severity_rank.get(
-                str(
-                    incident.severity
-                ).lower(),
-                0,
-            )
-
-            new_rank = severity_rank.get(
-                str(
-                    analysis["risk_level"]
-                ).lower(),
-                0,
-            )
-
-            if new_rank > old_rank:
-                incident.severity = (
-                    analysis["risk_level"]
+            if correlated_incident is None:
+                correlated_incident = (
+                    db.query(Incident)
+                    .join(
+                        Event,
+                        Incident.event_id == Event.id,
+                    )
+                    .join(
+                        ResponseAction,
+                        ResponseAction.incident_id
+                        == Incident.id,
+                    )
+                    .filter(
+                        Event.event_type.in_(
+                            correlation_types
+                        ),
+                        Event.source_ip
+                        == event.source_ip,
+                        Event.server_id
+                        == event.server_id,
+                        Event.id != event.id,
+                        Incident.status
+                        == "resolved",
+                        ResponseAction.status.in_(
+                            (
+                                "executed",
+                                "rolled_back",
+                            )
+                        ),
+                        func.coalesce(
+                            ResponseAction.rolled_back_at,
+                            ResponseAction.executed_at,
+                            ResponseAction.created_at,
+                        ) >= cutoff,
+                    )
+                    .order_by(
+                        Incident.id.desc()
+                    )
+                    .first()
                 )
 
-            db.commit()
-            db.refresh(event)
-            db.refresh(incident)
+            # ==================================================
+            # INCIDENTE EXISTENTE
+            # ==================================================
+
+            if correlated_incident is not None:
+                incident = correlated_incident
+
+                analysis[
+                    "incident_reused"
+                ] = True
+
+                analysis[
+                    "correlated_to_incident_id"
+                ] = incident.id
+
+                event_details = dict(
+                    event.details or {}
+                )
+
+                event_details[
+                    "correlated_incident_id"
+                ] = incident.id
+
+                event_details[
+                    "correlation_role"
+                ] = "related"
+
+                event.details = event_details
+
+                severity_rank = {
+                    "normal": 0,
+                    "warning": 1,
+                    "high": 2,
+                    "critical": 3,
+                }
+
+                old_rank = severity_rank.get(
+                    str(
+                        incident.severity
+                    ).lower(),
+                    0,
+                )
+
+                new_rank = severity_rank.get(
+                    str(
+                        analysis["risk_level"]
+                    ).lower(),
+                    0,
+                )
+
+                if new_rank > old_rank:
+                    incident.severity = (
+                        analysis["risk_level"]
+                    )
+
+            # ==================================================
+            # INCIDENTE NUEVO
+            # ==================================================
+
+            else:
+                incident = Incident(
+                    event_id=event.id,
+                    severity=analysis[
+                        "risk_level"
+                    ],
+                    status="open",
+                )
+
+                db.add(incident)
+
+                # Necesitamos incident.id para las relaciones,
+                # pero seguimos dentro de la misma transacción.
+                db.flush()
+
+                analysis[
+                    "incident_reused"
+                ] = False
+
+                analysis[
+                    "correlated_to_incident_id"
+                ] = incident.id
+
+                event_details = dict(
+                    event.details or {}
+                )
+
+                event_details[
+                    "correlated_incident_id"
+                ] = incident.id
+
+                event_details[
+                    "correlation_role"
+                ] = "primary"
+
+                event.details = event_details
+
+                # ----------------------------------------------
+                # MITRE dentro de la transacción.
+                # ----------------------------------------------
+
+                mitre = (
+                    create_automatic_incident_mitre(
+                        db=db,
+                        incident_id=incident.id,
+                        event_type=event.event_type,
+                        details=event.details,
+                        commit=False,
+                    )
+                )
+
+                # ----------------------------------------------
+                # Dashboard dentro de la transacción.
+                # Telegram se aplaza hasta después del commit.
+                # ----------------------------------------------
+
+                notification = (
+                    create_incident_notification(
+                        db=db,
+                        incident_id=incident.id,
+                        severity=incident.severity,
+                        event_type=event.event_type,
+                        server_id=event.server_id,
+                        commit=False,
+                        send_telegram=False,
+                    )
+                )
+
+                # ----------------------------------------------
+                # Acción defensiva dentro de la transacción.
+                # ----------------------------------------------
+
+                response_action = (
+                    create_automatic_response_action(
+                        db=db,
+                        incident_id=incident.id,
+                        event_type=event.event_type,
+                        severity=incident.severity,
+                        scope=event.scope,
+                        source_ip=(
+                            str(
+                                event.source_ip
+                            )
+                            if event.source_ip
+                            else None
+                        ),
+                        details=event.details,
+                        commit=False,
+                    )
+                )
 
         # ======================================================
-        # INCIDENTE NUEVO
+        # ÚNICO COMMIT DE LA PARTE CRÍTICA
         # ======================================================
-        else:
-            incident = Incident(
-                event_id=event.id,
-                severity=analysis[
-                    "risk_level"
-                ],
-                status="open",
+
+        db.commit()
+
+    except Exception:
+        # Ninguna pieza parcial del evento/incidente debe quedar
+        # persistida si la transacción principal falla.
+        db.rollback()
+        raise
+
+    # ==========================================================
+    # REFRESCAR OBJETOS YA CONFIRMADOS
+    # ==========================================================
+
+    db.refresh(event)
+
+    if incident is not None:
+        db.refresh(incident)
+
+    if notification is not None:
+        db.refresh(notification)
+
+    if response_action is not None:
+        db.refresh(response_action)
+
+    if mitre is not None:
+        db.refresh(mitre)
+
+    # ==========================================================
+    # TELEGRAM FUERA DE LA TRANSACCIÓN PRINCIPAL
+    # ==========================================================
+    #
+    # Solo existe notification para HIGH/CRITICAL nuevos.
+    # Un fallo aquí NO debe deshacer lo anterior.
+    # ==========================================================
+
+    if notification is not None:
+        try:
+            create_incident_telegram_notification(
+                db=db,
+                incident_id=incident.id,
+                severity=incident.severity,
+                event_type=event.event_type,
+                server_id=event.server_id,
             )
-
-            db.add(incident)
-            db.commit()
-            db.refresh(incident)
-
-            analysis[
-                "incident_reused"
-            ] = False
-
-            analysis[
-                "correlated_to_incident_id"
-            ] = incident.id
-
-            # --------------------------------------------------
-            # Marcar el evento que originó el incidente.
-            # --------------------------------------------------
-            event_details = dict(
-                event.details or {}
-            )
-
-            event_details[
-                "correlated_incident_id"
-            ] = incident.id
-
-            event_details[
-                "correlation_role"
-            ] = "primary"
-
-            event.details = event_details
-
-            db.commit()
-            db.refresh(event)
-
-            # --------------------------------------------------
-            # MITRE solo se crea una vez por incidente.
-            # --------------------------------------------------
-            mitre = (
-                create_automatic_incident_mitre(
-                    db=db,
-                    incident_id=incident.id,
-                    event_type=event.event_type,
-                    details=event.details,
-                )
-            )
-
-            # --------------------------------------------------
-            # UNA notificación inicial por incidente.
-            # --------------------------------------------------
-            notification = (
-                create_incident_notification(
-                    db=db,
-                    incident_id=incident.id,
-                    severity=incident.severity,
-                    event_type=event.event_type,
-                    server_id=event.server_id,
-                )
-            )
-
-            # --------------------------------------------------
-            # UNA acción defensiva por incidente.
-            # --------------------------------------------------
-            response_action = (
-                create_automatic_response_action(
-                    db=db,
-                    incident_id=incident.id,
-                    event_type=event.event_type,
-                    severity=incident.severity,
-                    scope=event.scope,
-                    source_ip=(
-                        str(
-                            event.source_ip
-                        )
-                        if event.source_ip
-                        else None
-                    ),
-                    details=event.details,
-                )
-            )
+        except Exception:
+            # Una posible falla de persistencia de la
+            # notificación externa tampoco debe dejar
+            # la sesión SQLAlchemy en estado fallido.
+            db.rollback()
 
     return {
         "success": True,
@@ -410,7 +440,8 @@ def process_security_event(db: Session, data):
         }
         if response_action
         else None,
-    "mitre": {
+
+        "mitre": {
             "id": mitre.id,
             "incident_id": mitre.incident_id,
             "technique_id": mitre.technique_id,
@@ -419,9 +450,9 @@ def process_security_event(db: Session, data):
             "reference_url": mitre.reference_url,
             "is_primary": mitre.is_primary,
             "notes": mitre.notes,
-    }
-    if mitre
-    else None,
+        }
+        if mitre
+        else None,
     }
 
 

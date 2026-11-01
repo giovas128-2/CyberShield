@@ -241,6 +241,7 @@ def create_automatic_response_action(
     scope: str | None,
     source_ip: str | None,
     details: dict | None = None,
+    commit: bool = True,
 ):
     """
     Evalúa una política de respuesta y, cuando corresponde,
@@ -513,7 +514,13 @@ def create_automatic_response_action(
     )
 
     db.add(action)
-    db.commit()
-    db.refresh(action)
+
+    if commit:
+        db.commit()
+        db.refresh(action)
+    else:
+        # Envía el INSERT dentro de la transacción actual
+        # y asigna el ID, pero NO confirma los cambios.
+        db.flush()
 
     return action
