@@ -613,7 +613,86 @@ export async function getEventStats(window: "1s" | "60s"): Promise<EventStats> {
 
 export async function getNotifications(): Promise<NotificationItem[]> {
   const res = await http.get(ROUTES.notifications);
-  return (res.data ?? []).map((n: any) => ({
+
+  const rawList: any[] = Array.isArray(res.data)
+    ? res.data
+    : [];
+
+  /*
+   * DEDUPLICACIÓN VISUAL
+   *
+   * La BD conserva todas las notificaciones.
+   * La interfaz muestra una sola notificación
+   * por incidente actualmente visible.
+   */
+
+  const visibleIncidents = await getIncidents();
+
+  const visibleIncidentIds = new Set(
+    visibleIncidents
+      .map((incident) => Number(incident.backendId))
+      .filter((id) => Number.isFinite(id)),
+  );
+
+  const timestampOf = (notification: any) => {
+    const raw =
+      notification.sent_at ??
+      notification.created_at ??
+      "";
+
+    const timestamp = Date.parse(raw);
+
+    return Number.isFinite(timestamp)
+      ? timestamp
+      : Number(notification.id) || 0;
+  };
+
+  const latestByIncident = new Map<number, any>();
+
+  for (const notification of rawList) {
+    const incidentId = Number(notification.incident_id);
+
+    if (!Number.isFinite(incidentId)) {
+      continue;
+    }
+
+    // Ignorar notificaciones de incidentes históricos
+    // que ya fueron agrupados visualmente.
+    if (!visibleIncidentIds.has(incidentId)) {
+      continue;
+    }
+
+    const current = latestByIncident.get(incidentId);
+
+    if (
+      !current ||
+      timestampOf(notification) > timestampOf(current) ||
+      (
+        timestampOf(notification) === timestampOf(current) &&
+        Number(notification.id) > Number(current.id)
+      )
+    ) {
+      latestByIncident.set(incidentId, notification);
+    }
+  }
+
+  const list = Array.from(
+    latestByIncident.values(),
+  ).sort(
+    (a, b) => timestampOf(b) - timestampOf(a),
+  );
+
+  console.log(
+    "[NOTIFICATIONS] backend:",
+    rawList.length,
+  );
+
+  console.log(
+    "[NOTIFICATIONS] después de agrupar:",
+    list.length,
+  );
+
+  return list.map((n: any) => ({
     id: Number(n.id),
     incident_id: Number(n.incident_id),
     severity: toSeverity(n.severity),
