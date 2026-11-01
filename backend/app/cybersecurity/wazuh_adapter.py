@@ -81,6 +81,8 @@ def normalize_wazuh_event(
             "original_timestamp": raw_event.get("timestamp"),
             "raw_location": raw_event.get("location"),
             "integration": "wazuh_real",
+            "source_ip_observation": "wazuh_srcip",
+            "source_ip_role": "remote_peer",
         }
 
         user = data.get("dstuser")
@@ -240,6 +242,8 @@ def normalize_wazuh_event(
                 raw_event.get("timestamp")
             ),
             "integration": "wazuh_real",
+            "source_ip_observation": "wazuh_srcip",
+            "source_ip_role": "remote_peer",
         }
 
         return {
@@ -551,6 +555,12 @@ def normalize_wazuh_event(
         "raw_location": raw_event.get("location"),
 
         "integration": "wazuh_real",
+
+        # En FIM esta IP identifica al HOST MONITOREADO,
+        # no necesariamente al atacante.
+        "affected_host_ip": agent_ip,
+        "source_ip_observation": "not_available_from_fim",
+        "source_ip_role": "unknown_attacker",
     }
 
     if sensor_confirmed_ransomware_like:
@@ -573,7 +583,11 @@ def normalize_wazuh_event(
     return {
         "event_type": event_type,
         "source": "wazuh",
-        "source_ip": agent_ip,
+
+        # Wazuh FIM demuestra qué host sufrió el cambio,
+        # pero por sí solo no demuestra qué IP lo causó.
+        "source_ip": None,
+
         "server_id": server_id,
         "description": description,
         "scope": scope,
