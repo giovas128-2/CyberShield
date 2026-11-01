@@ -317,9 +317,62 @@ def normalize_wazuh_event(
         in normalized_path
     )
 
+    # ---------------------------------------------------------
+    # Identificación del archivo observado.
+    #
+    # Reconocemos tanto:
+    #   archivo_1.txt
+    # como:
+    #   archivo_1.txt.locked
+    #
+    # exclusivamente para los 12 documentos sintéticos.
+    # ---------------------------------------------------------
+
+    normalized_demo_filename = filename
+
+    for suffix in (
+        ".locked",
+        ".encrypted",
+        ".enc",
+    ):
+        if normalized_demo_filename.endswith(
+            suffix
+        ):
+            normalized_demo_filename = (
+                normalized_demo_filename[
+                    :-len(suffix)
+                ]
+            )
+            break
+
+    expected_demo_documents = {
+        f"archivo_{number}.txt"
+        for number in range(1, 13)
+    }
+
     demo_document = (
-        filename.startswith("archivo_")
-        and filename.endswith(".txt")
+        normalized_demo_filename
+        in expected_demo_documents
+    )
+
+    suspicious_extension = (
+        filename.endswith(
+            (
+                ".locked",
+                ".encrypted",
+                ".enc",
+            )
+        )
+    )
+
+    suspicious_name_indicator = (
+        in_ransomware_lab
+        and (
+            suspicious_extension
+            or "ransomware" in filename
+            or "encryptor" in filename
+            or "encrypt" in filename
+        )
     )
 
     sha_before = syscheck.get("sha256_before")
@@ -358,12 +411,63 @@ def normalize_wazuh_event(
         and not internal_control_file
     )
 
+    # ---------------------------------------------------------
+    # Explicar POR QUÉ fue detectado.
+    # ---------------------------------------------------------
+
+    behavior_indicators = []
+
+    if content_changed:
+        behavior_indicators.append(
+            "file_content_changed"
+        )
+
+    if hash_changed:
+        behavior_indicators.append(
+            "sha256_changed"
+        )
+
+    if size_changed:
+        behavior_indicators.append(
+            "file_size_changed"
+        )
+
+    if suspicious_extension:
+        behavior_indicators.append(
+            "suspicious_extension"
+        )
+
+    if suspicious_name_indicator:
+        behavior_indicators.append(
+            "suspicious_filename"
+        )
+
+    if (
+        sensor_confirmed_ransomware_like
+        and suspicious_name_indicator
+    ):
+        detection_basis = (
+            "filename_and_behavior"
+        )
+
+    elif sensor_confirmed_ransomware_like:
+        detection_basis = "behavior"
+
+    elif suspicious_name_indicator:
+        detection_basis = "filename"
+
+    else:
+        detection_basis = "sensor_rule"
+
     is_decoy = (
         "senuelo" in filename
         or "señuelo" in filename
     )
 
-    if sensor_confirmed_ransomware_like:
+    if (
+        sensor_confirmed_ransomware_like
+        or suspicious_name_indicator
+    ):
         event_type = "possible_ransomware_behavior"
         authorized = False
         file_criticality = "important"
@@ -385,14 +489,6 @@ def normalize_wazuh_event(
     ):
         agent_ip = None
 
-    suspicious_extension = filename.endswith(
-        (
-            ".locked",
-            ".encrypted",
-            ".enc",
-        )
-    )
-
     details = {
         "wazuh_rule_id": rule_id,
         "wazuh_level": rule.get("level"),
@@ -411,6 +507,20 @@ def normalize_wazuh_event(
         ),
 
         "lab_ransomware_signal": in_ransomware_lab,
+
+        # Evidencia explicable para CyberShield/UI.
+        "observed_filename": filename or None,
+        "observed_path": path,
+        "normalized_demo_filename": (
+            normalized_demo_filename or None
+        ),
+        "filename_indicator": (
+            suspicious_name_indicator
+        ),
+        "detection_basis": detection_basis,
+        "behavior_indicators": (
+            behavior_indicators
+        ),
 
         # No fingimos que hubo 50 o 100 archivos.
         # Cada alerta FIM representa al menos un cambio real.

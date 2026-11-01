@@ -38,6 +38,52 @@ AUTHORIZED_ROOT = Path(
 
 RUNNING = True
 
+# ============================================================
+# CIFRADO SIMULADO DE LABORATORIO
+# ============================================================
+#
+# NO es ransomware real ni cifrado criptográfico.
+# Es una transformación reversible limitada exclusivamente
+# a los 12 archivos sintéticos de CyberShield.
+#
+# Nunca acepta rutas proporcionadas por el usuario.
+# ============================================================
+
+LAB_DEMO_KEY = b"CYBERSHIELD-LAB-DEMO-ONLY"
+
+EXPECTED_DEMO_FILES = {
+    f"archivo_{number}.txt"
+    for number in range(1, 13)
+}
+
+ENCRYPTED_SUFFIX = ".locked"
+
+ENCRYPTED_HEADER = (
+    b"CYBERSHIELD-DEMO-ENCRYPTED\n"
+)
+
+
+def demo_encrypt_bytes(data: bytes) -> bytes:
+    """
+    Transformación reversible únicamente para mostrar
+    visualmente un archivo "cifrado" en el laboratorio.
+
+    No se utiliza criptografía real y no admite rutas.
+    """
+
+    transformed = bytes(
+        value
+        ^ LAB_DEMO_KEY[
+            index % len(LAB_DEMO_KEY)
+        ]
+        for index, value in enumerate(data)
+    )
+
+    return (
+        ENCRYPTED_HEADER
+        + transformed
+    )
+
 
 def log(message):
     print(
@@ -100,6 +146,18 @@ def prepare():
     validate_environment()
 
     baseline = {}
+
+    # Limpiar únicamente residuos cifrados de los
+    # 12 archivos sintéticos del laboratorio.
+    for number in range(1, 13):
+        locked_path = (
+            DEMO_DIR
+            / f"archivo_{number}.txt{ENCRYPTED_SUFFIX}"
+        )
+
+        locked_path.unlink(
+            missing_ok=True
+        )
 
     for number in range(1, 13):
         path = (
@@ -232,18 +290,19 @@ def start():
     )
 
     log(
-        "IMPORTANTE: no existe cifrado ni eliminación real."
+        "IMPORTANTE: se ejecutará únicamente una "
+        "transformación reversible de laboratorio."
     )
 
     log(
-        "Solo se modificarán archivos sintéticos."
+        "Solo pueden modificarse los 12 archivos "
+        "sintéticos de CyberShield."
     )
 
-    files = sorted(
-        DEMO_DIR.glob(
-            "archivo_*.txt"
-        )
-    )
+    files = [
+        DEMO_DIR / f"archivo_{number}.txt"
+        for number in range(1, 13)
+    ]
 
     modification_count = 0
 
@@ -263,19 +322,58 @@ def start():
                 if not path.exists():
                     continue
 
-                marker = (
-                    "\n[DEMO-RANSOMWARE-LIKE] "
-                    f"modificación controlada "
-                    f"{modification_count + 1} "
-                    f"{now()}\n"
+                # Tercera barrera:
+                # solo aceptamos exactamente archivo_1.txt
+                # ... archivo_12.txt dentro de DEMO_DIR.
+                resolved_path = path.resolve()
+
+                if (
+                    resolved_path.parent != DEMO_DIR
+                    or resolved_path.name
+                    not in EXPECTED_DEMO_FILES
+                ):
+                    log(
+                        f"Archivo rechazado por seguridad: "
+                        f"{resolved_path}"
+                    )
+                    continue
+
+                locked_path = (
+                    DEMO_DIR
+                    / (
+                        path.name
+                        + ENCRYPTED_SUFFIX
+                    )
                 )
 
+                if locked_path.exists():
+                    log(
+                        f"Ya estaba cifrado: "
+                        f"{locked_path.name}"
+                    )
+                    continue
+
                 try:
-                    with path.open(
-                        "a",
-                        encoding="utf-8",
-                    ) as file:
-                        file.write(marker)
+                    original_bytes = (
+                        path.read_bytes()
+                    )
+
+                    encrypted_bytes = (
+                        demo_encrypt_bytes(
+                            original_bytes
+                        )
+                    )
+
+                    # Primero cambia el contenido del archivo
+                    # sintético y después agrega .locked.
+                    # Wazuh FIM puede observar ambas señales.
+                    path.write_bytes(
+                        encrypted_bytes
+                    )
+
+                    path.rename(
+                        locked_path
+                    )
 
                 except PermissionError:
                     log(
@@ -289,7 +387,9 @@ def start():
                 modification_count += 1
 
                 log(
-                    f"Modificado: {path.name}"
+                    "Cifrado simulado: "
+                    f"{path.name} -> "
+                    f"{locked_path.name}"
                 )
 
                 save_state(
@@ -297,9 +397,13 @@ def start():
                     run_id=run_id,
                     pid=os.getpid(),
                     modifications=modification_count,
+                    encrypted_files=modification_count,
+                    last_file=locked_path.name,
                 )
 
-                time.sleep(0.5)
+                # Damos tiempo a Wazuh/CyberShield para
+                # observar y contener el comportamiento.
+                time.sleep(1.0)
 
             time.sleep(0.5)
 
@@ -381,6 +485,18 @@ def restore():
     )
 
     restored = 0
+
+    # Eliminar exclusivamente los .locked correspondientes
+    # a los archivos sintéticos conocidos.
+    for number in range(1, 13):
+        locked_path = (
+            DEMO_DIR
+            / f"archivo_{number}.txt{ENCRYPTED_SUFFIX}"
+        )
+
+        locked_path.unlink(
+            missing_ok=True
+        )
 
     for raw_path, content in baseline.items():
         path = Path(

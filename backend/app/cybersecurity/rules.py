@@ -398,6 +398,18 @@ def analyze_security_event(event):
             )
         )
 
+        filename_indicator = bool(
+            details.get(
+                "filename_indicator",
+                False,
+            )
+        )
+
+        detection_basis = details.get(
+            "detection_basis",
+            "unknown",
+        )
+
         # Umbrales PROVISIONALES para laboratorio.
         # No se cifra ni destruye información real.
         if maintenance_mode:
@@ -413,6 +425,19 @@ def analyze_security_event(event):
             severity = "high"
             create_incident = True
             scope = "IMPACT"
+
+        # Un nombre/extensión sospechosa dentro del
+        # laboratorio también se detecta.
+        #
+        # Por sí solo empieza como WARNING para evitar
+        # afirmar compromiso únicamente por un nombre.
+        elif (
+            filename_indicator
+            and lab_ransomware_signal
+        ):
+            severity = "warning"
+            create_incident = False
+            scope = "REACHED"
 
         elif modified_files >= 100 and renamed_files >= 50:
             severity = "critical"
@@ -435,6 +460,11 @@ def analyze_security_event(event):
         if (
             suspicious_extension
             and severity == "warning"
+            and detection_basis
+            in (
+                "behavior",
+                "filename_and_behavior",
+            )
         ):
             severity = "high"
             create_incident = True
@@ -442,6 +472,8 @@ def analyze_security_event(event):
         elif (
             suspicious_extension
             and severity == "high"
+            and detection_basis
+            == "filename_and_behavior"
         ):
             severity = "critical"
             create_incident = True
