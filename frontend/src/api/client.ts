@@ -645,7 +645,9 @@ export async function getEventStats(window: "1s" | "60s"): Promise<EventStats> {
   };
 }
 
-export async function getNotifications(): Promise<NotificationItem[]> {
+export async function getNotifications(
+  visibleIncidents?: Incidente[]
+): Promise<NotificationItem[]> {
   const res = await http.get(ROUTES.notifications);
 
   const rawList: any[] = Array.isArray(res.data)
@@ -660,10 +662,18 @@ export async function getNotifications(): Promise<NotificationItem[]> {
    * por incidente actualmente visible.
    */
 
-  const visibleIncidents = await getIncidents();
+  // El dashboard ya cargó los incidentes durante
+  // este mismo ciclo. Los reutilizamos para evitar
+  // una segunda petición GET /incidents.
+  //
+  // El fallback mantiene compatibilidad con otros
+  // consumidores que llamen getNotifications()
+  // directamente.
+  const incidentsForVisibility =
+    visibleIncidents ?? await getIncidents();
 
   const visibleIncidentIds = new Set(
-    visibleIncidents
+    incidentsForVisibility
       .map((incident) => Number(incident.backendId))
       .filter((id) => Number.isFinite(id)),
   );

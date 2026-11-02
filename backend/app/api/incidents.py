@@ -70,6 +70,76 @@ def list_incidents(
         except (TypeError, ValueError):
             continue
 
+    # -----------------------------------------------------
+    # CARGA MASIVA DE RELACIONES
+    #
+    # Antes se ejecutaban 2 consultas adicionales POR
+    # INCIDENTE:
+    #   - IncidentMitre
+    #   - ResponseAction
+    #
+    # Con cientos de incidentes esto generaba un N+1.
+    #
+    # Ahora recuperamos ambas colecciones en solo
+    # 2 consultas totales y construimos índices en memoria.
+    # -----------------------------------------------------
+
+    incident_ids = [
+        incident.id
+        for incident, _event in rows
+    ]
+
+    mitre_by_incident = {}
+    response_by_incident = {}
+
+    if incident_ids:
+        mitre_rows = (
+            db.query(IncidentMitre)
+            .filter(
+                IncidentMitre.incident_id.in_(
+                    incident_ids
+                )
+            )
+            .order_by(
+                IncidentMitre.incident_id.asc(),
+                IncidentMitre.is_primary.desc(),
+                IncidentMitre.id.asc(),
+            )
+            .all()
+        )
+
+        for mitre_item in mitre_rows:
+            # El orden garantiza que el primero sea:
+            # 1. primary=True
+            # 2. menor ID en caso de empate
+            mitre_by_incident.setdefault(
+                mitre_item.incident_id,
+                mitre_item,
+            )
+
+        response_rows = (
+            db.query(ResponseAction)
+            .filter(
+                ResponseAction.incident_id.in_(
+                    incident_ids
+                )
+            )
+            .order_by(
+                ResponseAction.incident_id.asc(),
+                ResponseAction.id.desc(),
+            )
+            .all()
+        )
+
+        for response_item in response_rows:
+            # El primero por incidente es la acción
+            # más reciente, igual que el .first()
+            # anterior ordenado por id DESC.
+            response_by_incident.setdefault(
+                response_item.incident_id,
+                response_item,
+            )
+
     result = []
 
     for incident, event in rows:
@@ -77,29 +147,14 @@ def list_incidents(
             event.event_type
         )
 
-        mitre = (
-            db.query(IncidentMitre)
-            .filter(
-                IncidentMitre.incident_id
-                == incident.id
-            )
-            .order_by(
-                IncidentMitre.is_primary.desc(),
-                IncidentMitre.id.asc(),
-            )
-            .first()
+        mitre = mitre_by_incident.get(
+            incident.id
         )
 
         response_action = (
-            db.query(ResponseAction)
-            .filter(
-                ResponseAction.incident_id
-                == incident.id
+            response_by_incident.get(
+                incident.id
             )
-            .order_by(
-                ResponseAction.id.desc()
-            )
-            .first()
         )
 
         result.append({

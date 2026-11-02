@@ -55,7 +55,7 @@ export function useCyberShieldData(user: User) {
       const optional = await Promise.allSettled([
         getEventStats("1s"),
         getEventStats("60s"),
-        getNotifications(),
+        getNotifications(incidents),
       ]);
       const s1 = optional[0].status === "fulfilled" ? optional[0].value : null;
       const s60 = optional[1].status === "fulfilled" ? optional[1].value : null;
