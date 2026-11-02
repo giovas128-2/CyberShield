@@ -135,6 +135,13 @@ def process_security_event(db: Session, data):
 
     correlated_incident = None
 
+    # Las simulaciones manuales del laboratorio deben ser
+    # reproducibles e independientes entre ejecuciones.
+    # No deben absorberse en incidentes históricos abiertos.
+    is_lab_simulation = bool(
+        details.get("simulation", False)
+    )
+
     # ==========================================================
     # TRANSACCIÓN PRINCIPAL
     # ==========================================================
@@ -207,41 +214,49 @@ def process_security_event(db: Session, data):
             # 1. Buscar incidente activo.
             # --------------------------------------------------
 
-            correlated_incident = (
-                db.query(Incident)
-                .join(
-                    Event,
-                    Incident.event_id == Event.id,
+            if not is_lab_simulation:
+                correlated_incident = (
+                    db.query(Incident)
+                    .join(
+                        Event,
+                        Incident.event_id == Event.id,
+                    )
+                    .filter(
+                        Event.event_type.in_(
+                            correlation_types
+                        ),
+                        Event.source_ip
+                        == event.source_ip,
+                        Event.server_id
+                        == event.server_id,
+                        Event.id != event.id,
+                        Incident.status.in_(
+                            (
+                                "open",
+                                "investigating",
+                                "escalated",
+                            )
+                        ),
+                        Incident.created_at >= cutoff,
+                    )
+                    .order_by(
+                        Incident.id.desc()
+                    )
+                    .first()
                 )
-                .filter(
-                    Event.event_type.in_(
-                        correlation_types
-                    ),
-                    Event.source_ip
-                    == event.source_ip,
-                    Event.server_id
-                    == event.server_id,
-                    Event.id != event.id,
-                    Incident.status.in_(
-                        (
-                            "open",
-                            "investigating",
-                            "escalated",
-                        )
-                    ),
-                )
-                .order_by(
-                    Incident.id.desc()
-                )
-                .first()
-            )
 
             # --------------------------------------------------
             # 2. Absorber eventos tardíos de un incidente
             #    recién resuelto.
+            #
+            # Las simulaciones LAB siempre generan una
+            # ejecución independiente.
             # --------------------------------------------------
 
-            if correlated_incident is None:
+            if (
+                correlated_incident is None
+                and not is_lab_simulation
+            ):
                 correlated_incident = (
                     db.query(Incident)
                     .join(

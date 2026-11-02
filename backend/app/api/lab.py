@@ -212,6 +212,7 @@ def run_lab_scenario(
             source="lab",
             source_ip="127.0.0.1",
             server_id=2,
+            user="priv_demo",
             description=(
                 "Simulación controlada de abuso de "
                 "privilegios en laboratorio"

@@ -486,13 +486,31 @@ def restore():
 
     restored = 0
 
-    # Eliminar exclusivamente los .locked correspondientes
-    # a los archivos sintéticos conocidos.
+    # Conservar propietario/permisos de los archivos
+    # transformados antes de eliminar los .locked.
+    locked_metadata = {}
+
     for number in range(1, 13):
         locked_path = (
             DEMO_DIR
             / f"archivo_{number}.txt{ENCRYPTED_SUFFIX}"
         )
+
+        original_path = (
+            DEMO_DIR
+            / f"archivo_{number}.txt"
+        ).resolve()
+
+        if locked_path.exists():
+            metadata = locked_path.stat()
+
+            locked_metadata[
+                str(original_path)
+            ] = {
+                "uid": metadata.st_uid,
+                "gid": metadata.st_gid,
+                "mode": metadata.st_mode & 0o777,
+            }
 
         locked_path.unlink(
             missing_ok=True
@@ -518,6 +536,22 @@ def restore():
                 content,
                 encoding="utf-8",
             )
+
+            metadata = locked_metadata.get(
+                str(path)
+            )
+
+            if metadata:
+                os.chown(
+                    path,
+                    metadata["uid"],
+                    metadata["gid"],
+                )
+
+                os.chmod(
+                    path,
+                    metadata["mode"],
+                )
 
             restored += 1
 

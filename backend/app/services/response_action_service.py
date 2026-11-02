@@ -314,12 +314,51 @@ def create_automatic_response_action(
         )
     )
 
+    # Simulación explícita y limitada del laboratorio.
+    # NO se etiqueta como confirmación real de Wazuh.
+    is_lab_privilege_simulation = (
+        event_type == "privilege_escalation"
+        and severity.lower() in ("high", "critical")
+        and bool(
+            details.get(
+                "simulation",
+                False,
+            )
+        )
+        and details.get(
+            "lab_scenario"
+        ) == "sc4"
+        and (
+            details.get("user")
+            or details.get("srcuser")
+        ) == "priv_demo"
+        and bool(
+            details.get(
+                "sudo_used",
+                False,
+            )
+        )
+        and not bool(
+            details.get(
+                "authorized",
+                True,
+            )
+        )
+        and bool(
+            details.get(
+                "success",
+                False,
+            )
+        )
+    )
+
     if (
         severity.lower() != "critical"
         and event_type != "possible_lateral_movement"
         and not is_confirmed_ssh_bruteforce
         and not is_confirmed_lab_ransomware
         and not is_confirmed_privilege_abuse
+        and not is_lab_privilege_simulation
     ):
         return None
 
@@ -389,12 +428,20 @@ def create_automatic_response_action(
         target = target_user
         duration_seconds = 180
 
-        reason = (
-            "Wazuh confirmó uso exitoso de sudo "
-            "por una cuenta de laboratorio que "
-            "no está autorizada como administradora. "
-            "Se propone bloqueo temporal y reversible."
-        )
+        if is_lab_privilege_simulation:
+            reason = (
+                "Simulación controlada de abuso de "
+                "privilegios sobre la cuenta priv_demo. "
+                "CyberShield aplicará un bloqueo temporal "
+                "y reversible exclusivamente en el laboratorio."
+            )
+        else:
+            reason = (
+                "Wazuh confirmó uso exitoso de sudo "
+                "por una cuenta de laboratorio que "
+                "no está autorizada como administradora. "
+                "Se propone bloqueo temporal y reversible."
+            )
 
     elif event_type == "possible_ransomware_behavior":
         target = (
