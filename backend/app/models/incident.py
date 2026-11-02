@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 
 from app.database.connection import Base
 
@@ -9,7 +9,11 @@ class Incident(Base):
     __tablename__ = "incidents"
 
     id = Column(Integer, primary_key=True, index=True)
-    event_id = Column(Integer, nullable=False)
+    event_id = Column(
+        Integer,
+        ForeignKey("events.id", ondelete="RESTRICT"),
+        nullable=False,
+    )
     status = Column(String(30), nullable=False)
     severity = Column(String(20), nullable=False)
 
