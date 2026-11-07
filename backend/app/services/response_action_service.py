@@ -272,6 +272,32 @@ def create_automatic_response_action(
         and sensor_confirmed_bruteforce
     )
 
+    sensor_confirmed_exfiltration = bool(
+        details.get(
+            "sensor_confirmed_exfiltration",
+            False,
+        )
+    )
+
+    is_confirmed_suricata_exfiltration = (
+        event_type == "possible_data_exfiltration"
+        and sensor_confirmed_exfiltration
+        and bool(
+            details.get(
+                "lab_exfiltration_signal",
+                False,
+            )
+        )
+        and details.get(
+            "destination_ip"
+        ) == "172.25.176.1"
+        and int(
+            details.get(
+                "destination_port"
+            ) or 0
+        ) == 8765
+    )
+
     sensor_confirmed_ransomware_like = bool(
         details.get(
             "sensor_confirmed_ransomware_like",
@@ -357,6 +383,7 @@ def create_automatic_response_action(
         and event_type != "possible_lateral_movement"
         and not is_confirmed_ssh_bruteforce
         and not is_confirmed_lab_ransomware
+        and not is_confirmed_suricata_exfiltration
         and not is_confirmed_privilege_abuse
         and not is_lab_privilege_simulation
     ):

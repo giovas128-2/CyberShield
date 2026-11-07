@@ -32,6 +32,51 @@ def normalize_suricata_event(
     )
 
     # =========================================================
+    # ALERTA DE EXFILTRACIÓN CONTROLADA DEL LABORATORIO
+    # =========================================================
+    #
+    # SID 1000002 corresponde exclusivamente a la firma
+    # CYBERSHIELD LAB Possible Data Exfiltration.
+    #
+    lab_exfil_alert = (
+        suricata_event_type == "alert"
+        and int(alert.get("signature_id") or 0) == 1000002
+        and dest_ip == "172.25.176.1"
+        and int(dest_port or 0) == 8765
+    )
+
+    if lab_exfil_alert:
+        return {
+            "event_type": "possible_data_exfiltration",
+            "source": "suricata",
+            "source_ip": src_ip,
+            "server_id": server_id,
+            "description": (
+                "Suricata detectó la firma controlada "
+                "de exfiltración de CyberShield."
+            ),
+            "scope": "REACHED",
+            "details": {
+                "suricata_event_type": suricata_event_type,
+                "signature": alert.get("signature"),
+                "signature_id": alert.get("signature_id"),
+                "src_ip": src_ip,
+                "src_port": src_port,
+                "dest_ip": dest_ip,
+                "dest_port": dest_port,
+                "proto": proto,
+                "dest_class": "external",
+                "bulk_data_access": True,
+                "sensor_confirmed_exfiltration": True,
+                "lab_exfiltration_signal": True,
+                "destination_ip": dest_ip,
+                "destination_port": dest_port,
+                "original_timestamp": raw_event.get("timestamp"),
+                "integration": "suricata_real",
+            },
+        }
+
+    # =========================================================
     # EXFILTRACIÓN CONTROLADA DEL LABORATORIO
     # =========================================================
     #

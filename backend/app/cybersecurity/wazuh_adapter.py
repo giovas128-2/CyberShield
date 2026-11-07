@@ -193,12 +193,68 @@ def normalize_wazuh_event(
         }
 
     # =========================================================
-    # 3. MOVIMIENTO LATERAL SSH
-    # =========================================================
+    # 3. AUTENTICACION SSH Y MOVIMIENTO LATERAL
+
+    is_ssh_decoder = decoder.get("name") == "sshd"
+
+    is_ssh_auth_failure = (
+        is_ssh_decoder
+        and (
+            "authentication_failed" in rule_groups
+            or "invalid_login" in rule_groups
+        )
+    )
+
+    is_ssh_auth_success = (
+        is_ssh_decoder
+        and "authentication_success" in rule_groups
+    )
+
+    if is_ssh_auth_failure:
+        source_ip = data.get("srcip")
+        user = data.get("dstuser") or data.get("srcuser")
+
+        details = {
+            "wazuh_rule_id": rule_id,
+            "wazuh_level": rule.get("level"),
+            "wazuh_description": rule.get("description"),
+            "agent_id": agent.get("id"),
+            "agent_name": agent.get("name"),
+            "decoder": decoder.get("name"),
+            "protocol": "ssh",
+            "srcip": source_ip,
+            "source_ip": source_ip,
+            "user": user,
+            "destination_user": user,
+            "login_successful": False,
+            "authentication_failed": True,
+            "mitre_ids": mitre_ids,
+            "groups": rule_groups,
+            "full_log": raw_event.get("full_log"),
+            "original_timestamp": raw_event.get("timestamp"),
+            "integration": "wazuh_real",
+        }
+
+        return {
+            "event_type": "ssh_authentication_failed",
+            "source": "wazuh",
+            "source_ip": source_ip,
+            "server_id": server_id,
+            "user": user,
+            "description": (
+                f"Wazuh detectó un intento SSH fallido "
+                f"para {user} desde {source_ip}"
+            ),
+            "scope": "REACHED",
+            "details": details,
+        }
 
     is_lateral_ssh = (
         rule_id == "100210"
-        or "T1021.004" in mitre_ids
+        or (
+            is_ssh_auth_success
+            and "T1021.004" in mitre_ids
+        )
     )
 
     if is_lateral_ssh:
@@ -226,21 +282,13 @@ def normalize_wazuh_event(
             "pair_authorized": False,
             "maintenance_mode": False,
             "prior_open_incident": False,
-            "sensor_confirmed_lateral": (
-                sensor_confirmed_lateral
-            ),
+            "sensor_confirmed_lateral": sensor_confirmed_lateral,
             "mitre_ids": mitre_ids,
-            "mitre_tactics": (
-                mitre.get("tactic") or []
-            ),
-            "mitre_techniques": (
-                mitre.get("technique") or []
-            ),
+            "mitre_tactics": mitre.get("tactic") or [],
+            "mitre_techniques": mitre.get("technique") or [],
             "groups": rule_groups,
             "full_log": raw_event.get("full_log"),
-            "original_timestamp": (
-                raw_event.get("timestamp")
-            ),
+            "original_timestamp": raw_event.get("timestamp"),
             "integration": "wazuh_real",
             "source_ip_observation": "wazuh_srcip",
             "source_ip_role": "remote_peer",
@@ -253,14 +301,49 @@ def normalize_wazuh_event(
             "server_id": server_id,
             "user": user,
             "description": (
-                "Wazuh detectó SSH exitoso hacia "
-                f"{user} desde {source_ip}"
+                f"Wazuh detectó movimiento lateral SSH "
+                f"exitoso hacia {user} desde {source_ip}"
             ),
             "scope": "REACHED",
             "details": details,
         }
 
-    # =========================================================
+    if is_ssh_auth_success:
+        source_ip = data.get("srcip")
+        user = data.get("dstuser")
+
+        details = {
+            "wazuh_rule_id": rule_id,
+            "wazuh_level": rule.get("level"),
+            "wazuh_description": rule.get("description"),
+            "agent_id": agent.get("id"),
+            "agent_name": agent.get("name"),
+            "decoder": decoder.get("name"),
+            "protocol": "ssh",
+            "srcip": source_ip,
+            "user": user,
+            "login_successful": True,
+            "mitre_ids": mitre_ids,
+            "groups": rule_groups,
+            "full_log": raw_event.get("full_log"),
+            "original_timestamp": raw_event.get("timestamp"),
+            "integration": "wazuh_real",
+        }
+
+        return {
+            "event_type": "ssh_authentication_success",
+            "source": "wazuh",
+            "source_ip": source_ip,
+            "server_id": server_id,
+            "user": user,
+            "description": (
+                f"Wazuh confirmó un inicio SSH exitoso "
+                f"para {user} desde {source_ip}"
+            ),
+            "scope": "REACHED",
+            "details": details,
+        }
+
     # 4. WAZUH FIM / SYSCHECK
     # =========================================================
 

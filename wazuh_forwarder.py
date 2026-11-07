@@ -8,7 +8,7 @@ WAZUH_ALERTS = "/var/ossec/logs/alerts/alerts.json"
 
 API_URL = (
     "http://127.0.0.1:8000"
-    "/integrations/wazuh?server_id=2"
+    "/integrations/wazuh?server_id=1"
 )
 
 

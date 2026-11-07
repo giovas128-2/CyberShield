@@ -353,9 +353,31 @@ def analyze_security_event(event):
         ):
             severity = "high"
 
-        create_incident = severity in (
-            "high",
-            "critical",
+        sensor_confirmed_exfiltration = bool(
+            details.get(
+                "sensor_confirmed_exfiltration",
+                False,
+            )
+        )
+
+        lab_exfiltration_signal = bool(
+            details.get(
+                "lab_exfiltration_signal",
+                False,
+            )
+        )
+
+        confirmed_lab_exfiltration = (
+            sensor_confirmed_exfiltration
+            and lab_exfiltration_signal
+        )
+
+        create_incident = (
+            severity in (
+                "high",
+                "critical",
+            )
+            or confirmed_lab_exfiltration
         )
 
         if scope is None:

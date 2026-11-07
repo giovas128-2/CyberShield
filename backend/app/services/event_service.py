@@ -352,6 +352,69 @@ def process_security_event(db: Session, data):
                         analysis["risk_level"]
                     )
 
+                # ------------------------------------------
+                # Respuesta defensiva para exfiltración
+                # correlacionada.
+                #
+                # Si el incidente ya existía, el flujo normal
+                # no llegaba a crear una response_action.
+                # Para exfiltración confirmada por Suricata,
+                # creamos una sola acción si aún no existe.
+                # ------------------------------------------
+
+                is_confirmed_suricata_exfiltration = (
+                    event.event_type
+                    == "possible_data_exfiltration"
+                    and bool(
+                        event.details.get(
+                            "sensor_confirmed_exfiltration",
+                            False,
+                        )
+                    )
+                    and bool(
+                        event.details.get(
+                            "lab_exfiltration_signal",
+                            False,
+                        )
+                    )
+                )
+
+                if is_confirmed_suricata_exfiltration:
+                    existing_exfil_action = (
+                        db.query(ResponseAction)
+                        .filter(
+                            ResponseAction.incident_id
+                            == incident.id,
+                            ResponseAction.action_type
+                            == "RESTRICT_DATA_FLOW",
+                            ResponseAction.status.in_(
+                                (
+                                    "pending",
+                                    "executed",
+                                )
+                            ),
+                        )
+                        .first()
+                    )
+
+                    if existing_exfil_action is None:
+                        response_action = (
+                            create_automatic_response_action(
+                                db=db,
+                                incident_id=incident.id,
+                                event_type=event.event_type,
+                                severity=incident.severity,
+                                scope=event.scope,
+                                source_ip=(
+                                    str(event.source_ip)
+                                    if event.source_ip
+                                    else None
+                                ),
+                                details=event.details,
+                                commit=False,
+                            )
+                        )
+
             # ==================================================
             # INCIDENTE NUEVO
             # ==================================================

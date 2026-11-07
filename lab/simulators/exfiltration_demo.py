@@ -12,7 +12,7 @@ PAYLOAD = (
 )
 
 
-def send_demo(megabytes):
+def send_demo(megabytes, delay_ms):
     total_bytes = (
         megabytes * 1_000_000
     )
@@ -72,7 +72,7 @@ def send_demo(megabytes):
                     )
 
                 time.sleep(
-                    0.01
+                    delay_ms / 1000
                 )
 
     except (
@@ -114,6 +114,16 @@ def main():
         default=60,
     )
 
+    parser.add_argument(
+        "--delay-ms",
+        type=int,
+        default=10,
+        help=(
+            "Pausa entre bloques en milisegundos. "
+            "Útil para observar la respuesta defensiva."
+        ),
+    )
+
     args = parser.parse_args()
 
     if not 10 <= args.mb <= 100:
@@ -122,7 +132,8 @@ def main():
         )
 
     send_demo(
-        args.mb
+        args.mb,
+        args.delay_ms,
     )
 
 
