@@ -21,6 +21,9 @@ from app.services.device_trust_service import (
     create_access_event,
 )
 
+from app.schemas.event import SecurityEventRequest
+from app.services.event_service import process_security_event
+
 router = APIRouter(tags=["Device Trust"])
 
 
@@ -127,5 +130,35 @@ def post_access_evaluate(
             "allowed": result["allowed"],
         },
     )
+
+    if result["event_type"] == "unauthorized_device_access":
+        security_event = SecurityEventRequest(
+            event_type="unauthorized_device_access",
+            source="device_trust",
+            source_ip=source_ip,
+            server_id=2,
+            description=(
+                "Acceso restringido desde dispositivo "
+                "no autorizado o no registrado"
+            ),
+            scope="BLOCKED",
+            details={
+                "auth_result": "success",
+                "device_state": (
+                    "unregistered"
+                    if result["reason"] == "device_not_registered"
+                    else "untrusted"
+                ),
+                "reason": result["reason"],
+                "device_uuid": device_uuid,
+                "allowed": result["allowed"],
+                "device_trust_real": True,
+            },
+        )
+
+        process_security_event(
+            db,
+            security_event,
+        )
 
     return result

@@ -66,6 +66,16 @@ def relevant(event):
     if lab_exfil_alert:
         return True
 
+    # Alerta específica del laboratorio para SC5:
+    # conexión saliente sospechosa.
+    lab_suspicious_outbound_alert = (
+        event_type == "alert"
+        and int(alert.get("signature_id") or 0) == 1000003
+    )
+
+    if lab_suspicious_outbound_alert:
+        return True
+
     # Conservamos la detección E2E anterior por volumen
     # como señal secundaria del laboratorio.
     if event_type != "flow":

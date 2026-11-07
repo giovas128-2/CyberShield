@@ -237,9 +237,20 @@ def analyze_security_event(event):
         else:
             severity = "warning"
 
+        # Señal controlada confirmada por Suricata para SC5.
+        confirmed_sc5_suricata = (
+            details.get("integration") == "suricata_real"
+            and int(details.get("signature_id") or 0) == 1000003
+            and not destination_allowed
+        )
+
+        if confirmed_sc5_suricata:
+            severity = "high"
+            create_incident = True
+
         # Patrón anormal sostenido.
         # Estos valores son PROVISIONALES para laboratorio.
-        if (
+        elif (
             not destination_allowed
             and requests >= 100
             and time_window <= 60

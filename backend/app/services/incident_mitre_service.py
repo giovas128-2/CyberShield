@@ -34,6 +34,20 @@ MITRE_MAPPING = {
             "de intentos de autenticación."
         ),
     },
+    "unauthorized_device_access": {
+        "technique_id": "T1078",
+        "technique_name": "Valid Accounts",
+        "tactic": "Defense Evasion",
+        "reference_url": (
+            "https://attack.mitre.org/techniques/T1078/"
+        ),
+        "notes": (
+            "Clasificación MITRE asociada a un acceso "
+            "con credenciales válidas desde un dispositivo "
+            "no registrado, no confiable o revocado."
+        ),
+    },
+
     "privilege_escalation": {
         "technique_id": "T1548.003",
         "technique_name": "Sudo and Sudo Caching",
@@ -58,6 +72,20 @@ MITRE_MAPPING = {
             "OLA1 se confirmó sobre un archivo señuelo monitoreado."
         ),
     },
+    "suspicious_network_traffic": {
+        "technique_id": "T1041",
+        "technique_name": "Exfiltration Over C2 Channel",
+        "tactic": "Exfiltration",
+        "reference_url": (
+            "https://attack.mitre.org/techniques/T1041/"
+        ),
+        "notes": (
+            "Clasificación MITRE aplicada al escenario "
+            "controlado de conexión saliente sospechosa "
+            "detectada por Suricata."
+        ),
+    },
+
     "possible_data_exfiltration": {
         "technique_id": "T1041",
         "technique_name": "Exfiltration Over C2 Channel",
