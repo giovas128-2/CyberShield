@@ -58,6 +58,9 @@ def list_response_actions(
         "CONTAIN_HOST",
         "RESTRICT_DATA_FLOW",
         "RESTRICT_LATERAL_COMMUNICATION",
+        "RESTRICT_DEVICE_ACCESS",
+        "PROTECT_CRITICAL_FILE",
+        "RESTRICT_OUTBOUND_CONNECTION",
         "LOCKDOWN",
     ]
     | None = Query(default=None),

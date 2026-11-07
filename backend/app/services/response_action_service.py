@@ -298,6 +298,33 @@ def create_automatic_response_action(
         ) == 8765
     )
 
+    is_confirmed_device_trust = (
+        event_type == "unauthorized_device_access"
+        and severity.lower() in ("high", "critical")
+        and bool(details.get("device_trust_real", False))
+        and not bool(details.get("allowed", True))
+    )
+
+    is_confirmed_critical_file_change = (
+        event_type == "suspicious_file_change"
+        and severity.lower() in ("high", "critical")
+        and details.get("integration") == "wazuh_real"
+        and not bool(details.get("authorized", True))
+        and bool(details.get("change_applied", False))
+        and details.get("file_criticality") in (
+            "critical",
+            "important",
+        )
+    )
+
+    is_confirmed_sc5_suricata = (
+        event_type == "suspicious_network_traffic"
+        and severity.lower() in ("high", "critical")
+        and details.get("integration") == "suricata_real"
+        and int(details.get("signature_id") or 0) == 1000003
+        and not bool(details.get("destination_allowed", True))
+    )
+
     sensor_confirmed_ransomware_like = bool(
         details.get(
             "sensor_confirmed_ransomware_like",
@@ -386,6 +413,9 @@ def create_automatic_response_action(
         and not is_confirmed_suricata_exfiltration
         and not is_confirmed_privilege_abuse
         and not is_lab_privilege_simulation
+        and not is_confirmed_device_trust
+        and not is_confirmed_critical_file_change
+        and not is_confirmed_sc5_suricata
     ):
         return None
 
@@ -395,6 +425,9 @@ def create_automatic_response_action(
             "possible_data_exfiltration",
             "possible_lateral_movement",
             "possible_ransomware_behavior",
+            "unauthorized_device_access",
+            "suspicious_file_change",
+            "suspicious_network_traffic",
         )
         and scope != "IMPACT"
     ):
@@ -469,6 +502,63 @@ def create_automatic_response_action(
                 "no está autorizada como administradora. "
                 "Se propone bloqueo temporal y reversible."
             )
+
+    elif event_type == "unauthorized_device_access":
+        if not is_confirmed_device_trust:
+            return None
+
+        target = details.get("device_uuid")
+
+        if not target:
+            return None
+
+        action_type = "RESTRICT_DEVICE_ACCESS"
+        duration_seconds = 180
+
+        reason = (
+            "CyberShield confirmó un intento de acceso desde "
+            "un dispositivo no registrado o no confiable. "
+            "Se mantiene la restricción de acceso y se registra "
+            "la respuesta defensiva para verificación."
+        )
+
+    elif event_type == "suspicious_file_change":
+        if not is_confirmed_critical_file_change:
+            return None
+
+        target = details.get("path")
+
+        if not target:
+            return None
+
+        action_type = "PROTECT_CRITICAL_FILE"
+        duration_seconds = 180
+
+        reason = (
+            "Wazuh FIM confirmó una modificación no autorizada "
+            "sobre un archivo crítico del laboratorio. "
+            "CyberShield aplicará protección temporal y reversible."
+        )
+
+    elif event_type == "suspicious_network_traffic":
+        if not is_confirmed_sc5_suricata:
+            return None
+
+        destination_ip = details.get("dest_ip")
+        destination_port = details.get("dest_port")
+
+        if not destination_ip or not destination_port:
+            return None
+
+        action_type = "RESTRICT_OUTBOUND_CONNECTION"
+        target = f"{destination_ip}:{destination_port}"
+        duration_seconds = 180
+
+        reason = (
+            "Suricata confirmó la conexión saliente sospechosa "
+            "del escenario SC5. CyberShield aplicará una "
+            "restricción temporal y reversible sobre el destino."
+        )
 
     elif event_type == "possible_ransomware_behavior":
         target = (

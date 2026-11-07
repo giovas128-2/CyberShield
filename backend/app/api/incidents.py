@@ -519,6 +519,89 @@ def get_incident_evidence(
             )
 
         # -----------------------------------------------------
+        # SC2 - Dispositivo no autorizado
+        # La restricción ocurre en Device Trust.
+        # No se inventa un comando de sistema operativo.
+        # -----------------------------------------------------
+        elif action_type == "RESTRICT_DEVICE_ACCESS":
+            tool = (
+                "CyberShield Device Trust / "
+                "SC2-SC3-SC5 Response Bridge"
+            )
+
+            command_display = (
+                "Device Trust: DENY ACCESS "
+                f"device_uuid={target}"
+            )
+
+            verification_command = (
+                "CyberShield: verificar dispositivo "
+                "como no registrado/no confiable"
+            )
+
+        # -----------------------------------------------------
+        # SC3 - Cambio no autorizado de archivo crítico
+        # -----------------------------------------------------
+        elif action_type == "PROTECT_CRITICAL_FILE":
+            tool = (
+                "CyberShield SC2-SC3-SC5 Response Bridge / "
+                "Filesystem permissions"
+            )
+
+            command_display = (
+                f"chmod 0444 {target}"
+            )
+
+            verification_command = (
+                f"stat {target}"
+            )
+
+            rollback_command = (
+                f"chmod 0644 {target}"
+            )
+
+        # -----------------------------------------------------
+        # SC5 - Conexión saliente sospechosa
+        # -----------------------------------------------------
+        elif action_type == "RESTRICT_OUTBOUND_CONNECTION":
+            tool = (
+                "CyberShield SC2-SC3-SC5 Response Bridge / "
+                "iptables"
+            )
+
+            if ":" in target:
+                destination_ip, destination_port = (
+                    target.rsplit(":", 1)
+                )
+            else:
+                destination_ip = target
+                destination_port = "8088"
+
+            command_display = (
+                "iptables -I OUTPUT 1 "
+                f"-d {destination_ip} "
+                "-p tcp "
+                f"--dport {destination_port} "
+                "-j REJECT"
+            )
+
+            verification_command = (
+                "iptables -C OUTPUT "
+                f"-d {destination_ip} "
+                "-p tcp "
+                f"--dport {destination_port} "
+                "-j REJECT"
+            )
+
+            rollback_command = (
+                "iptables -D OUTPUT "
+                f"-d {destination_ip} "
+                "-p tcp "
+                f"--dport {destination_port} "
+                "-j REJECT"
+            )
+
+        # -----------------------------------------------------
         # Ransomware-like de laboratorio
         # No se inventa un comando shell:
         # la defensa real se ejecuta desde Python.
