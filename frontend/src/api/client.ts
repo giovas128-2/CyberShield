@@ -197,7 +197,7 @@ export async function login(
     );
 
     return {
-      token: "mvp-session",
+      token: res.data.access_token as string,
       user: res.data.user as User,
     };
 

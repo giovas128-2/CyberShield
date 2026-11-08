@@ -2,6 +2,7 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
+from app.core.auth_dependencies import get_current_user
 
 from app.database.connection import get_db
 from app.services.notification_service import (
@@ -35,6 +36,8 @@ def list_notifications(
     incident_id: int | None = Query(default=None),
 
     db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+
 ):
     return get_notifications(
         db=db,

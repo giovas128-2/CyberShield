@@ -129,3 +129,5 @@ wikipedia==1.4.0
 win10toast==0.9
 wsproto==1.2.0
 yarl==1.20.1
+
+PyJWT>=2.10,<3

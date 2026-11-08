@@ -17,6 +17,7 @@ from app.services.auth_service import (
     register_user,
     login_user,
 )
+from app.core.jwt_security import create_access_token
 from app.services.event_service import process_security_event
 
 
@@ -171,5 +172,13 @@ def login(
 
     if is_admin:
         result["access_origin"] = "authorized"
+
+    # Generar token únicamente después de
+    # validar las credenciales y el origen.
+    result["access_token"] = create_access_token(
+        user_id=result["user"]["id"]
+    )
+
+    result["token_type"] = "bearer"
 
     return result
