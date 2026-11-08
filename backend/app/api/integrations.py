@@ -9,6 +9,8 @@ from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
 
+from app.core.service_auth import require_service_key
+
 from app.schemas.event import (
     SecurityEventRequest,
 )
@@ -38,6 +40,7 @@ from app.services.response_action_service import (
 router = APIRouter(
     prefix="/integrations",
     tags=["Integrations"],
+    dependencies=[Depends(require_service_key)],
 )
 
 class ActiveResponseReport(BaseModel):
