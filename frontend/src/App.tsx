@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { Login } from "./pages/Login";
 import PortalChoicePage from "./pages/PortalChoicePage";
@@ -37,24 +37,82 @@ function RegisterRoute() {
   return <Register goLogin={() => nav("/login/cybershield")} onDone={() => nav("/login/cybershield", { state: { notice: "Cuenta creada. Inicia sesión para continuar." } })} />;
 }
 
-function LoginRoute({ onUser }: { onUser: (u: User) => void }) {
+function LoginRoute({
+  onUser,
+  sessionNotice,
+}: {
+  onUser: (u: User) => void;
+  sessionNotice?: string;
+}) {
   const nav = useNavigate();
   const { state } = useLocation();
-  return <Login notice={(state as any)?.notice} goRegister={() => nav("/register")} goPortals={() => nav("/login")} onLogin={(u) => { onUser(u); nav("/dashboard"); }} />;
+  return <Login notice={sessionNotice || (state as any)?.notice} goRegister={() => nav("/register")} goPortals={() => nav("/login")} onLogin={(u) => { onUser(u); nav("/dashboard"); }} />;
 }
 
 export default function App() {
-  const [user, setUser] = useState<User | null>(readUser());
-  const saveUser = (u: User) => { localStorage.setItem("cs_user", JSON.stringify(u)); setUser(u); };
-  const logout = () => { localStorage.removeItem("cs_token"); localStorage.removeItem("cs_user"); setUser(null); };
-  const guard = (el: JSX.Element) => user ? el : <Navigate to="/login" replace />;
+
+const [user, setUser] = useState<User | null>(readUser());
+
+const [sessionNotice, setSessionNotice] = useState("");
+
+const saveUser = (u: User) => {
+  localStorage.setItem("cs_user", JSON.stringify(u));
+  setSessionNotice("");
+  setUser(u);
+};
+
+const logout = () => {
+  localStorage.removeItem("cs_token");
+  localStorage.removeItem("cs_user");
+  setSessionNotice("");
+  setUser(null);
+};
+
+useEffect(() => {
+  const handleSessionExpired = () => {
+    localStorage.removeItem("cs_token");
+    localStorage.removeItem("cs_user");
+
+    setUser(null);
+
+    setSessionNotice(
+      "Tu sesión ha expirado. Inicia sesión nuevamente."
+    );
+
+    window.location.hash = "#/login/cybershield";
+  };
+
+  window.addEventListener(
+    "cybershield:session-expired",
+    handleSessionExpired
+  );
+
+  return () => {
+    window.removeEventListener(
+      "cybershield:session-expired",
+      handleSessionExpired
+    );
+  };
+}, []);
+
+const guard = (el: JSX.Element) =>
+  user ? el : <Navigate to="/login" replace />;
+
 
   return (
     <div className="cs">
       <HashRouter>
         <Routes>
           <Route path="/login" element={<PortalChoicePage />} />
-          <Route path="/login/cybershield" element={<LoginRoute onUser={saveUser} />} />
+          <Route
+  path="/login/cybershield"
+  element={
+    <LoginRoute
+      onUser={saveUser}
+      sessionNotice={sessionNotice}
+    />
+  }
+/>
           <Route path="/register" element={<RegisterRoute />} />
 
           <Route path="/empresa-demo/login" element={<EDLogin />} />

@@ -27,6 +27,38 @@ http.interceptors.request.use((cfg) => {
   return cfg;
 });
 
+http.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (
+      axios.isAxiosError(error) &&
+      error.response?.status === 401
+    ) {
+      const url = error.config?.url ?? "";
+
+      const sentAuthorization =
+        error.config?.headers?.get?.("Authorization") ??
+        error.config?.headers?.Authorization;
+
+      const currentToken =
+        localStorage.getItem("cs_token");
+
+      if (
+        !url.startsWith("/auth/") &&
+        typeof sentAuthorization === "string" &&
+        currentToken &&
+        sentAuthorization === `Bearer ${currentToken}`
+      ) {
+        window.dispatchEvent(
+          new Event("cybershield:session-expired")
+        );
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
 export const ROUTES = {
   login: "/auth/login",
   register: "/auth/register",
