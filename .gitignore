@@ -103,3 +103,6 @@ frontend_RESPALDOS_OLA4/
 # Entregas y carpetas de trabajo locales
 frontend_OLA4_trabajo/
 jacobo_D4/
+
+# Respaldos locales de PostgreSQL
+/backend/backups/

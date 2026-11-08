@@ -13,6 +13,7 @@ from app.database.connection import get_db
 from app.core.auth_dependencies import (
     get_current_user,
     get_current_user_or_service,
+    require_roles,
 )
 from app.core.service_auth import require_service_key
 from app.schemas.response_action import (
@@ -107,7 +108,9 @@ def get_response_action(
 
 @router.post(
     "",
-    dependencies=[Depends(get_current_user)],
+    dependencies=[
+        Depends(require_roles("admin", "engineer"))
+    ],
 )
 def create_action(
     data: ResponseActionCreate,

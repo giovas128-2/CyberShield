@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
@@ -53,3 +54,21 @@ def get_current_user_or_service(
         detail="Autenticación requerida",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+def require_roles(*allowed_roles: str) -> Callable:
+    """
+    Verifica que el usuario autenticado tenga
+    uno de los roles permitidos.
+    """
+    def check_role(
+        current_user: User = Depends(get_current_user),
+    ) -> User:
+        if current_user.role not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No tienes permisos para esta operación",
+            )
+
+        return current_user
+
+    return check_role
