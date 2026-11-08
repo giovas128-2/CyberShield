@@ -6,6 +6,8 @@ from datetime import datetime, timedelta, timezone
 
 import httpx
 
+from cybershield_service_client import get_service_headers
+
 
 API = "http://127.0.0.1:8000"
 
@@ -36,6 +38,7 @@ def get_actions(status, action_type):
                 "status": status,
                 "action_type": action_type,
             },
+            headers=get_service_headers(),
             timeout=5,
         )
 
@@ -64,6 +67,7 @@ def patch_action(
                 "success": success,
                 "result": result,
             },
+            headers=get_service_headers(),
             timeout=10,
         )
 

@@ -3,6 +3,7 @@ import time
 
 import httpx
 
+from cybershield_service_client import get_service_headers
 
 ACTIVE_RESPONSE_LOG = (
     "/var/ossec/logs/active-responses.log"
@@ -48,6 +49,7 @@ def send_report(
             response = httpx.post(
                 API_URL,
                 json=payload,
+                headers=get_service_headers(),
                 timeout=5.0,
             )
 

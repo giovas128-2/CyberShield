@@ -3,6 +3,7 @@ import time
 
 import requests
 
+from cybershield_service_client import get_service_headers
 
 WAZUH_ALERTS = "/var/ossec/logs/alerts/alerts.json"
 
@@ -17,6 +18,7 @@ def send_event(event):
         response = requests.post(
             API_URL,
             json=event,
+	    headers=get_service_headers(),
             timeout=10,
         )
 

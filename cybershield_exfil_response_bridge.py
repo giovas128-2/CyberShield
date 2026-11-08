@@ -4,6 +4,8 @@ from datetime import datetime, timedelta, timezone
 
 import httpx
 
+from cybershield_service_client import get_service_headers
+
 API = "http://127.0.0.1:8000"
 
 ALLOWED_DESTINATIONS = {
@@ -21,6 +23,7 @@ def get_actions(status):
                 "status": status,
                 "action_type": "RESTRICT_DATA_FLOW",
             },
+            headers=get_service_headers(),
             timeout=5,
         )
 
@@ -48,6 +51,7 @@ def patch_action(
                 "success": success,
                 "result": result,
             },
+            headers=get_service_headers(),
             timeout=10,
         )
 

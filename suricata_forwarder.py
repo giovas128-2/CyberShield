@@ -3,6 +3,7 @@ import time
 
 import httpx
 
+from cybershield_service_client import get_service_headers
 
 EVE_FILE = "/var/log/suricata/eve.json"
 
@@ -97,6 +98,7 @@ def send(event):
         response = httpx.post(
             API_URL,
             json=event,
+	    headers=get_service_headers(),
             timeout=10.0,
         )
 

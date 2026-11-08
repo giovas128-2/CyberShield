@@ -6,6 +6,8 @@ from pathlib import Path
 
 import httpx
 
+from cybershield_service_client import get_service_headers
+
 
 API_BASE = "http://127.0.0.1:8000"
 
@@ -26,6 +28,7 @@ def get_actions(status):
                 "status": status,
                 "action_type": "TEMPORARY_ACCOUNT_LOCK",
             },
+            headers=get_service_headers(),
             timeout=5.0,
         )
 
@@ -58,6 +61,7 @@ def patch_action(
                 "success": success,
                 "result": result,
             },
+            headers=get_service_headers(),
             timeout=10.0,
         )
 

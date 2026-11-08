@@ -4,6 +4,8 @@ from datetime import datetime, timedelta, timezone
 
 import httpx
 
+from cybershield_service_client import get_service_headers
+
 
 API = "http://127.0.0.1:8000"
 
@@ -21,6 +23,7 @@ def get_actions(status):
                 "status": status,
                 "action_type": "RESTRICT_LATERAL_COMMUNICATION",
             },
+            headers=get_service_headers(),
             timeout=5,
         )
         response.raise_for_status()
@@ -38,6 +41,7 @@ def patch_action(action_id, endpoint, success, result):
                 "success": success,
                 "result": result,
             },
+            headers=get_service_headers(),
             timeout=10,
         )
 
