@@ -3,6 +3,7 @@
 import argparse
 import json
 import time
+from getpass import getpass
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
@@ -21,23 +22,61 @@ SCENARIOS = {
 }
 
 
-def get_json(url):
-    with urlopen(url, timeout=10) as response:
-        return json.loads(response.read().decode())
+
+def login():
+    email = input("Correo de CyberShield: ").strip()
+    password = getpass("Contraseña: ")
+
+    payload = json.dumps({
+        "email": email,
+        "password": password,
+    }).encode("utf-8")
+
+    request = Request(
+        f"{API}/auth/login",
+        method="POST",
+        headers={"Content-Type": "application/json"},
+        data=payload,
+    )
+
+    with urlopen(request, timeout=15) as response:
+        result = json.load(response)
+
+    token = result.get("access_token")
+
+    if not token:
+        raise RuntimeError(
+            "El inicio de sesión no devolvió un JWT."
+        )
+
+    return token
 
 
-def post_json(url):
+def get_json(url, token):
+    request = Request(
+        url,
+        headers={
+            "Authorization": f"Bearer {token}",
+        },
+    )
+
+    with urlopen(request, timeout=10) as response:
+        return json.load(response)
+
+
+def post_json(url, token):
     request = Request(
         url,
         method="POST",
         headers={
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {token}",
         },
         data=b"{}",
     )
 
     with urlopen(request, timeout=15) as response:
-        return json.loads(response.read().decode())
+        return json.load(response)
 
 
 def show(title, value):
@@ -78,10 +117,14 @@ def main():
     print()
 
     try:
-        result = post_json(
-            f"{API}/lab/scenarios/{scenario_id}/run"
-        )
+        token = login()
 
+        print("Autenticación completada.")
+
+        result = post_json(
+            f"{API}/lab/scenarios/{scenario_id}/run",
+            token,
+        )
     except HTTPError as exc:
         print("❌ Error HTTP:", exc.code)
         print(exc.read().decode())
@@ -160,7 +203,8 @@ def main():
 
             actions = get_json(
                 f"{API}/response-actions?"
-                f"incident_id={incident_id}"
+                f"incident_id={incident_id}",
+                token,
             )
 
             if not actions:

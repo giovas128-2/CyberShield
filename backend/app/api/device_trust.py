@@ -1,3 +1,5 @@
+from app.core.auth_dependencies import require_roles
+from app.models.user import User
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session as DBSession
 
@@ -27,12 +29,20 @@ from app.services.event_service import process_security_event
 router = APIRouter(tags=["Device Trust"])
 
 
-@router.get("/devices", response_model=list[DeviceResponse])
+@router.get(
+    "/devices",
+    response_model=list[DeviceResponse],
+    dependencies=[Depends(require_roles("admin", "engineer"))],
+)
 def get_devices(db: DBSession = Depends(get_db)):
     return list_devices(db)
 
 
-@router.post("/devices", response_model=DeviceResponse)
+@router.post(
+    "/devices",
+    response_model=DeviceResponse,
+    dependencies=[Depends(require_roles("admin", "engineer"))],
+)
 def post_device(
     payload: DeviceCreate,
     db: DBSession = Depends(get_db),
@@ -49,7 +59,11 @@ def post_device(
         raise HTTPException(status_code=400, detail=str(exc))
 
 
-@router.post("/user-devices", response_model=UserDeviceResponse)
+@router.post(
+    "/user-devices",
+    response_model=UserDeviceResponse,
+    dependencies=[Depends(require_roles("admin"))],
+)
 def post_user_device(
     payload: UserDeviceCreate,
     db: DBSession = Depends(get_db),
@@ -65,12 +79,20 @@ def post_user_device(
         raise HTTPException(status_code=400, detail=str(exc))
 
 
-@router.get("/sessions", response_model=list[SessionResponse])
+@router.get(
+    "/sessions",
+    response_model=list[SessionResponse],
+    dependencies=[Depends(require_roles("admin", "engineer"))],
+)
 def get_sessions(db: DBSession = Depends(get_db)):
     return list_sessions(db)
 
 
-@router.post("/sessions", response_model=SessionResponse)
+@router.post(
+    "/sessions",
+    response_model=SessionResponse,
+    dependencies=[Depends(require_roles("admin", "engineer"))],
+)
 def post_session(
     payload: SessionCreate,
     db: DBSession = Depends(get_db),
@@ -88,7 +110,11 @@ def post_session(
         raise HTTPException(status_code=400, detail=str(exc))
 
 
-@router.post("/sessions/{session_id}/revoke", response_model=SessionResponse)
+@router.post(
+    "/sessions/{session_id}/revoke",
+    response_model=SessionResponse,
+    dependencies=[Depends(require_roles("admin"))],
+)
 def post_revoke_session(
     session_id: int,
     db: DBSession = Depends(get_db),
@@ -107,7 +133,18 @@ def post_access_evaluate(
     device_uuid: str,
     source_ip: str | None = None,
     db: DBSession = Depends(get_db),
+    current_user: User = Depends(
+        require_roles("admin", "engineer")
+    ),
 ):
+    if current_user.id != user_id:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "No puedes evaluar dispositivos "
+                "en nombre de otro usuario"
+            ),
+        )
     result = evaluate_device_trust(
         db,
         user_id=user_id,
