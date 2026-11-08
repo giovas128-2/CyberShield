@@ -10,6 +10,11 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
+from app.core.auth_dependencies import (
+    get_current_user,
+    get_current_user_or_service,
+)
+from app.core.service_auth import require_service_key
 from app.schemas.response_action import (
     ResponseActionCreate,
 )
@@ -33,7 +38,10 @@ class ActionResultRequest(BaseModel):
     result: str
 
 
-@router.get("")
+@router.get(
+    "",
+    dependencies=[Depends(get_current_user_or_service)],
+)
 def list_response_actions(
     incident_id: int | None = Query(
         default=None
@@ -75,7 +83,10 @@ def list_response_actions(
     )
 
 
-@router.get("/{action_id}")
+@router.get(
+    "/{action_id}",
+    dependencies=[Depends(get_current_user)],
+)
 def get_response_action(
     action_id: int,
     db: Session = Depends(get_db),
@@ -94,7 +105,10 @@ def get_response_action(
     return action
 
 
-@router.post("")
+@router.post(
+    "",
+    dependencies=[Depends(get_current_user)],
+)
 def create_action(
     data: ResponseActionCreate,
     db: Session = Depends(get_db),
@@ -117,7 +131,10 @@ def create_action(
         )
 
 
-@router.patch("/{action_id}/execution-result")
+@router.patch(
+    "/{action_id}/execution-result",
+    dependencies=[Depends(require_service_key)],
+)
 def execution_result(
     action_id: int,
     data: ActionResultRequest,
@@ -138,7 +155,10 @@ def execution_result(
         )
 
 
-@router.patch("/{action_id}/rollback-result")
+@router.patch(
+    "/{action_id}/rollback-result",
+    dependencies=[Depends(require_service_key)],
+)
 def rollback_result(
     action_id: int,
     data: ActionResultRequest,
