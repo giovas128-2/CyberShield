@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.database.connection import get_db
 from app.schemas.event import SecurityEventRequest
 from app.services.event_service import process_security_event
+from app.core.auth_dependencies import require_roles
 
 router = APIRouter(
     prefix="/lab",
@@ -144,7 +145,12 @@ def list_lab_scenarios():
             ],
         },
     ]
-@router.post("/scenarios/{scenario_id}/run")
+@router.post(
+    "/scenarios/{scenario_id}/run",
+    dependencies=[
+        Depends(require_roles("admin", "engineer"))
+    ],
+)
 def run_lab_scenario(
     scenario_id: str,
     db: Session = Depends(get_db),
