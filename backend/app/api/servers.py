@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.database.connection import get_db
 from app.models.server import Server
 from app.schemas.server import ServerCreate, HeartbeatRequest
+from app.core.service_auth import require_service_key
 
 
 router = APIRouter(
@@ -113,7 +114,10 @@ def create_server(
     }
 
 
-@router.post("/heartbeat")
+@router.post(
+    "/heartbeat",
+    dependencies=[Depends(require_service_key)],
+)
 def heartbeat(
     data: HeartbeatRequest,
     db: Session = Depends(get_db)
