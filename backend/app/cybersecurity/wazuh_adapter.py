@@ -454,12 +454,9 @@ def normalize_wazuh_event(
 
     suspicious_name_indicator = (
         in_ransomware_lab
-        and (
-            suspicious_extension
-            or "ransomware" in filename
-            or "encryptor" in filename
-            or "encrypt" in filename
-        )
+        and demo_document
+        and suspicious_extension
+        and event_name in ("added", "modified")
     )
 
     sha_before = syscheck.get("sha256_before")
@@ -492,8 +489,7 @@ def normalize_wazuh_event(
     )
 
     sensor_confirmed_ransomware_like = (
-        in_ransomware_lab
-        and demo_document
+        suspicious_name_indicator
         and content_changed
         and not internal_control_file
     )

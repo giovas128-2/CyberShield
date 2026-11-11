@@ -26,6 +26,7 @@ import EDReportes from "./pages/empresademo/EDReportes";
 import EDPerfil from "./pages/empresademo/EDPerfil";
 import EDRestringido from "./pages/empresademo/EDRestringido";
 import EDAdministracion from "./pages/empresademo/EDAdministracion";
+import ConfigPage from "./pages/ConfigPage";
 import type { User } from "./types";
 
 const readUser = (): User | null => {
@@ -139,7 +140,7 @@ const guard = (el: JSX.Element) =>
             <Route path="/protections" element={<ProtectionsPage />} />
             <Route path="/lab" element={<LabPage />} />
             <Route path="/security" element={<PlaceholderPage title="Seguridad" />} />
-            <Route path="/config" element={<PlaceholderPage title="Configuración" />} />
+            <Route path="/config" element={<ConfigPage />} />
           </Route>
           <Route path="*" element={<Navigate to={user ? "/dashboard" : "/login"} replace />} />
         </Routes>

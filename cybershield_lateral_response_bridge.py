@@ -10,8 +10,7 @@ from cybershield_service_client import get_service_headers
 API = "http://127.0.0.1:8000"
 
 ALLOWED_IPS = {
-    "172.25.176.1",      # Windows actual
-    "100.125.119.56",    # srv-yahir-01 para demo posterior
+    "100.125.119.56",  # Servidor remoto autorizado
 }
 
 

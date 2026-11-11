@@ -280,10 +280,9 @@ def process_security_event(db: Session, data):
                         Incident.status
                         == "resolved",
                         ResponseAction.status.in_(
-                            (
-                                "executed",
-                                "rolled_back",
-                            )
+                            ("executed",)
+                            if event.event_type == "possible_ransomware_behavior"
+                            else ("executed", "rolled_back")
                         ),
                         func.coalesce(
                             ResponseAction.rolled_back_at,

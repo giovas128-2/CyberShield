@@ -16,7 +16,7 @@ import type { EventStats, Incidente, NotificationItem, Stats, User } from "../ty
 import { Brand } from "../components/Brand";
 import { AlertModal } from "../components/AlertModal";
 import { Toast, type ToastData } from "../components/Toast";
-import { DashboardView } from "../pages/DashboardView";
+
 import { IncidentsView } from "../pages/IncidentsView";
 import { ServersView } from "../pages/ServersView";
 import { eventsPerMinute } from "../utils/format";
@@ -221,7 +221,31 @@ export function Console({ user, onLogout }: { user: User; onLogout: () => void }
         </header>
 
         <main className="main">
-          {view === "dashboard" && <DashboardView d={data} simulate={simulate} />}
+          {view === "dashboard" && (
+            <>
+              <div className="h">
+                <div><h1>Dashboard (consola heredada)</h1><div className="mu">Resumen de monitoreo de CyberShield.</div></div>
+                <button className="btn sm" onClick={simulate}>Simular escenario HIGH</button>
+              </div>
+              <div className="g4">
+                <div className="card kpi"><div className="t">Eventos registrados</div><b>{data.eventos}</b></div>
+                <div className="card kpi"><div className="t">Incidentes abiertos</div><b>{data.incidentes}</b></div>
+                <div className="card kpi"><div className="t">Críticos abiertos</div><b>{data.criticos}</b></div>
+                <div className="card kpi"><div className="t">Servidores conectados</div><b>{data.servidoresOnline}</b></div>
+              </div>
+              <div className="card">
+                <b>Eventos recientes</b>
+                <div className="tw" style={{ marginTop: 12 }}>
+                  <table>
+                    <thead><tr><th>Hora</th><th>Tipo</th><th>Origen</th><th>Severidad</th></tr></thead>
+                    <tbody>{data.lista.slice(0, 10).map(event => (
+                      <tr key={event.id}><td>{event.fecha}</td><td>{event.tipo}</td><td>{event.origen}</td><td>{event.severidad}</td></tr>
+                    ))}</tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
           {view === "incidents" && <IncidentsView list={incs} selId={selId} setSelId={setSelId} onInvestigate={(incident) => changeStatus(incident, "investigating")} onResolve={(incident) => changeStatus(incident, "resolved")} />}
           {view === "servers" && <ServersView />}
           {view === "notifications" && (
