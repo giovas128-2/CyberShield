@@ -22,16 +22,17 @@ class IntegrationShadowTests(unittest.TestCase):
             },
         }
         self.stored_result = {
-            "event": {**self.normalized, "severity": "high"},
+            "event": {**self.normalized, "id": 847, "severity": "high"},
             "success": True,
         }
 
+    @patch("app.api.integrations.save_shadow_decision", return_value=23)
     @patch("app.api.integrations.assess_from_database")
     @patch("app.api.integrations.process_security_event")
     @patch("app.api.integrations.normalize_wazuh_event")
     @patch("app.api.integrations.validate_server")
     def test_shadow_adds_non_executable_decision(
-        self, check, normalize, process, evaluate
+        self, check, normalize, process, evaluate, store
     ):
         normalize.return_value = self.normalized
         process.return_value = self.stored_result.copy()
@@ -46,6 +47,8 @@ class IntegrationShadowTests(unittest.TestCase):
         self.assertEqual(result["autonomous_decision"]["mode"], "shadow")
         self.assertFalse(result["autonomous_decision"]["executed"])
         evaluate.assert_called_once()
+        store.assert_called_once()
+        self.assertEqual(result["autonomous_decision"]["decision_id"], 23)
 
     @patch("app.api.integrations.assess_from_database", side_effect=RuntimeError("offline"))
     @patch("app.api.integrations.process_security_event")
