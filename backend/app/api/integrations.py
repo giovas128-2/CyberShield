@@ -31,6 +31,9 @@ from app.services.intelligence.shadow_decision_store import (
 from app.services.intelligence.privilege_decision_engine import (
     assess_privilege_from_database,
 )
+from app.services.intelligence.fim_decision_engine import (
+    assess_fim_from_database,
+)
 
 from app.cybersecurity.wazuh_adapter import (
     normalize_wazuh_event,
@@ -179,14 +182,16 @@ def receive_wazuh_event(
         "authentication_burst",
         "authentication_failure",
         "privilege_escalation",
+        "suspicious_file_change",
     ):
         try:
             stored = result["event"]
-            evaluator = (
-                assess_privilege_from_database
-                if stored["event_type"] == "privilege_escalation"
-                else assess_from_database
-            )
+            if stored["event_type"] == "privilege_escalation":
+                evaluator = assess_privilege_from_database
+            elif stored["event_type"] == "suspicious_file_change":
+                evaluator = assess_fim_from_database
+            else:
+                evaluator = assess_from_database
             decision = evaluator(db, {
                 "event_type": stored["event_type"],
                 "severity": stored["severity"],
