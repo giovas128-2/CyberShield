@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Activity, Clock3, HardDrive, Loader2, RefreshCw, Server, ServerCrash, Wifi, WifiOff } from "lucide-react";
 import { getServers } from "../api/client";
+import ServerEnrollmentPanel from "../components/ServerEnrollmentPanel";
 import type { ServerItem, ServerStatus } from "../types";
 import { timeAgo } from "../utils/format";
 import "../styles/operations-redesign.css";
@@ -51,6 +52,7 @@ export function ServersView() {
       <div className="cs-ops-hero-copy"><span className="cs-ops-eyebrow">INFRAESTRUCTURA MONITOREADA</span><h1>Servidores</h1><p>Inventario conectado a CyberShield. Revisa el estado declarado, la dirección IP, el agente y la última actividad de cada servidor.</p></div>
       <button type="button" className="cs-ops-refresh" onClick={load}><RefreshCw size={17}/> Actualizar</button>
     </header>
+    <ServerEnrollmentPanel selected={selected} onRegistered={()=>{void load();}}/>
     {servers===null&&<div className="cs-ops-card cs-ops-loading" role="status"><Loader2 size={18} className="spin"/> Cargando servidores…</div>}
     {error&&<div className="cs-ops-alert" role="alert"><ServerCrash size={18}/><div><b>No se pudieron actualizar los servidores</b><p>{error}</p></div></div>}
     {servers&&<>
@@ -71,6 +73,8 @@ export function ServersView() {
               <span className="cs-ops-record-symbol"><Server size={20}/></span>
               <span className="cs-ops-record-body"><strong>{server.name}</strong><small className="mono">{server.ipAddress}</small><span className="cs-ops-record-target">{server.agent??"Sin agente"} · {timeAgo(server.lastSeen)}</span></span>
               <span className={`sv ${statusClass[server.status]}`}>● {statusText[server.status]}</span>
+              {server.agentConnection&&server.agentConnection.state!=="not_enrolled"&&
+                <span className="cs-server-agent-note">{server.agentConnection.state==="connected"?"Agente autenticado":server.agentConnection.state==="awaiting_heartbeat"?"Pendiente de primer heartbeat":server.agentConnection.state==="disconnected"?"Agente sin señal reciente":"Agente revocado"}</span>}
             </button>)}
             {!filtered.length&&<div className="cs-ops-empty">No hay servidores con este estado.</div>}
           </div>
@@ -85,6 +89,11 @@ export function ServersView() {
                 <div><small>Estado</small><b>{statusText[selected.status]}</b></div>
                 <div><small>Última actividad</small><b>{timeAgo(selected.lastSeen)}</b></div>
                 <div><small>Fecha de registro</small><b>{timeAgo(selected.createdAt??null)}</b></div>
+                <div><small>Conexión individual</small><b>{selected.agentConnection?.state==="connected"?"Confirmada por heartbeat":selected.agentConnection?.state==="awaiting_heartbeat"?"Esperando primer heartbeat":selected.agentConnection?.state==="disconnected"?"Sin heartbeat reciente":selected.agentConnection?.state==="revoked"?"Credencial revocada":"Sin agente individual"}</b></div>
+                <div><small>Plataforma</small><b>{selected.agentConnection?.platform??"No informada"}</b></div>
+                {selected.agentConnection?.agentId&&<div><small>ID del agente</small><b className="mono">{selected.agentConnection.agentId}</b></div>}
+                {selected.agentConnection?.agentVersion&&<div><small>Versión</small><b>{selected.agentConnection.agentVersion}</b></div>}
+                {selected.agentConnection?.lastSeen&&<div><small>Último heartbeat autenticado</small><b>{timeAgo(selected.agentConnection.lastSeen)}</b></div>}
               </div><div className="cs-ops-advisory"><Activity size={16}/><span>El estado corresponde a la última información recibida. La ausencia de actividad reciente requiere verificación.</span></div>
             </>:<div className="cs-ops-empty">Selecciona un servidor para consultar sus datos.</div>}
           </aside>
