@@ -26,7 +26,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   consoleNotices: true,
   browserNotices: false,
   density: "comfortable",
-  theme: "dark",
+  theme: "light",
   timeZone: "browser",
 };
 
@@ -58,7 +58,7 @@ function normalize(raw: unknown): Preferences {
     consoleNotices: typeof v.consoleNotices === "boolean" ? v.consoleNotices : true,
     browserNotices: v.browserNotices === true,
     density: v.density === "compact" ? "compact" : "comfortable",
-    theme: v.theme === "light" ? "light" : "dark",
+    theme: v.theme === "light" || v.theme === "dark" ? v.theme : DEFAULT_PREFERENCES.theme,
     timeZone: ALLOWED_ZONES.includes(v.timeZone as TimeZoneChoice) ? v.timeZone as TimeZoneChoice : "browser",
   };
 }
