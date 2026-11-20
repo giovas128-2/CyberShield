@@ -69,12 +69,16 @@ export function ServersView() {
         </div>
         <div className="cs-ops-split">
           <div className="cs-ops-record-list">
-            {filtered.map(server=><button type="button" key={server.id} className={"cs-ops-record"+(selected?.id===server.id?" is-selected":"")} onClick={()=>setSelectedId(server.id)}>
+            {filtered.map(server=><button type="button" key={server.id} className={"cs-ops-record cs-server-record"+(selected?.id===server.id?" is-selected":"")} onClick={()=>setSelectedId(server.id)}>
               <span className="cs-ops-record-symbol"><Server size={20}/></span>
-              <span className="cs-ops-record-body"><strong>{server.name}</strong><small className="mono">{server.ipAddress}</small><span className="cs-ops-record-target">{server.agent??"Sin agente"} · {timeAgo(server.lastSeen)}</span></span>
+              <span className="cs-ops-record-body">
+                <strong title={server.name}>{server.name}</strong>
+                <small className="mono" title={server.ipAddress}>{server.ipAddress}</small>
+                <span className="cs-ops-record-target">{server.agent??"Sin agente"} · {timeAgo(server.lastSeen)}</span>
+                {server.agentConnection&&server.agentConnection.state!=="not_enrolled"&&
+                  <span className="cs-server-agent-note">{server.agentConnection.state==="connected"?"Agente autenticado":server.agentConnection.state==="awaiting_heartbeat"?"Pendiente de primer heartbeat":server.agentConnection.state==="disconnected"?"Agente sin señal reciente":"Agente revocado"}</span>}
+              </span>
               <span className={`sv ${statusClass[server.status]}`}>● {statusText[server.status]}</span>
-              {server.agentConnection&&server.agentConnection.state!=="not_enrolled"&&
-                <span className="cs-server-agent-note">{server.agentConnection.state==="connected"?"Agente autenticado":server.agentConnection.state==="awaiting_heartbeat"?"Pendiente de primer heartbeat":server.agentConnection.state==="disconnected"?"Agente sin señal reciente":"Agente revocado"}</span>}
             </button>)}
             {!filtered.length&&<div className="cs-ops-empty">No hay servidores con este estado.</div>}
           </div>
