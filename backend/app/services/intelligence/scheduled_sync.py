@@ -118,6 +118,32 @@ def run(*, apply: bool) -> int:
         except Exception:
             failures += 1
             LOG.exception("No se pudo actualizar %s", source)
+    # Revisión de marcos y catálogos oficiales: se suma al temporizador diario
+    # existente, solo cuando la migración opcional 013 está instalada.
+    # No cambia configuraciones, reglas, respuestas ni catálogo de protecciones.
+    if apply:
+        try:
+            from app.database.connection import SessionLocal
+            from app.services.intelligence.official_frameworks import (
+                table_exists, check_official_sources,
+            )
+            with SessionLocal() as session:
+                if table_exists(session):
+                    official = check_official_sources(session)
+                    if official["failed_sources"]:
+                        LOG.warning(
+                            "Fuentes oficiales no disponibles: %s. Verificar en Protecciones.",
+                            ", ".join(official["failed_sources"]),
+                        )
+                    else:
+                        LOG.info("Fuentes oficiales MITRE/NIST/CIS/CISA verificadas")
+                else:
+                    LOG.info("Revisión de marcos pendiente: falta migración 013")
+        except Exception:
+            # No anular la sincronización CISA/MITRE previa por un error
+            # del monitor documental opcional.
+            LOG.exception("No se pudo completar la revisión oficial de marcos")
+
     LOG.info(
         "Finalizado: fuentes_fallidas=%s defensas_ejecutadas=0", failures
     )
