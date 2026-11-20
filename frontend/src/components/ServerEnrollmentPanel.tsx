@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Check, ChevronDown, ChevronUp, ClipboardCopy, KeyRound, LockKeyhole, Plus, ServerCog, ShieldAlert, X } from "lucide-react";
+import { Check, ChevronUp, ClipboardCopy, LockKeyhole, Plus, ServerCog, ShieldAlert, X } from "lucide-react";
 import { api, ApiError } from "../api/client";
 import type { ServerItem } from "../types";
 import "../styles/server-enrollment.css";
@@ -34,7 +34,7 @@ export default function ServerEnrollmentPanel({selected,onRegistered}:{selected:
   }
   async function submit(event:FormEvent<HTMLFormElement>){
     event.preventDefault();if(saving)return;
-    if(enrollmentMode==="existing" && (!selected||selected.agentConnection?.state!=="not_enrolled")) {
+    if(enrollmentMode==="existing" && (!selected||!["not_enrolled","revoked"].includes(selected.agentConnection?.state ?? "not_enrolled"))) {
       setError("Selecciona un servidor que aún no tenga agente individual.");return;
     }
     setSaving(true);setError("");setEnrollment(null);
@@ -61,7 +61,7 @@ export default function ServerEnrollmentPanel({selected,onRegistered}:{selected:
     try{await navigator.clipboard.writeText(enrollment.token);setCopied(true);}
     catch{setError("No se pudo copiar el token. Muéstralo y cópialo manualmente.");}
   }
-  const existingAvailable=Boolean(selected&&(!selected.agentConnection||selected.agentConnection.state==="not_enrolled"));
+  const existingAvailable=Boolean(selected&&(!selected.agentConnection||["not_enrolled","revoked"].includes(selected.agentConnection.state)));
   const safeUrl=apiUrl.trim();
   const remoteReady=/^https:\/\/[^\s/?#]+(?::\d{1,5})?\/?$/.test(safeUrl);
   const showUrl=remoteReady?safeUrl.replace(/\/$/,""):"https://TU-DOMINIO-DE-CYBERSHIELD";
