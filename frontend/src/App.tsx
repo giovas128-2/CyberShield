@@ -19,7 +19,6 @@ import ProtectionsPage from "./pages/ProtectionsPage";
 import ProtectionProposalsPage from "./pages/ProtectionProposalsPage";
 import CodeSecurityReviewPage from "./pages/CodeSecurityReviewPage";
 import LabPage from "./pages/LabPage";
-import PlaceholderPage from "./pages/PlaceholderPage";
 import { EmpresaDemoLayout } from "./empresademo/EmpresaDemoLayout";
 import EDLogin from "./pages/empresademo/EDLogin";
 import EDInicio from "./pages/empresademo/EDInicio";
@@ -145,7 +144,7 @@ const guard = (el: JSX.Element) =>
             <Route path="/protection-proposals" element={<ProtectionProposalsPage />} />
             <Route path="/code-review" element={<CodeSecurityReviewPage />} />
             <Route path="/lab" element={<LabPage />} />
-            <Route path="/security" element={<PlaceholderPage title="Seguridad" />} />
+            <Route path="/security" element={<Navigate to="/config" replace />} />
             <Route path="/config" element={<ConfigPage />} />
           </Route>
           <Route path="*" element={<Navigate to={user ? "/dashboard" : "/login"} replace />} />
