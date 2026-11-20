@@ -450,3 +450,55 @@ def review_zip_project(
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     scan["analysis"] = review_zip_with_ai(scan, sources, payload.use_ai)
     return scan
+
+
+# ============================================================
+# INVESTIGACIÓN DE FUENTES OFICIALES PARA LAS 8 PROTECCIONES
+# GET: solo PostgreSQL (sin bloquear la interfaz con solicitudes externas).
+# POST: consulta HTTPS únicamente a MITRE/NIST/CIS/CISA (rol autorizado).
+# No envía datos internos a terceros ni modifica reglas o defensas.
+# ============================================================
+
+@router.get("/official-frameworks")
+def official_frameworks(db: Session = Depends(get_db)):
+    from app.api.protections import list_protections
+    from app.services.intelligence.official_frameworks import (
+        read_snapshots, references_for_controls, table_exists,
+    )
+    configured = table_exists(db)
+    return {
+        "configured": configured,
+        "sources": read_snapshots(db),
+        "controls": references_for_controls(list_protections(db)),
+        "automatic_application": False,
+        "note": (
+            "Las referencias NIST/CIS son orientativas y requieren validación humana. "
+            "La comprobación solo observa cambios de versión o del catálogo CISA; "
+            "no demuestra protección desplegada ni aplica reglas nuevas. "
+            "Si falta la migración 013, instala la tabla antes de consultar."
+        ),
+    }
+
+
+@router.post("/official-frameworks/check")
+def check_official_frameworks(
+    db: Session = Depends(get_db),
+    _reviewer=Depends(require_roles("admin", "engineer")),
+):
+    from app.api.protections import list_protections
+    from app.services.intelligence.official_frameworks import (
+        check_official_sources, references_for_controls, table_exists,
+    )
+    if not table_exists(db):
+        raise HTTPException(
+            status_code=503, detail="Falta migración 013_official_framework_checks.sql"
+        )
+    result = check_official_sources(db)
+    return {
+        "configured": True,
+        "sources": result["sources"],
+        "failed_sources": result["failed_sources"],
+        "controls": references_for_controls(list_protections(db)),
+        "automatic_application": False,
+        "note": "Consulta verificada de fuentes oficiales; sin modificar las defensas.",
+    }
