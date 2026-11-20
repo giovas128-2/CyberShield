@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { FormEvent } from "react";
 import { Check, ChevronDown, ChevronUp, ClipboardCopy, KeyRound, LockKeyhole, Plus, ServerCog, ShieldAlert, X } from "lucide-react";
 import { api, ApiError } from "../api/client";
 import type { ServerItem } from "../types";
@@ -31,7 +32,7 @@ export default function ServerEnrollmentPanel({selected,onRegistered}:{selected:
     setError("");setEnrollment(null);setCopied(false);setShowToken(false);
     setEnrollmentMode(mode);setExpanded(true);
   }
-  async function submit(event:React.FormEvent<HTMLFormElement>){
+  async function submit(event:FormEvent<HTMLFormElement>){
     event.preventDefault();if(saving)return;
     if(enrollmentMode==="existing" && (!selected||selected.agentConnection?.state!=="not_enrolled")) {
       setError("Selecciona un servidor que aún no tenga agente individual.");return;
