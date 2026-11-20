@@ -8,6 +8,7 @@ Requires=cybershield-api.service
 Type=simple
 User=yahir
 Group=yahir
+SupplementaryGroups=suricata
 WorkingDirectory=/mnt/c/Users/Giovas128/downloads/CyberSHield
 ExecStart=/mnt/c/Users/Giovas128/downloads/CyberSHield/backend/venv-wsl/bin/python -u /mnt/c/Users/Giovas128/downloads/CyberSHield/suricata_forwarder.py
 Environment=PYTHONUNBUFFERED=1
