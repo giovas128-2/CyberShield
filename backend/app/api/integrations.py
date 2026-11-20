@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import (
     APIRouter,
     Depends,
@@ -18,6 +20,9 @@ from app.schemas.event import (
 from app.services.event_service import (
     process_security_event,
 )
+from app.services.intelligence.defensive_decision_engine import (
+    assess_from_database,
+)
 
 from app.cybersecurity.wazuh_adapter import (
     normalize_wazuh_event,
@@ -36,6 +41,8 @@ from app.services.response_action_service import (
     register_execution_result,
     register_rollback_result,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/integrations",
@@ -102,10 +109,47 @@ def receive_wazuh_event(
         **normalized
     )
 
-    return process_security_event(
+    result = process_security_event(
         db,
         event,
     )
+
+    # Motor CyberShield 2.0: observación posterior al almacenamiento.
+    # La evaluación NO crea acciones, NO ejecuta comandos y NO afecta la
+    # lógica de respuestas preexistente. Sólo esta ruta de integración
+    # autenticada utiliza el evaluador shadow; /events/simulate no.
+    #
+    # OJO: autenticar el integrador con una clave de servicio no prueba por
+    # sí mismo la autenticidad del sensor ni que su cuerpo JSON sea genuino.
+    # Antes de habilitar ejecución autónoma se requerirá validar esa cadena.
+    if normalized.get("event_type") in (
+        "multiple_login_attempts",
+        "authentication_burst",
+        "authentication_failure",
+    ):
+        try:
+            stored = result["event"]
+            decision = assess_from_database(db, {
+                "event_type": stored["event_type"],
+                "severity": stored["severity"],
+                "source": stored["source"],
+                "source_ip": stored["source_ip"],
+                "details": stored["details"],
+            })
+            # Campos nuevos exclusivamente informativos.
+            result["autonomous_decision"] = decision.to_dict()
+            result["autonomous_decision"]["mode"] = "shadow"
+        except Exception:
+            logger.exception("Evaluación shadow T1110 falló; no se ejecuta defensa")
+            db.rollback()
+            result["autonomous_decision"] = {
+                "mode": "shadow",
+                "status": "evaluation_unavailable",
+                "execution_allowed": False,
+                "executed": False,
+            }
+
+    return result
 
 
 @router.post("/suricata")
