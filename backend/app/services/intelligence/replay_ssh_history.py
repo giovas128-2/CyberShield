@@ -44,7 +44,7 @@ def main() -> int:
         with Session(bind=connection) as db:
             events = db.execute(text("""
                 SELECT e.id, e.event_type, e.severity, e.source,
-                       e.source_ip::text AS source_ip, e.details,
+                       host(e.source_ip) AS source_ip, e.details,
                        e.created_at,
                        (SELECT ra.status
                           FROM incidents i
