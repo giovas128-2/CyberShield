@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Palette, ClipboardList, Activity, Bell, FlaskConical, LayoutDashboard, Lock, Server, Settings, ShieldAlert, ShieldCheck, Smartphone, User as UserIcon, Wrench } from "lucide-react";
+import { Palette, ClipboardList, Activity, Bell, FlaskConical, LayoutDashboard, Server, Settings, ShieldAlert, ShieldCheck, Smartphone, User as UserIcon, Wrench } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Brand } from "./Brand";
 import { formatClock } from "../preferences/cybershieldPreferences";
@@ -23,7 +23,6 @@ export const NAV: { sec: string; items: [string, string, LucideIcon][] }[] = [
     ["/lab", "Laboratorio", FlaskConical],
   ] },
   { sec: "SISTEMA", items: [
-    ["/security", "Seguridad", Lock],
     ["/design-preview", "Prototipo UI", Palette],
     ["/config", "Configuración", Settings],
   ] },
