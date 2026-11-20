@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { AlertTriangle, BookOpen, CheckCircle2, Clock3, ExternalLink,
-  FileSearch, Globe2, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
+  FileSearch, Globe2, Loader2, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
 import { api } from "../api/client";
 import "../styles/protection-official-research.css";
 
@@ -39,6 +39,8 @@ export default function ProtectionOfficialResearch() {
   const [data, setData] = useState<Research | null>(null);
   const [error, setError] = useState("");
   const [checking, setChecking] = useState(false);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiReport, setAiReport] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -59,6 +61,7 @@ export default function ProtectionOfficialResearch() {
     if (checking || !data?.configured) return;
     setChecking(true);
     setError("");
+    setAiReport("");
     try {
       const result = await api<Research>("/intelligence/official-frameworks/check", "POST");
       if (!Array.isArray(result.sources) || !Array.isArray(result.controls)) {
@@ -72,6 +75,20 @@ export default function ProtectionOfficialResearch() {
       setError(err instanceof Error ? err.message : "No se pudieron revisar las fuentes oficiales.");
     } finally {
       setChecking(false);
+    }
+  }
+
+  async function interpretWithAI() {
+    if (aiBusy || !data?.configured) return;
+    setAiBusy(true);
+    setError("");
+    try {
+      const result = await api<{mode: string; summary: string}>("/intelligence/official-frameworks/ai-review", "POST");
+      setAiReport(result.summary);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo obtener el resumen opcional.");
+    } finally {
+      setAiBusy(false);
     }
   }
 
@@ -102,7 +119,7 @@ export default function ProtectionOfficialResearch() {
     {data && <>
       {!data.configured && <p className="cs-official-feedback is-warning"><AlertTriangle size={17}/> Falta aplicar la migración 013 a PostgreSQL. Las referencias son visibles, pero la investigación automática aún no se puede ejecutar.</p>}
       <div className="cs-official-counters">
-        <div><strong>8</strong><span>Controles originales relacionados</span></div>
+        <div><strong>{data.controls.length}</strong><span>Controles originales relacionados</span></div>
         <div><strong>{lastSuccessful}/4</strong><span>Fuentes con consulta histórica correcta</span></div>
         <div><strong>{reviewed}</strong><span>Fuentes con cambios pendientes de estudiar</span></div>
       </div>
@@ -126,6 +143,15 @@ export default function ProtectionOfficialResearch() {
         </article>)}
       </div>
 
+      <section className="cs-official-ai">
+        <div><strong><Sparkles size={16}/> Interpretación opcional con IA</strong>
+          <p>Solo envía al modelo versiones, enlaces oficiales y códigos MITRE públicos; nunca direcciones IP, nombres de servidores, alertas ni credenciales. El modelo no navega por su cuenta ni aplica cambios.</p></div>
+        <button type="button" disabled={aiBusy || checking || !lastSuccessful || !data.configured} onClick={interpretWithAI}>
+          {aiBusy ? <Loader2 size={15} className="spin"/> : <Sparkles size={15}/>}
+          {aiBusy ? "Interpretando..." : "Analizar metadatos públicos"}
+        </button>
+        {!!aiReport && <p className="cs-official-ai-result" role="status">{aiReport}</p>}
+      </section>
       <div className="cs-official-section-title">
         <div><span className="cs-ops-kicker">RELACIÓN POR CONTROL</span><h3>Referencias para las ocho protecciones</h3><p>Correspondencias orientativas; la pertinencia de cada norma debe verificarse antes de configurar una defensa.</p></div>
       </div>
