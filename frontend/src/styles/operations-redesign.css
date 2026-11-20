@@ -127,12 +127,77 @@
 @media(max-width:430px){.cs-ops-stats{gap:8px}.cs-ops-stat{padding:13px}.cs-ops-stat strong{font-size:25px}.cs-ops-facts{grid-template-columns:1fr}.cs-ops-coverage-title{align-items:flex-start}}
 @media(prefers-reduced-motion:reduce){.cs-ops *{transition:none!important}}
 
-/* Conectividad real de servidor: segundo renglón informativo del agente individual. */
-.cs-ops-record .cs-server-agent-note{
-  flex:0 0 100%;display:block;margin-left:53px;color:#3e76a6;
-  font-size:10px;font-weight:750;padding-top:2px;
+/* Lista real de servidores: no permitir que el estado del agente
+   colapse el nombre ni la dirección IP. Alcance exclusivo a Servidores. */
+.cs-ops-record.cs-server-record{
+  display:grid;
+  grid-template-columns:41px minmax(0,1fr) auto;
+  column-gap:12px;
+  align-items:center;
+  width:100%;
+  min-width:0;
 }
-.cs-ops-record .cs-server-agent-note:before{
-  content:"";display:inline-block;width:7px;height:7px;border-radius:100%;
-  background:#5b99d6;margin-right:6px;
+.cs-server-record .cs-ops-record-body{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:5px;
+  min-width:0;
+  width:100%;
+}
+.cs-server-record .cs-ops-record-body strong,
+.cs-server-record .cs-ops-record-body small,
+.cs-server-record .cs-ops-record-target {
+  display:block;
+  min-width:0;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  overflow-wrap:normal;
+  word-break:normal;
+}
+.cs-server-record>.sv{
+  justify-self:end;
+  align-self:center;
+  margin-left:0;
+  white-space:nowrap;
+}
+.cs-server-record .cs-server-agent-note{
+  display:block;
+  min-width:0;
+  width:100%;
+  margin:0;
+  padding-top:2px;
+  color:#3e76a6;
+  font-size:10px;
+  font-weight:750;
+  line-height:1.45;
+  overflow-wrap:break-word;
+  word-break:normal;
+  white-space:normal;
+}
+.cs-server-record .cs-server-agent-note:before{
+  content:"";
+  display:inline-block;
+  width:7px;
+  height:7px;
+  border-radius:100%;
+  background:#5b99d6;
+  margin-right:6px;
+}
+@media(max-width:700px){
+  .cs-ops-record.cs-server-record{
+    grid-template-columns:36px minmax(0,1fr);
+    column-gap:10px;
+  }
+  .cs-server-record .cs-ops-record-symbol{
+    width:36px;
+    height:36px;
+    flex-basis:36px;
+  }
+  .cs-server-record>.sv{
+    grid-column:2;
+    justify-self:start;
+    margin-left:0;
+  }
 }
