@@ -28,6 +28,9 @@ from app.services.intelligence.defensive_decision_engine import (
 from app.services.intelligence.shadow_decision_store import (
     save_shadow_decision,
 )
+from app.services.intelligence.privilege_decision_engine import (
+    assess_privilege_from_database,
+)
 
 from app.cybersecurity.wazuh_adapter import (
     normalize_wazuh_event,
@@ -175,10 +178,16 @@ def receive_wazuh_event(
         "multiple_login_attempts",
         "authentication_burst",
         "authentication_failure",
+        "privilege_escalation",
     ):
         try:
             stored = result["event"]
-            decision = assess_from_database(db, {
+            evaluator = (
+                assess_privilege_from_database
+                if stored["event_type"] == "privilege_escalation"
+                else assess_from_database
+            )
+            decision = evaluator(db, {
                 "event_type": stored["event_type"],
                 "severity": stored["severity"],
                 "source": stored["source"],
@@ -194,7 +203,7 @@ def receive_wazuh_event(
             result["autonomous_decision"]["mode"] = "shadow"
             result["autonomous_decision"]["decision_id"] = decision_id
         except Exception:
-            logger.exception("Evaluación shadow T1110 falló; no se ejecuta defensa")
+            logger.exception("Evaluación shadow falló; no se ejecuta defensa")
             db.rollback()
             result["autonomous_decision"] = {
                 "mode": "shadow",
