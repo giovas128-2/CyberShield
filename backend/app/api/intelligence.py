@@ -359,3 +359,63 @@ def review_protection_proposal(
         "executed": False,
         "note": "La revisión no activa ni aprueba defensas",
     }
+
+
+# ============================================================
+# AUDITORÍA DE CÓDIGO (SIN EJECUCIÓN NI CREACIÓN DE INCIDENTES)
+# ============================================================
+
+class CodeFilePayload(BaseModel):
+    path: str = Field(min_length=1, max_length=240)
+    content: str = Field(max_length=60000)
+
+
+class CodeReviewPayload(BaseModel):
+    files: list[CodeFilePayload] = Field(min_length=1, max_length=20)
+    use_ai: bool = False
+
+
+class GithubReviewPayload(BaseModel):
+    owner: str = Field(min_length=1, max_length=100)
+    repo: str = Field(min_length=1, max_length=100)
+    branch: str = Field(default="", max_length=100)
+    use_ai: bool = False
+
+
+@router.post("/code-review/files")
+def review_code_files(
+    payload: CodeReviewPayload,
+    _reviewer = Depends(require_roles("admin", "engineer")),
+):
+    """Procesa solamente código fuente enviado voluntariamente, sin almacenarlo."""
+    from app.services.intelligence.code_review import scan_sources, explain_with_llm
+    try:
+        scan = scan_sources([item.model_dump() for item in payload.files])
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    scan["analysis"] = explain_with_llm(scan, payload.use_ai)
+    return scan
+
+
+@router.post("/code-review/github")
+def review_github_repository(
+    payload: GithubReviewPayload,
+    _reviewer = Depends(require_roles("admin", "engineer")),
+):
+    """Consulta la API pública de GitHub; nunca clona ni ejecuta el repositorio."""
+    import httpx
+    from app.services.intelligence.code_review import (
+        github_public_files, scan_sources, explain_with_llm,
+    )
+    try:
+        files = github_public_files(payload.owner, payload.repo, payload.branch)
+        scan = scan_sources(files)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except (httpx.HTTPStatusError, httpx.RequestError):
+        raise HTTPException(
+            status_code=502,
+            detail="No se pudo leer el repositorio público. Comprueba nombre, rama y conectividad.",
+        )
+    scan["analysis"] = explain_with_llm(scan, payload.use_ai)
+    return scan
