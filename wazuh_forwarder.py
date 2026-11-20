@@ -169,6 +169,15 @@ def follow_alerts(path=WAZUH_ALERTS, cursor_path=CURSOR_FILE,
                 current = None
 
             old = os.fstat(file.fileno())
+            if current and (
+                current.st_dev == old.st_dev
+                and current.st_ino == old.st_ino
+                and current.st_size < file.tell()
+            ):
+                LOG.warning("Truncado en ejecución: se reanuda desde offset 0")
+                file.seek(0)
+                save_cursor(cursor_for(file), cursor_path)
+                continue
             if current and (current.st_dev, current.st_ino) != (old.st_dev, old.st_ino):
                 # Se agotó el archivo anterior; abrir el rotado.
                 file.close()
