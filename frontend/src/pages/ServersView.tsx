@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Activity, CheckCircle2, Clock3, HardDrive, Loader2, RefreshCw, Server, ServerCrash, Wifi, WifiOff } from "lucide-react";
+import { Activity, Clock3, HardDrive, Loader2, RefreshCw, Server, ServerCrash, Wifi, WifiOff } from "lucide-react";
 import { getServers } from "../api/client";
 import type { ServerItem, ServerStatus } from "../types";
 import { timeAgo } from "../utils/format";
