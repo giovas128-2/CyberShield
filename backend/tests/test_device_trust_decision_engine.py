@@ -1,5 +1,8 @@
 """Pruebas aisladas de decisión c2; no interactúan con usuarios reales."""
 import unittest
+from unittest.mock import MagicMock
+
+from app.services.intelligence.device_trust_decision_engine import assess_device_from_database
 
 from app.services.intelligence.device_trust_decision_engine import assess_device_access
 
@@ -78,6 +81,51 @@ class DeviceDecisionTests(unittest.TestCase):
             self.assess(control={"mode": "pending"}).status,
             "control_unavailable",
         )
+
+    def test_database_denied_access_is_boolean_false(self):
+        """Regression: JSONB 'false' must become False, not True."""
+        db = MagicMock()
+        access_row = {
+            "access_event_type": "unauthorized_device_access",
+            "access_decision": "restricted",
+            "reason": "device_not_registered",
+            "access_allowed": "false",
+            "device_id": None,
+            "user_confirmed": True,
+            "uuid_matches": True,
+            "registered_device_status": None,
+            "assigned_to_user": False,
+        }
+
+        def query_response(statement, params):
+            result = MagicMock()
+            sql = str(statement)
+            if "FROM access_events ae" in sql:
+                result.mappings.return_value.first.return_value = access_row
+            elif "intelligence_mitre_techniques" in sql:
+                result.scalar_one.return_value = True
+            elif "cybershield_protection_catalog" in sql:
+                result.mappings.return_value.first.return_value = CONTROL
+            else:
+                raise AssertionError(f"Unexpected query: {sql}")
+            return result
+
+        db.execute.side_effect = query_response
+        decision = assess_device_from_database(
+            db,
+            {
+                "event_type": "unauthorized_device_access",
+                "source": "device_trust",
+                "details": {
+                    "device_uuid": "lab-test-uuid",
+                    "allowed": False,
+                },
+            },
+            access_event_id=77,
+        )
+        self.assertEqual(decision.status, "access_restricted")
+        self.assertFalse(decision.executed)
+        self.assertFalse(decision.execution_allowed)
 
     def test_lab_event_not_accepted(self):
         evidence = {**BASE, "source": "lab"}
