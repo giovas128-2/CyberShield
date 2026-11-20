@@ -4,6 +4,7 @@
 import os
 import socket
 import sys
+import time
 from urllib.parse import urlsplit
 from uuid import UUID
 
@@ -20,10 +21,10 @@ def main():
     token = os.getenv("CYBERSHIELD_AGENT_TOKEN", "")
     expected_host = os.getenv(
         "CYBERSHIELD_AGENT_HOSTNAME",
-        "srv-cyber-01",
+        "",
     )
 
-    if socket.gethostname() != expected_host:
+    if expected_host and socket.gethostname() != expected_host:
         print("Hostname no autorizado. Heartbeat cancelado.")
         return 1
 
@@ -112,4 +113,18 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    if sys.argv[1:] == ["--watch"]:
+        print("CyberShield Agent: enviando heartbeat cada 30 segundos.")
+        print("Para detener, pulsa Ctrl+C.")
+        try:
+            while True:
+                main()
+                time.sleep(30)
+        except KeyboardInterrupt:
+            print("Agente detenido.")
+            sys.exit(0)
+    elif not sys.argv[1:]:
+        sys.exit(main())
+    else:
+        print("Uso: python cybershield-agent-heartbeat.py [--watch]")
+        sys.exit(2)
