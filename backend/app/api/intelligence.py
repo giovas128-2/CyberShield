@@ -419,3 +419,34 @@ def review_github_repository(
         )
     scan["analysis"] = explain_with_llm(scan, payload.use_ai)
     return scan
+
+
+class ZipReviewPayload(BaseModel):
+    """ZIP enviado como base64 para evitar dependencias multipart adicionales."""
+    filename: str = Field(default="proyecto.zip",max_length=200)
+    archive_base64: str = Field(min_length=4,max_length=10_666_672)
+    use_ai: bool = False
+
+
+@router.post("/code-review/zip")
+def review_zip_project(
+    payload: ZipReviewPayload,
+    _reviewer = Depends(require_roles("admin", "engineer")),
+):
+    """Analiza realmente el código de un ZIP, sin extraerlo ni ejecutarlo.
+
+    IA opcional requiere habilitación explícita y OPENAI_API_KEY. Solo entonces
+    se envía al proveedor una muestra acotada de fragmentos del proyecto.
+    """
+    from app.services.intelligence.archive_review import (
+        decode_archive, analyze_zip, review_zip_with_ai,
+    )
+    if not payload.filename.lower().endswith(".zip"):
+        raise HTTPException(status_code=422, detail="Solo se admiten archivos .zip")
+    try:
+        raw = decode_archive(payload.archive_base64)
+        scan, sources = analyze_zip(raw)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    scan["analysis"] = review_zip_with_ai(scan, sources, payload.use_ai)
+    return scan
