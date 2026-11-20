@@ -126,3 +126,13 @@
 }
 @media(max-width:430px){.cs-ops-stats{gap:8px}.cs-ops-stat{padding:13px}.cs-ops-stat strong{font-size:25px}.cs-ops-facts{grid-template-columns:1fr}.cs-ops-coverage-title{align-items:flex-start}}
 @media(prefers-reduced-motion:reduce){.cs-ops *{transition:none!important}}
+
+/* Conectividad real de servidor: segundo renglón informativo del agente individual. */
+.cs-ops-record .cs-server-agent-note{
+  flex:0 0 100%;display:block;margin-left:53px;color:#3e76a6;
+  font-size:10px;font-weight:750;padding-top:2px;
+}
+.cs-ops-record .cs-server-agent-note:before{
+  content:"";display:inline-block;width:7px;height:7px;border-radius:100%;
+  background:#5b99d6;margin-right:6px;
+}
