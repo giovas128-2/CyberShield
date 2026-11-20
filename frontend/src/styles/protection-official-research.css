@@ -46,3 +46,11 @@
 .cs-official-foot svg{flex:none;margin-top:1px}
 @media(max-width:1450px){.cs-official-source-grid,.cs-official-control-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:720px){.cs-official{padding:16px}.cs-official-source-grid,.cs-official-control-grid{grid-template-columns:1fr}.cs-official-counters{grid-template-columns:1fr}.cs-official-refresh{width:100%}}
+
+.cs-official-ai{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 16px;background:#f6faff;border:1px solid #d8e9f9;border-radius:12px}
+.cs-official-ai>div{flex:1;min-width:230px}
+.cs-official-ai strong{display:flex;align-items:center;gap:8px;color:#235e99;font-size:12px}
+.cs-official-ai p{margin:6px 0 0;font-size:11px;line-height:1.5;color:#6c85a0}
+.cs-official-ai button{display:flex;align-items:center;gap:7px;justify-content:center;border:1px solid #c7ddf7;border-radius:9px;background:#fff;color:#246db6;padding:10px 13px;font-size:11px;font-weight:800;cursor:pointer}
+.cs-official-ai button:disabled{opacity:.55;cursor:not-allowed}
+.cs-official-ai .cs-official-ai-result{flex:0 0 100%;white-space:pre-wrap;color:#305c88;font-size:12px;line-height:1.65;padding:12px;border:1px solid #d9e7f6;background:#fff;border-radius:9px;overflow-wrap:anywhere}
