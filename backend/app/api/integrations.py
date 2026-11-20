@@ -34,6 +34,9 @@ from app.services.intelligence.privilege_decision_engine import (
 from app.services.intelligence.fim_decision_engine import (
     assess_fim_from_database,
 )
+from app.services.intelligence.ransomware_decision_engine import (
+    assess_ransomware_from_database,
+)
 from app.services.intelligence.network_decision_engine import (
     assess_connection_from_database,
 )
@@ -186,6 +189,7 @@ def receive_wazuh_event(
         "authentication_failure",
         "privilege_escalation",
         "suspicious_file_change",
+        "possible_ransomware_behavior",
     ):
         try:
             stored = result["event"]
@@ -193,6 +197,8 @@ def receive_wazuh_event(
                 evaluator = assess_privilege_from_database
             elif stored["event_type"] == "suspicious_file_change":
                 evaluator = assess_fim_from_database
+            elif stored["event_type"] == "possible_ransomware_behavior":
+                evaluator = assess_ransomware_from_database
             else:
                 evaluator = assess_from_database
             decision = evaluator(db, {
