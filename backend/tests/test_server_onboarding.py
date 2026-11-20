@@ -40,7 +40,7 @@ class ServerOnboardingTests(unittest.TestCase):
         db.execute.return_value.scalar_one.return_value="server_agent_credentials"
         db.query.return_value.filter.return_value.first.return_value=(1,)
         with self.assertRaises(HTTPException) as ctx:
-            onboard_server(self.payload(),db=db,_current_user=SimpleNamespace(role="engineer"))
+            onboard_server(self.payload(),response=Response(),db=db,_current_user=SimpleNamespace(role="engineer"))
         self.assertEqual(ctx.exception.status_code,409)
         db.add.assert_not_called()
 
@@ -51,7 +51,7 @@ class ServerOnboardingTests(unittest.TestCase):
         def flush():
             db.add.call_args[0][0].id=105
         db.flush.side_effect=flush
-        result=onboard_server(self.payload(),db=db,_current_user=SimpleNamespace(role="engineer"))
+        result=onboard_server(self.payload(),response=Response(),db=db,_current_user=SimpleNamespace(role="engineer"))
         self.assertEqual(result["server"]["status"],"registered")
         self.assertIsNone(result["server"]["last_seen"])
         self.assertEqual(result["server"]["id"],105)
