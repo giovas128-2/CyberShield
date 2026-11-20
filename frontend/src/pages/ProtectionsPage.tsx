@@ -1,4 +1,5 @@
 import { PageHeader, ModeBadge, ResourceView } from "../components/ui";
+import ProtectionIntelligenceCoverage from "../components/ProtectionIntelligenceCoverage";
 import { MitreBadge } from "../components/mitre/MitreTechniqueCard";
 import { useResource } from "../hooks/useResource";
 import { getProtections } from "../services/management";
@@ -50,6 +51,7 @@ export default function ProtectionsPage() {
           })}
         </div>
       </ResourceView>
+      <ProtectionIntelligenceCoverage />
     </>
   );
 }
