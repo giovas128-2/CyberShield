@@ -1,0 +1,48 @@
+/* CyberShield · investigación documental oficial, aislada a Protecciones. */
+.cs-official {display:grid;gap:17px;min-width:0;padding:24px;border-radius:17px;background:#fff;border:1px solid #dae8f7;box-shadow:0 10px 30px #164f810c;color:#1a416e}
+.cs-official-head{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.cs-official-icon{width:48px;height:48px;flex:0 0 48px;display:grid;place-items:center;color:#1672c6;background:#e8f3ff;border:1px solid #d2e7ff;border-radius:14px}
+.cs-official-heading{flex:1;min-width:min(100%,270px)}
+.cs-official-heading h2{font-size:21px;font-weight:800;margin:6px 0;color:#173b69}
+.cs-official-heading p,.cs-official-section-title p{font-size:12px;line-height:1.6;color:#6e86a2;margin:0}
+.cs-official-refresh{display:flex;gap:8px;align-items:center;justify-content:center;padding:11px 14px;border:1px solid #b9d8f8;background:#edf6ff;border-radius:10px;color:#1765b2;font-size:12px;font-weight:800;cursor:pointer}
+.cs-official-refresh:disabled{opacity:.58;cursor:not-allowed}
+.cs-official-disclaimer{display:flex;align-items:flex-start;gap:9px;font-size:11px;line-height:1.6;color:#476a8b;background:#f0f7ff;border:1px solid #d7e8fa;border-radius:10px;padding:12px 14px}
+.cs-official-disclaimer svg{color:#2475c9;flex:none;margin-top:2px}
+.cs-official-feedback{display:flex;gap:8px;align-items:center;margin:0;color:#517b9d;font-size:12px}
+.cs-official-feedback.is-warning,.cs-official-feedback.is-error{background:#fff7ed;border:1px solid #f8d6a4;padding:12px;border-radius:10px;color:#90531a}
+.cs-official-feedback.is-error{border-color:#f0bdbb;background:#fff3f3;color:#a03434}
+.cs-official-counters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.cs-official-counters>div{background:#f8fbff;border:1px solid #e0eaf7;border-radius:12px;padding:13px;min-width:0;display:grid;gap:4px}
+.cs-official-counters strong{font-size:23px;color:#1767b3}
+.cs-official-counters span{font-size:11px;color:#6b86a0;line-height:1.4}
+.cs-official-source-grid,.cs-official-control-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;min-width:0}
+.cs-official-source{display:flex;flex-direction:column;gap:7px;background:#fcfdff;border:1px solid #deebfa;border-radius:14px;padding:16px;min-width:0}
+.cs-official-source-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap}
+.cs-official-source-symbol{display:grid;place-items:center;width:32px;height:32px;border-radius:9px;background:#ecf5ff;color:#2276cb}
+.cs-official-state{display:inline-flex;align-items:center;gap:5px;border-radius:8px;padding:5px 7px;font-size:10px;font-weight:700;line-height:1.3}
+.cs-official-state.is-neutral{color:#2269a3;background:#e8f4fd}
+.cs-official-state.is-review{color:#946219;background:#fff1d8}
+.cs-official-state.is-unavailable{color:#9e3c3c;background:#fff1f1}
+.cs-official-source h3{font-size:13px;font-weight:800;line-height:1.35;margin:3px 0;color:#194472;overflow-wrap:break-word}
+.cs-official-source-version{font-size:12px;font-weight:750;margin:0;color:#315e8b;overflow-wrap:break-word}
+.cs-official-source-count{font-size:11px;margin:0;color:#547997}
+.cs-official-source small{font-size:10px;color:#7b93ae;line-height:1.5}
+.cs-official-source a{display:flex;align-items:center;gap:6px;font-size:11px;color:#1367bb;font-weight:750;margin-top:auto;text-decoration:none;padding-top:8px;overflow-wrap:anywhere}
+.cs-official-source a:hover{text-decoration:underline}
+.cs-official-section-title h3{font-size:17px;font-weight:800;margin:5px 0;color:#173b69}
+.cs-official-control{min-width:0;background:#fff;border:1px solid #deebfa;border-radius:13px;padding:15px;display:grid;gap:10px;align-content:start}
+.cs-official-control-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;color:#7895b1;font-size:10px;font-weight:750}
+.cs-official-control-id{padding:5px 8px;border-radius:7px;background:#eaf4ff;color:#206fbe;font-weight:850}
+.cs-official-control h4{font-size:13px;line-height:1.4;color:#163e6d;margin:0;overflow-wrap:break-word}
+.cs-official-ref-group{display:grid;gap:5px;min-width:0}
+.cs-official-ref-group strong{font-size:10px;letter-spacing:.2px;color:#2369aa}
+.cs-official-ref-group small{font-size:10px;line-height:1.45;color:#627e98;overflow-wrap:break-word}
+.cs-official-techniques{display:flex;flex-wrap:wrap;gap:5px}
+.cs-official-techniques a{display:inline-flex;gap:4px;align-items:center;background:#edf6ff;border:1px solid #d3e7fc;color:#236bb5;font-size:11px;font-weight:750;border-radius:7px;padding:5px 8px;text-decoration:none}
+.cs-official-review-note{margin:0;display:flex;align-items:flex-start;gap:5px;color:#8b601c;background:#fff6e7;border:1px solid #f2dbaf;font-size:10px;padding:8px;border-radius:7px;line-height:1.45}
+.cs-official-review-note svg{flex:none}
+.cs-official-foot{display:flex;align-items:flex-start;gap:8px;margin:0;color:#6d86a1;font-size:11px;line-height:1.6}
+.cs-official-foot svg{flex:none;margin-top:1px}
+@media(max-width:1450px){.cs-official-source-grid,.cs-official-control-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:720px){.cs-official{padding:16px}.cs-official-source-grid,.cs-official-control-grid{grid-template-columns:1fr}.cs-official-counters{grid-template-columns:1fr}.cs-official-refresh{width:100%}}
