@@ -164,6 +164,10 @@ export default function CyberShieldDesignPreview() {
   const [selectedSession, setSelectedSession] = useState("SES-01");
   const [proposalFilter, setProposalFilter] = useState("Todos");
   const [selectedLab, setSelectedLab] = useState("SC1");
+  const [previewTimezone, setPreviewTimezone] = useState("America/Mexico_City");
+  const [previewNotifications, setPreviewNotifications] = useState(false);
+  const [previewSeverities, setPreviewSeverities] = useState(["CRITICAL","HIGH","WARNING","NORMAL"]);
+  const [previewSaved, setPreviewSaved] = useState(false);
 
 
 
@@ -423,8 +427,33 @@ export default function CyberShieldDesignPreview() {
   </>;
 
   const renderSettings = () => <>
-    {header("PREFERENCIAS DE INTERFAZ", "Configuración", "Un diseño accesible para analistas, ingenieros y personas que necesitan entender el riesgo.")}
-    <div className="csd-two-thirds"><Panel><SectionHead title="Identidad visual" desc="Blanco como base y cinco tonalidades de azul" icon={Settings}/><div className="csd-palette">{[["#EFF6FF","Azul 050"],["#CFE4FF","Azul 100"],["#8ABFFF","Azul 300"],["#347DE1","Azul 500"],["#0D4A95","Azul 700"],["#0AAFA2","Turquesa"]].map(([color,name])=><div key={color}><span style={{background:color}}/><b>{name}</b><small>{color}</small></div>)}</div><Callout>Las alertas críticas emplean rojo o ámbar solo para identificar gravedad; el fondo general permanece blanco.</Callout></Panel><Panel><SectionHead title="Preferencias" desc="Configuración visual local del prototipo" icon={ListChecks}/><label className="csd-toggle"><span><b>Diseño compacto</b><small>Reduce el espacio vertical de las tarjetas</small></span><input type="checkbox" checked={compact} onChange={e=>setCompact(e.target.checked)}/></label><label className="csd-toggle"><span><b>Explicaciones para ingeniería</b><small>Muestra inicialmente el enfoque técnico en incidentes</small></span><input type="checkbox" checked={showEngineerDetails} onChange={e=>setShowEngineerDetails(e.target.checked)}/></label><Callout>Estas preferencias no se guardan en tu perfil. La persistencia se incorpora más adelante.</Callout></Panel></div>
+    {header("PREFERENCIAS Y SEGURIDAD", "Configuración", "Ajusta la presentación, los filtros personales y las preferencias de notificación sin afectar la detección.")}
+    <div className="csd-two-thirds">
+      <div className="csd-stack">
+        <Panel><SectionHead title="Apariencia" desc="Identidad visual azul y blanca de CyberShield" icon={Settings}/>
+          <div className="csd-palette">{[["#EFF6FF","Azul 050"],["#CFE4FF","Azul 100"],["#8ABFFF","Azul 300"],["#347DE1","Azul 500"],["#0D4A95","Azul 700"],["#0AAFA2","Turquesa"]].map(([color,name])=><div key={color}><span style={{background:color}}/><b>{name}</b><small>{color}</small></div>)}</div>
+          <div className="csd-detail-grid" style={{marginTop:18}}><div><small>Tema del prototipo</small><b>Claro · Azul y blanco</b></div><div><small>Tema oscuro del sistema real</small><b>Se conserva sin cambios</b></div></div>
+          <label className="csd-toggle"><span><b>Vista compacta</b><small>Menos espacio entre tarjetas y tablas</small></span><input type="checkbox" checked={compact} onChange={e=>{setCompact(e.target.checked);setPreviewSaved(false);}}/></label>
+          <label className="csd-toggle"><span><b>Explicación técnica predeterminada</b><small>Ejemplos orientados al ingeniero</small></span><input type="checkbox" checked={showEngineerDetails} onChange={e=>{setShowEngineerDetails(e.target.checked);setPreviewSaved(false);}}/></label>
+        </Panel>
+        <Panel><SectionHead title="Idioma y zona horaria" desc="Fechas y horarios comprensibles para tu equipo" icon={Clock3}/>
+          <label className="csd-field"><span>Zona horaria</span><select className="csd-select" value={previewTimezone} onChange={e=>{setPreviewTimezone(e.target.value);setPreviewSaved(false);}}><option value="browser">Automática (navegador)</option><option value="America/Mexico_City">Ciudad de México</option><option value="America/Monterrey">Monterrey</option><option value="America/Tijuana">Tijuana</option><option value="UTC">UTC</option></select></label>
+          <Callout>En la aplicación real puedes ajustar el formato de tiempo. Esta selección es únicamente visual.</Callout>
+        </Panel>
+      </div>
+      <div className="csd-stack">
+        <Panel><SectionHead title="Centro de notificaciones" desc="Controla las preferencias del navegador" icon={Bell}/>
+          <label className="csd-toggle"><span><b>Notificaciones del navegador</b><small>Requieren permiso y un contexto seguro en la app real</small></span><input type="checkbox" checked={previewNotifications} onChange={e=>{setPreviewNotifications(e.target.checked);setPreviewSaved(false);}}/></label>
+          <div className="csd-highlight"><Pill tone="blue">Telegram</Pill><h3>Canal de alertas</h3><p>El bot y la asignación «Yo me encargo» se integrarán sin alterar las preferencias visuales.</p></div>
+          <Callout>Este interruptor no solicita permisos del navegador ni modifica canales externos.</Callout>
+        </Panel>
+        <Panel><SectionHead title="Visibilidad personal" desc="Filtrar en pantalla no desactiva sensores ni el registro" icon={Filter}/>
+          {["CRITICAL","HIGH","WARNING","NORMAL"].map(level=><label key={level} className="csd-toggle"><span><b>{level}</b><small>Mostrar este nivel en las vistas operativas</small></span><input type="checkbox" checked={previewSeverities.includes(level)} onChange={e=>{setPreviewSeverities(old=>e.target.checked?[...old,level]:old.filter(x=>x!==level));setPreviewSaved(false);}}/></label>)}
+          <Callout>Los cambios de visibilidad en este prototipo no afectan las alertas de CyberShield.</Callout>
+        </Panel>
+        <Panel><div className="csd-between"><SectionHead title="Guardar cambios" desc="Simulación del flujo de preferencias" icon={CheckCircle2}/><button className="csd-btn csd-btn-primary" onClick={()=>setPreviewSaved(true)}><CheckCircle2 size={16}/> Previsualizar guardado</button></div>{previewSaved&&<Callout>Preferencias aplicadas solo a la vista previa. No se ha modificado tu configuración real.</Callout>}</Panel>
+      </div>
+    </div>
   </>;
 
   function content() {
