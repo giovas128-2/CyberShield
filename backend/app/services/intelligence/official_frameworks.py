@@ -168,7 +168,9 @@ def read_snapshots(db) -> list[dict]:
 def references_for_controls(controls: list[dict]) -> list[dict]:
     result = []
     for control in controls:
-        mapping = CONTROL_REFERENCES.get(control.get("id"), {"cis": [], "nist": []})
+        if control.get("id") not in CONTROL_REFERENCES:
+            continue  # Esta vista se limita a los ocho controles originales.
+        mapping = CONTROL_REFERENCES[control["id"]]
         techniques = [x.get("technique_id") for x in control.get("mitre_techniques", [])
                       if isinstance(x, dict) and re.fullmatch(
                           r"T\d{4}(?:\.\d{3})?", str(x.get("technique_id", "")))]
