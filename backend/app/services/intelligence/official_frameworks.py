@@ -246,3 +246,69 @@ def check_official_sources(db, *, keys=None) -> dict:
                "count": found["record_count"], "checked_at": checked_at})
         db.commit()
     return {"failed_sources": errors, "sources": read_snapshots(db)}
+
+
+def explain_official_changes_with_ai(db) -> dict:
+    """IA opcional: únicamente metadatos PÚBLICOS ya obtenidos de fuentes fijas.
+
+    No permite al modelo navegar arbitrariamente ni modificar configuraciones.
+    Solo se invoca tras la acción explícita de un ingeniero/administrador.
+    """
+    import json
+    import os
+
+    snapshots = read_snapshots(db)
+    verified = [source for source in snapshots if source["status"] == "verified"]
+    if not verified:
+        return {"mode": "unavailable", "summary": (
+            "Primero consulta las fuentes oficiales. No hay versiones verificadas "
+            "que una IA pueda analizar de forma responsable."
+        )}
+    key = os.getenv("OPENAI_API_KEY", "").strip()
+    if not key:
+        return {"mode": "unavailable", "summary": (
+            "IA opcional no configurada: OPENAI_API_KEY no está disponible. "
+            "La vigilancia oficial por versiones funciona sin IA."
+        )}
+
+    public_data = {
+        "sources": [{
+            "name": item["name"], "official_url": item["url"],
+            "reference_version": item["baseline_version"],
+            "observed_version": item["observed_version"],
+            "changed_since_reference": item["needs_review"],
+        } for item in snapshots],
+        "existing_mitre_techniques": [
+            "T1110", "T1078", "T1565.001", "T1548.003",
+            "T1041", "T1486", "T1021.004",
+        ],
+    }
+    try:
+        from openai import OpenAI
+        result = OpenAI(api_key=key, timeout=18).responses.create(
+            model=os.getenv("CYBERSHIELD_AI_MODEL", "gpt-4.1-mini"),
+            instructions=(
+                "Eres analista defensivo documental. Recibirás exclusivamente "
+                "metadatos públicos de cuatro fuentes oficiales ya consultadas. "
+                "No dispones de navegacion web propia ni de detalles de servidores. "
+                "No inventes cambios, nuevos ataques, CVEs, versiones o cumplimiento. "
+                "Distingue cambios comprobados de actualizaciones no verificadas; "
+                "si no hay cambios observados dilo expresamente. No afirmes que "
+                "MITRE/NIST/CIS se aplica automáticamente ni que el servidor "
+                "está vulnerable. En español, explica brevemente prioridades "
+                "de investigación documental y pruebas humanas para las técnicas "
+                "existentes. No incluyas comandos ni acciones ejecutables."
+            ),
+            input=json.dumps(public_data, ensure_ascii=False),
+            max_output_tokens=420,
+        )
+        summary = (result.output_text or "").strip()
+        if not summary:
+            raise ValueError("Respuesta vacía")
+        return {"mode": "public_metadata_ai", "summary": summary[:4000],
+                "automatic_application": False}
+    except Exception:
+        return {"mode": "unavailable", "summary": (
+            "El proveedor de IA no respondió. Conserva la comprobación "
+            "documental y consulta manualmente las publicaciones oficiales."
+        )}
