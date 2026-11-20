@@ -1,0 +1,23 @@
+[Unit]
+Description=CyberShield Suricata EVE Forwarder
+After=network-online.target suricata.service cybershield-api.service
+Wants=network-online.target
+Requires=cybershield-api.service
+
+[Service]
+Type=simple
+User=yahir
+Group=yahir
+WorkingDirectory=/mnt/c/Users/Giovas128/downloads/CyberSHield
+ExecStart=/mnt/c/Users/Giovas128/downloads/CyberSHield/backend/venv-wsl/bin/python -u /mnt/c/Users/Giovas128/downloads/CyberSHield/suricata_forwarder.py
+Environment=PYTHONUNBUFFERED=1
+Environment=CYBERSHIELD_SURICATA_CURSOR=/var/lib/cybershield/suricata-forwarder.cursor.json
+StateDirectory=cybershield
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=true
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
