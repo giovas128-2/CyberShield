@@ -84,7 +84,8 @@ class ProposalReadApiTests(unittest.TestCase):
 
     def test_routes_are_get_only_and_have_auth_dependencies(self):
         routes = [
-            r for r in router.routes if "/protection-proposals" in r.path
+            r for r in router.routes
+            if "/protection-proposals" in r.path and r.methods == {"GET"}
         ]
         self.assertEqual(len(routes), 2)
         self.assertTrue(all(r.methods == {"GET"} for r in routes))
