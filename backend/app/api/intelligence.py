@@ -3,6 +3,8 @@
 import re
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
+from typing import Literal
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -275,3 +277,85 @@ def protection_proposal_detail(
     if row is None:
         raise HTTPException(status_code=404, detail="Propuesta no encontrada")
     return dict(row)
+
+
+# ============================================================
+# REVISIÓN HUMANA NO EJECUTABLE
+# No admite aprobación ni registro en catálogo de defensas.
+# ============================================================
+
+class ProposalReviewRequest(BaseModel):
+    status: Literal["under_review", "rejected"]
+    notes: str = Field(min_length=10, max_length=2000)
+
+
+@router.patch("/protection-proposals/{proposal_id}/review")
+def review_protection_proposal(
+    proposal_id: int,
+    payload: ProposalReviewRequest,
+    db: Session = Depends(get_db),
+    reviewer = Depends(require_roles("admin", "engineer")),
+):
+    """Cambia solo estado y notas; bloquea propuestas rechazadas.
+
+    La transición atómica impide sobrescribir una revisión terminal.
+    No cambia catálogo de protecciones ni permite ejecución.
+    """
+    if proposal_id < 1:
+        raise HTTPException(status_code=422, detail="ID de propuesta inválido")
+    notes = payload.notes.strip()
+    if len(notes) < 10:
+        raise HTTPException(status_code=422, detail="Escribe al menos 10 caracteres de observaciones")
+    actor_id = getattr(reviewer, "id", None)
+    if not isinstance(actor_id, int) or actor_id < 1:
+        raise HTTPException(status_code=403, detail="Revisor no identificado")
+
+    # Actualización atómica: solo se permiten estas transiciones.
+    # No existe estado 'approved' en esta tabla.
+    row = db.execute(text("""
+        UPDATE cybershield_protection_proposals
+        SET status = :next_status,
+            review_notes = :review_notes,
+            reviewed_by = :reviewed_by,
+            reviewed_at = NOW(),
+            updated_at = NOW()
+        WHERE id = :proposal_id
+          AND status IN ('review_required', 'under_review')
+          AND execution_allowed = FALSE
+          AND executed = FALSE
+          AND telemetry_verified = FALSE
+          AND detection_verified = FALSE
+        RETURNING id, technique_id, status, review_notes,
+                  reviewed_by, reviewed_at, execution_allowed, executed
+    """), {
+        "proposal_id": proposal_id,
+        "next_status": payload.status,
+        "review_notes": notes,
+        "reviewed_by": str(actor_id),
+    }).mappings().first()
+
+    if row is None:
+        db.rollback()
+        exists = db.execute(text("""
+            SELECT status FROM cybershield_protection_proposals
+            WHERE id = :proposal_id
+        """), {"proposal_id": proposal_id}).scalar_one_or_none()
+        if exists is None:
+            raise HTTPException(status_code=404, detail="Propuesta no encontrada")
+        raise HTTPException(
+            status_code=409,
+            detail="La propuesta ya fue rechazada o no puede revisarse en su estado actual",
+        )
+
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    return {
+        "success": True,
+        "proposal": dict(row),
+        "execution_allowed": False,
+        "executed": False,
+        "note": "La revisión no activa ni aprueba defensas",
+    }
