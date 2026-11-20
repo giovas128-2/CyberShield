@@ -852,6 +852,7 @@ def get_incident_analysis(
     incident_id: int,
     db: Session = Depends(get_db),
     _reviewer = Depends(require_roles("admin", "engineer")),
+    use_ai: bool = False,
 ):
     """Análisis explicable de un incidente existente; exclusivamente SELECT."""
     from app.services.intelligence.incident_analysis import analyze_incident
@@ -887,4 +888,7 @@ def get_incident_analysis(
         "tactic": mitre.tactic,
     } if mitre else None)
     response_record = ({"status": response.status} if response else None)
-    return analyze_incident(incident_record, event_record, mitre_record, response_record)
+    from app.services.intelligence.incident_ai import generate_incident_explanation
+    analysis = analyze_incident(incident_record, event_record, mitre_record, response_record)
+    analysis.update(generate_incident_explanation(analysis, enabled=use_ai))
+    return analysis
