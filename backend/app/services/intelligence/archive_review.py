@@ -15,7 +15,7 @@ from typing import Any
 
 from app.services.intelligence.code_review import (
     MAX_BYTES_PER_FILE, MAX_FILES, MAX_TOTAL,
-    is_allowed, scan_sources, explain_with_llm,
+    is_allowed, scan_sources,
 )
 
 MAX_ZIP_BYTES = 8_000_000
@@ -112,7 +112,7 @@ def analyze_zip(raw: bytes) -> tuple[dict[str, Any], list[dict[str, str]]]:
         if not chunk:
             return
         batch = scan_sources(chunk)
-        if len(findings) + len(batch["findings"]) > MAX_FINDINGS_RETURNED:
+        if len(findings) + len(batch["findings"]) > MAX_FINDINGS_RETURNED or len(batch["findings"]) >= 100:
             limit_reached = True
         findings.extend(batch["findings"][:max(0, MAX_FINDINGS_RETURNED - len(findings))])
         chunk, chunk_bytes = [], 0
@@ -149,7 +149,7 @@ def _redact_excerpt(code: str) -> str:
 
 def review_zip_with_ai(scan: dict[str, Any], sources: list[dict[str,str]], enabled: bool) -> dict[str, Any]:
     if not enabled:
-        return explain_with_llm(scan, False)
+        return {"mode":"rules_only", "summary":"Se analizaron realmente los archivos compatibles del ZIP mediante reglas estáticas. No se solicitó revisión con IA."}
     if not os.getenv("OPENAI_API_KEY"):
         return {"mode":"rules_only", "summary":"IA no configurada: falta OPENAI_API_KEY. El escaneo real por reglas sí se completó."}
     # Máximo 16 archivos y 1800 caracteres por archivo. Es revisión de una muestra,
