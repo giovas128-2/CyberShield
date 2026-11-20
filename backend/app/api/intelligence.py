@@ -143,7 +143,7 @@ def protection_coverage(db: Session = Depends(get_db)):
     """
     from app.api.protections import list_protections
 
-    controls = list_protections()
+    controls = list_protections(db)
     technique_ids = {
         entry["technique_id"]
         for control in controls
