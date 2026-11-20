@@ -29,8 +29,10 @@ NIST/CIS son sugerencias documentales, no controles certificados.
   telemetría ni código fuente a MITRE, NIST, CIS o CISA.
 - Las fuentes consultadas pueden registrar la dirección IP pública del
   servidor desde el que se hace la petición HTTPS.
-- No envía contenido a un LLM. Se usa consulta y comparación verificable;
-  ninguna salida de IA se considera autoridad normativa.
+- La consulta automática no utiliza un LLM. El botón opcional de IA,
+  activado por un ingeniero, envía al proveedor únicamente versiones,
+  enlaces de fuentes públicas y códigos MITRE públicos; nunca datos internos.
+  La interpretación no es una norma, una detección ni una autorización.
 - URLs allowlist fijas, HTTPS, sin redirecciones, con límites de descarga.
 - No descarga ni ejecuta scripts de terceros ni modifica los 8 controles.
 - No ejecuta respuesta defensiva, actualización de reglas, bloqueo, ni aplica
@@ -64,6 +66,9 @@ Después reinicia **solo** el servicio FastAPI:
 En la interfaz: Protecciones defensivas → Vigilancia de normas, marcos y
 amenazas → Consultar fuentes oficiales. Se requiere sesión **admin/engineer**
 para la comprobación manual. La lectura de resultados utiliza autenticación.
+
+El botón **Analizar metadatos públicos** es optativo y requiere OPENAI_API_KEY;
+el resumen de IA no aplica configuraciones ni sustituye la revisión humana.
 
 ## Revisión diaria opcional existente
 Si ya está habilitado cybershield-intelligence-sync.timer, su ejecución
