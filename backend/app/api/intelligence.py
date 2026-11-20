@@ -133,3 +133,72 @@ def list_vulnerabilities(
         "total": total,
         "items": [dict(row) for row in rows],
     }
+
+
+@router.get("/protection-coverage")
+def protection_coverage(db: Session = Depends(get_db)):
+    """Relaciona las 8 protecciones existentes con mitigaciones documentales MITRE.
+
+    Solo lectura: no registra nuevos controles ni ejecuta respuestas.
+    """
+    from app.api.protections import list_protections
+
+    controls = list_protections()
+    technique_ids = {
+        entry["technique_id"]
+        for control in controls
+        for entry in control.get("mitre_techniques", [])
+        if entry.get("technique_id")
+    }
+
+    # Los parámetros SQL proceden del catálogo interno; se enlazan igualmente
+    # para evitar concatenar identificadores en consultas.
+    mitigations_by_technique = {technique_id: [] for technique_id in technique_ids}
+    for technique_id in sorted(technique_ids):
+        rows = db.execute(text("""
+            SELECT DISTINCT m.mitigation_id, m.name, m.description
+            FROM intelligence_mitre_techniques t
+            JOIN intelligence_mitre_relationships r
+              ON r.technique_id = t.id
+            JOIN intelligence_mitre_mitigations m
+              ON m.id = r.mitigation_id
+            WHERE t.attack_id = :attack_id
+            ORDER BY m.mitigation_id
+        """), {"attack_id": technique_id}).mappings().all()
+        mitigations_by_technique[technique_id] = [dict(row) for row in rows]
+
+    items = []
+    for control in controls:
+        mitre_ids = [
+            entry["technique_id"]
+            for entry in control.get("mitre_techniques", [])
+            if entry.get("technique_id")
+        ]
+        suggestions = {}
+        for technique_id in mitre_ids:
+            for m in mitigations_by_technique.get(technique_id, []):
+                suggestions[m["mitigation_id"]] = m
+
+        items.append({
+            "id": control["id"],
+            "name": control["name"],
+            "sensor": control["sensor"],
+            "mode": control["mode"],
+            "mitre_techniques": mitre_ids,
+            "mitre_mitigations": list(suggestions.values()),
+            "mitigation_count": len(suggestions),
+            "execution_status": "not_evaluated",
+        })
+
+    return {
+        "source": "CyberShield Intelligence / MITRE ATT&CK",
+        "controls_total": len(items),
+        "controls_integrated": sum(x["mode"] == "integrated" for x in items),
+        "controls_simulated": sum(x["mode"] == "simulated" for x in items),
+        "controls": items,
+        "note": (
+            "Las mitigaciones MITRE son recomendaciones documentales; "
+            "no se han convertido automáticamente en controles ejecutables. "
+            "El campo execution_status no certifica una respuesta aplicada."
+        ),
+    }
