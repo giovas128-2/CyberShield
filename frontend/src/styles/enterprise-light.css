@@ -328,3 +328,52 @@
 @media(prefers-reduced-motion:reduce){
  :root[data-cs-theme="light"] .cs > .shell *{scroll-behavior:auto;transition:none}
 }
+
+
+/* Navegación oficial: azul marino como el prototipo, sin modificar NavLinks ni sus contadores. */
+:root[data-cs-theme="light"] .cs > .shell .side {
+  background:linear-gradient(177deg,#0d3467 0%,#0a2b57 43%,#071e3e 100%);
+  border-right:1px solid #204e82;
+  box-shadow:5px 0 23px #0a376229;
+  color:#e3efff;
+}
+:root[data-cs-theme="light"] .cs > .shell .side .side-brand{
+  border-bottom:1px solid #ffffff21;
+}
+:root[data-cs-theme="light"] .cs > .shell .side .brand{color:#fff}
+:root[data-cs-theme="light"] .cs > .shell .side .brand i{
+  background:linear-gradient(140deg,#287ecf,#0d579c);color:#eaf8ff;border:1px solid #3b8cd1;
+}
+:root[data-cs-theme="light"] .cs > .shell .side .sec{
+  color:#91b8e6;font-weight:850;letter-spacing:1.3px;
+}
+:root[data-cs-theme="light"] .cs > .shell .side .nav{
+  color:#c8ddf6;border:1px solid transparent;border-radius:10px;min-height:42px;
+}
+:root[data-cs-theme="light"] .cs > .shell .side .nav svg{color:#b5d5f8;flex:none}
+:root[data-cs-theme="light"] .cs > .shell .side .nav:hover{
+  background:#ffffff15;color:#fff;border-color:#ffffff1a;
+}
+:root[data-cs-theme="light"] .cs > .shell .side .nav.on{
+  background:linear-gradient(95deg,#1d6eaf99,#2077bb38);
+  color:#fff;border:1px solid #3f98df7a;
+  box-shadow:inset 3px 0 0 #55baff,0 4px 13px #001b3b25;
+}
+:root[data-cs-theme="light"] .cs > .shell .side .nav.on svg{color:#6ed7ff}
+:root[data-cs-theme="light"] .cs > .shell .side .bdg{
+  background:#b93556;color:#fff;font-weight:850;border:1px solid #df557755;
+}
+:root[data-cs-theme="light"] .cs > .shell .side .agent{
+  background:#ffffff0e;border:1px solid #ffffff21;color:#adcaea;border-radius:12px;
+}
+:root[data-cs-theme="light"] .cs > .shell .side .agent .sv.ok{
+  background:#093d40;color:#76f2cf;border:1px solid #2d9e8273;
+}
+:root[data-cs-theme="light"] .cs > .shell .side .agent .sv.wn{
+  background:#443318;color:#ffda8e;border:1px solid #c2914373;
+}
+:root[data-cs-theme="light"] .cs > .shell .side .agent .sv.er{
+  background:#451e30;color:#ffb1bf;border:1px solid #a9496473;
+}
+:root[data-cs-theme="light"] .cs > .shell .side::-webkit-scrollbar{width:6px}
+:root[data-cs-theme="light"] .cs > .shell .side::-webkit-scrollbar-thumb{background:#5a8cbd;border-radius:8px}
