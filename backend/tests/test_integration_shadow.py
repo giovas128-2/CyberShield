@@ -109,6 +109,51 @@ class IntegrationShadowTests(unittest.TestCase):
         assess.assert_called_once()
         store.assert_called_once_with(self.db, 39327, decision)
 
+    @patch("app.api.integrations.save_shadow_decision", return_value=44)
+    @patch("app.api.integrations.assess_fim_from_database")
+    @patch("app.api.integrations.process_security_event")
+    @patch("app.api.integrations.normalize_wazuh_event")
+    @patch("app.api.integrations.validate_server")
+    def test_fim_shadow_persists_without_action(
+        self, check, normalize, process, assess, store
+    ):
+        normalized = {
+            **self.normalized,
+            "event_type": "suspicious_file_change",
+            "source_ip": None,
+            "details": {
+                "integration": "wazuh_real",
+                "wazuh_rule_id": "550",
+                "path": "/opt/cybershield-lab/archivo-prueba.txt",
+                "wazuh_event": "modified",
+                "change_applied": True,
+                "authorized": True,
+                "file_criticality": "common",
+            },
+        }
+        normalize.return_value = normalized
+        process.return_value = {
+            "event": {**normalized, "id": 39340, "severity": "normal"},
+            "success": True,
+        }
+        decision = MagicMock()
+        decision.to_dict.return_value = {
+            "status": "observed_authorized",
+            "technique_id": "T1565.001",
+            "recommended_action": None,
+            "execution_allowed": False,
+            "executed": False,
+        }
+        assess.return_value = decision
+        result = receive_wazuh_event(
+            {"id": "test-fim-540"}, server_id=2, db=self.db
+        )
+        self.assertEqual(result["autonomous_decision"]["decision_id"], 44)
+        self.assertEqual(result["autonomous_decision"]["status"], "observed_authorized")
+        self.assertFalse(result["autonomous_decision"]["execution_allowed"])
+        assess.assert_called_once()
+        store.assert_called_once_with(self.db, 39340, decision)
+
     @patch("app.api.integrations.validate_server")
     def test_missing_wazuh_alert_id_is_rejected(self, check):
         from fastapi import HTTPException
