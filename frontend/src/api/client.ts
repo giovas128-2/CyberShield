@@ -656,6 +656,13 @@ export async function getServers(): Promise<ServerItem[]> {
     agent: s.agent ?? null,
     createdAt: s.created_at ?? null,
     lastSeen: s.last_seen ?? null,
+    agentConnection: s.agent_connection ? {
+      state: String(s.agent_connection.state || "not_enrolled") as NonNullable<ServerItem["agentConnection"]>["state"],
+      agentId: s.agent_connection.agent_id ?? null,
+      platform: s.agent_connection.platform ?? null,
+      agentVersion: s.agent_connection.agent_version ?? null,
+      lastSeen: s.agent_connection.last_seen ?? null,
+    } : undefined,
   }));
 }
 
