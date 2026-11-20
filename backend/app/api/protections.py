@@ -1,4 +1,10 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+
+from app.core.auth_dependencies import require_roles
+from app.database.connection import get_db
 
 router = APIRouter(
     prefix="/protections",
@@ -6,8 +12,7 @@ router = APIRouter(
 )
 
 
-@router.get("")
-def list_protections():
+def builtin_protections():
     return [
         {
             "id": "c1",
@@ -130,3 +135,104 @@ def list_protections():
             ],
         },
     ]
+
+# El catálogo persistente solo se habilita cuando se aplica la migración 007.
+# Mantener los ocho controles históricos como respaldo de solo lectura protege
+# las interfaces del laboratorio durante una actualización gradual.
+CATALOG_TABLE = "cybershield_protection_catalog"
+
+
+class ProtectionProposal(BaseModel):
+    name: str = Field(min_length=3, max_length=160)
+    description: str = Field(min_length=10, max_length=1000)
+    sensor: str = Field(min_length=2, max_length=120)
+    technique_id: str = Field(pattern=r"^T\d{4}(?:\.\d{3})?$")
+
+
+def catalog_exists(db: Session) -> bool:
+    return db.execute(
+        text("SELECT to_regclass('public.cybershield_protection_catalog')")
+    ).scalar_one() is not None
+
+
+def read_catalog(db: Session):
+    rows = db.execute(text("""
+        SELECT control_id, name, sensor, description, mode,
+               mitre_techniques, origin, execution_enabled,
+               execution_verified
+          FROM cybershield_protection_catalog
+         ORDER BY sort_order, control_id
+    """)).mappings().all()
+    return [
+        {
+            "id": row["control_id"],
+            "name": row["name"],
+            "sensor": row["sensor"],
+            "description": row["description"],
+            "mode": row["mode"],
+            "mitre_techniques": row["mitre_techniques"],
+            "origin": row["origin"],
+            "execution_enabled": row["execution_enabled"],
+            "execution_verified": row["execution_verified"],
+        }
+        for row in rows
+    ]
+
+
+@router.get("")
+def list_protections(db: Session = Depends(get_db)):
+    if not catalog_exists(db):
+        return builtin_protections()
+    catalog = read_catalog(db)
+    return catalog if catalog else builtin_protections()
+
+
+@router.post(
+    "/catalog",
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_roles("admin", "engineer"))],
+)
+def propose_protection(
+    proposal: ProtectionProposal,
+    db: Session = Depends(get_db),
+):
+    """Solo registra una propuesta pendiente. Nunca instala sensores ni defensas."""
+    if not catalog_exists(db):
+        raise HTTPException(
+            status_code=503,
+            detail="Aplica la migracion 007 antes de crear propuestas",
+        )
+
+    import json
+
+    # No aceptamos parametros de modo ni comandos del cliente.
+    mitre = [{
+        "technique_id": proposal.technique_id,
+        "technique_name": "Pendiente de validar",
+        "tactic": "Pendiente de validar",
+        "is_primary": True,
+    }]
+    row = db.execute(text("""
+        INSERT INTO cybershield_protection_catalog
+            (control_id, name, sensor, description, mode, origin,
+             mitre_techniques, execution_enabled, execution_verified)
+        VALUES
+            ('proposal-' || replace(gen_random_uuid()::text, '-', ''),
+             :name, :sensor, :description, 'pending', 'proposal',
+             CAST(:mitre AS jsonb), FALSE, FALSE)
+        RETURNING control_id
+    """), {
+        "name": proposal.name.strip(),
+        "sensor": proposal.sensor.strip(),
+        "description": proposal.description.strip(),
+        "mitre": json.dumps(mitre),
+    })
+    control_id = row.scalar_one()
+    db.commit()
+    return {
+        "id": control_id,
+        "mode": "pending",
+        "execution_enabled": False,
+        "execution_verified": False,
+        "message": "Propuesta registrada para validacion; no ejecuta defensas.",
+    }

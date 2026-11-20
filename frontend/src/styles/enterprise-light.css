@@ -1,0 +1,379 @@
+/*
+ * CyberShield 2.0 · diseño enterprise azul/blanco para INTERFACES OFICIALES.
+ * Solo estilos; no se sustituyen pantallas ni se ejecutan respuestas.
+ * El tema claro existente activa este diseño. Tema oscuro se conserva.
+ * Las vistas .csd-* del prototipo y EmpresaDemo se mantienen aisladas.
+ */
+:root[data-cs-theme="light"] .cs {
+  --bg:#f4f8ff;--sf:#ffffff;--sf2:#f2f7fe;--bd:#dce8f6;
+  --ac:#176fcb;--ok:#087f64;--wn:#9b651b;--er:#c53d57;
+  --tx:#16365f;--mu:#68819f;
+}
+:root[data-cs-theme="light"] .cs > .shell {
+  background:linear-gradient(180deg,#f5f9ff,#f8fbff 48%,#f3f8ff);
+  color:var(--tx);
+  min-width:0;
+}
+:root[data-cs-theme="light"] .cs > .shell .shell-body{min-width:0}
+:root[data-cs-theme="light"] .cs > .shell .side {
+  background:linear-gradient(180deg,#fff,#f9fcff);
+  border-right:1px solid #dce8f6;
+  box-shadow:5px 0 25px #1e56920b;
+}
+:root[data-cs-theme="light"] .cs > .shell .side-brand{
+  padding:5px 3px 17px; border-bottom:1px solid #e5effa; margin-bottom:8px;
+}
+:root[data-cs-theme="light"] .cs > .shell .brand{color:#0e3262;font-weight:850;letter-spacing:-.5px}
+:root[data-cs-theme="light"] .cs > .shell .brand i{
+  width:41px;height:41px;border-radius:12px;
+  background:linear-gradient(145deg,#4ba5ff,#1567c5);
+  border:0;color:#fff;box-shadow:0 8px 18px #2371cc29;
+}
+:root[data-cs-theme="light"] .cs > .shell .sec{
+  color:#7c96b3;letter-spacing:1.25px;font-size:10px;font-weight:800
+}
+:root[data-cs-theme="light"] .cs > .shell .nav{
+  border-radius:11px;color:#4d6d91;min-height:41px;font-weight:600;transition:.15s background,.15s color;
+}
+:root[data-cs-theme="light"] .cs > .shell .nav:hover{background:#eef6ff;color:#0c5eb5}
+:root[data-cs-theme="light"] .cs > .shell .nav.on {
+  background:#e7f2ff;color:#075ec1;font-weight:800;box-shadow:inset 3px 0 0 #347de1;
+}
+:root[data-cs-theme="light"] .cs > .shell .agent{
+  background:#edf6ff;border:1px solid #d9eafb;padding:13px;border-radius:12px;color:#577b9f;
+}
+:root[data-cs-theme="light"] .cs > .shell .top{
+  background:#fff;border-bottom:1px solid #dfeaf6;box-shadow:0 3px 15px #17477609;
+  padding:0 clamp(16px,2.4vw,38px);
+}
+:root[data-cs-theme="light"] .cs > .shell .crumb{color:#7a95b0}
+:root[data-cs-theme="light"] .cs > .shell .crumb b{color:#173b6b;font-weight:800}
+:root[data-cs-theme="light"] .cs > .shell .av {
+  color:#1558a6;background:#e2efff;border:1px solid #c9e2ff;font-weight:800;
+}
+:root[data-cs-theme="light"] .cs > .shell .main{
+  width:100%;max-width:1850px;margin:0 auto;padding:clamp(18px,2.5vw,34px);
+  align-content:start;min-width:0;
+}
+:root[data-cs-theme="light"] .cs > .shell .h h1,
+:root[data-cs-theme="light"] .cs > .shell h1{color:#12345e;font-weight:800;letter-spacing:-.7px}
+:root[data-cs-theme="light"] .cs > .shell h2,
+:root[data-cs-theme="light"] .cs > .shell h3{color:#184170}
+:root[data-cs-theme="light"] .cs > .shell .card,
+:root[data-cs-theme="light"] .cs > .shell .tw,
+:root[data-cs-theme="light"] .cs > .shell .modal,
+:root[data-cs-theme="light"] .cs > .shell .ic{
+  background:#fff;border:1px solid #dce8f6;border-radius:15px;
+  box-shadow:0 8px 26px #1b52850a;
+}
+:root[data-cs-theme="light"] .cs > .shell .ic:hover{background:#f7fbff;border-color:#a9ccf4}
+:root[data-cs-theme="light"] .cs > .shell .ic.on{background:#ecf5ff;border-color:#72b1f5;box-shadow:inset 3px 0 0 #347de1}
+:root[data-cs-theme="light"] .cs > .shell .card:focus-within{border-color:#b9d9fa}
+:root[data-cs-theme="light"] .cs > .shell th{
+  background:#f0f6ff;color:#57799e;font-weight:750;letter-spacing:.5px;
+}
+:root[data-cs-theme="light"] .cs > .shell td{color:#244568;border-top-color:#e6eef8}
+:root[data-cs-theme="light"] .cs > .shell tbody tr:hover{background:#f5faff}
+:root[data-cs-theme="light"] .cs > .shell .inp,
+:root[data-cs-theme="light"] .cs > .shell .sel,
+:root[data-cs-theme="light"] .cs > .shell .cfg-field select {
+  background:#fff;color:#1a3e69;border:1px solid #cddff2;border-radius:10px;
+}
+:root[data-cs-theme="light"] .cs > .shell input,
+:root[data-cs-theme="light"] .cs > .shell select,
+:root[data-cs-theme="light"] .cs > .shell textarea{accent-color:#2079d8}
+:root[data-cs-theme="light"] .cs > .shell .btn:not(.gh):not(.rd):not(.resolve) {
+  background:linear-gradient(110deg,#2b83e6,#1265c4);color:#fff;
+  border-radius:10px;box-shadow:0 6px 15px #1b72ca21;
+}
+:root[data-cs-theme="light"] .cs > .shell .btn.gh,
+:root[data-cs-theme="light"] .cs > .shell .ab {
+  color:#135eaf;background:#f7fbff;border:1px solid #cbe1f8;border-radius:10px;
+}
+:root[data-cs-theme="light"] .cs > .shell .lnk{color:#176fcb}
+:root[data-cs-theme="light"] .cs > .shell .sv.ok,
+:root[data-cs-theme="light"] .cs > .shell .origin.ok{background:#e0f7ef;color:#067858;border-color:#b8ead6}
+:root[data-cs-theme="light"] .cs > .shell .sv.wn,
+:root[data-cs-theme="light"] .cs > .shell .origin.wn{background:#fff2d9;color:#975d0e;border-color:#f2dab1}
+:root[data-cs-theme="light"] .cs > .shell .sv.er,
+:root[data-cs-theme="light"] .cs > .shell .origin.er{background:#fff0f2;color:#ae2f4d;border-color:#f5d7de}
+:root[data-cs-theme="light"] .cs > .shell .sv.pd{background:#e7f2ff;color:#176fcb}
+:root[data-cs-theme="light"] .cs > .shell .bdg{background:#ffe7eb;color:#b53251}
+:root[data-cs-theme="light"] .cs > .shell .demo,
+:root[data-cs-theme="light"] .cs > .shell .cfg-info{color:#2e659d;background:#eaf5ff;border-color:#cde6ff}
+:root[data-cs-theme="light"] .cs > .shell .reco {
+  color:#345578;background:#f1f7ff;border:1px solid #d7e8fb;border-radius:12px;
+}
+:root[data-cs-theme="light"] .cs > .shell .reco b{color:#145caa}
+:root[data-cs-theme="light"] .cs > .shell .investigation-guide {
+  background:#f7fbff;border-color:#dce8f6;border-radius:12px;
+}
+:root[data-cs-theme="light"] .cs > .shell .guide-toggle{color:#145caa}
+:root[data-cs-theme="light"] .cs > .shell .resolved-note{background:#e0f7ed;color:#087f64}
+:root[data-cs-theme="light"] .cs > .shell .note{background:#eef6ff;color:#597b9e}
+:root[data-cs-theme="light"] .cs > .shell .pgrid .pcard,
+:root[data-cs-theme="light"] .cs > .shell .coverage-card{border-radius:15px}
+:root[data-cs-theme="light"] .cs > .shell .prog{background:#e2edf9}
+:root[data-cs-theme="light"] .cs > .shell .prog i{background:linear-gradient(90deg,#2b83e6,#13b6b5)}
+:root[data-cs-theme="light"] .cs > .shell .cfg-switch-row+.cfg-switch-row{border-top-color:#e2edf9}
+:root[data-cs-theme="light"] .cs > .shell .cfg-switch{background:#acc4dc}
+:root[data-cs-theme="light"] .cs > .shell .cfg-field select{background:#fff;color:#244970}
+:root[data-cs-theme="light"] .cs > .shell .cfg-readonly{background:#f4f8fe;color:#244970}
+:root[data-cs-theme="light"] .cs > .shell .cfg-savebar{box-shadow:0 8px 28px #1b528516}
+
+/* Centro de operaciones: mantener datos y gráficas del dashboard SOC real. */
+:root[data-cs-theme="light"] .cs > .shell .soc-panel,
+:root[data-cs-theme="light"] .cs > .shell .soc-kpi{
+  background:#fff;border:1px solid #dce8f6;border-radius:15px;
+  box-shadow:0 8px 26px #1b52850b;
+}
+:root[data-cs-theme="light"] .cs > .shell .soc-hero-alert{
+  background:linear-gradient(110deg,#fff2f4,#fff 68%);border-color:#efbdc7;
+}
+:root[data-cs-theme="light"] .cs > .shell .soc-hero-safe,
+:root[data-cs-theme="light"] .cs > .shell .soc-hero-contained{
+  background:linear-gradient(110deg,#eaf9f3,#fff 68%);border-color:#bce6d5;
+}
+:root[data-cs-theme="light"] .cs > .shell .soc-hero-main>p,
+:root[data-cs-theme="light"] .cs > .shell .soc-bar-row>span{color:#5c7899}
+:root[data-cs-theme="light"] .cs > .shell .soc-eventtable th{background:#f0f6ff;color:#58779a}
+:root[data-cs-theme="light"] .cs > .shell .soc-track{background:#e3eefb}
+:root[data-cs-theme="light"] .cs > .shell .soc-track i{background:linear-gradient(90deg,#327fe2,#2ab5d9)}
+:root[data-cs-theme="light"] .cs > .shell .soc-scope-blocked{background:#e4f8ee;color:#087858}
+:root[data-cs-theme="light"] .cs > .shell .soc-scope-reached{background:#fff3df;color:#94601b}
+:root[data-cs-theme="light"] .cs > .shell .soc-scope-impact{background:#fff0f3;color:#b2344e}
+:root[data-cs-theme="light"] .cs > .shell .soc-pill.soc-cyan{background:#e4f2ff;color:#1567bc}
+:root[data-cs-theme="light"] .cs > .shell .soc-pill.soc-red{background:#ffecf0;color:#ae3450}
+:root[data-cs-theme="light"] .cs > .shell .soc-pill.soc-green{background:#e1f7ed;color:#0b805c}
+:root[data-cs-theme="light"] .cs > .shell .soc-pill.soc-amber{background:#fff2db;color:#955f12}
+:root[data-cs-theme="light"] .cs > .shell .soc-incident:hover{background:#f4f9ff}
+:root[data-cs-theme="light"] .cs > .shell .soc-hero-facts b svg{color:#4473a5}
+:root[data-cs-theme="light"] .cs > .shell .soc-card-head h2{color:#164170}
+
+/* Consola operativa de investigación (ev-*) — mantener TODAS las secciones. */
+:root[data-cs-theme="light"] .cs > .shell .ev-pane,
+:root[data-cs-theme="light"] .cs > .shell .ev-box{
+  background:#fff;border:1px solid #dce8f6;border-radius:14px;
+  box-shadow:0 7px 23px #1b528509;
+}
+:root[data-cs-theme="light"] .cs > .shell .ev-ico{background:#eaf4ff;color:#176dcc;border-color:#cde3fc}
+:root[data-cs-theme="light"] .cs > .shell .ev-sum{background:#dce8f6}
+:root[data-cs-theme="light"] .cs > .shell .ev-sum>div{background:#f8fbff}
+:root[data-cs-theme="light"] .cs > .shell .ev-state.ev-t-ok,
+:root[data-cs-theme="light"] .cs > .shell .ev-badge.ev-t-ok,
+:root[data-cs-theme="light"] .cs > .shell .ev-notif.ev-t-ok,
+:root[data-cs-theme="light"] .cs > .shell .ev-result.ev-t-ok{background:#e2f8ef;color:#08785a;border-color:#c3ebd9}
+:root[data-cs-theme="light"] .cs > .shell .ev-state.ev-t-wn,
+:root[data-cs-theme="light"] .cs > .shell .ev-badge.ev-t-wn,
+:root[data-cs-theme="light"] .cs > .shell .ev-result.ev-t-wn{background:#fff4de;color:#986017;border-color:#f1dbb4}
+:root[data-cs-theme="light"] .cs > .shell .ev-state.ev-t-er,
+:root[data-cs-theme="light"] .cs > .shell .ev-badge.ev-t-er,
+:root[data-cs-theme="light"] .cs > .shell .ev-result.ev-t-er{background:#fff0f3;color:#b73452;border-color:#f3cdd7}
+:root[data-cs-theme="light"] .cs > .shell .ev-state.ev-t-in,
+:root[data-cs-theme="light"] .cs > .shell .ev-badge.ev-t-in,
+:root[data-cs-theme="light"] .cs > .shell .ev-result.ev-t-in{background:#e8f4ff;color:#1769c0;border-color:#c5e2ff}
+:root[data-cs-theme="light"] .cs > .shell .ev-tl .dot{background:#f4f9ff}
+:root[data-cs-theme="light"] .cs > .shell .ev-tl .st-done .dot{background:#e9f4ff}
+:root[data-cs-theme="light"] .cs > .shell .ev-tl .tone-ok .dot{background:#e1f8ef}
+:root[data-cs-theme="light"] .cs > .shell .ev-log,
+:root[data-cs-theme="light"] .cs > .shell .ev-term{
+  background:#f4f8ff;color:#153961;border:1px solid #d6e7f9;border-radius:10px;
+  font-family:"IBM Plex Mono",monospace;line-height:1.6;max-height:440px;
+}
+:root[data-cs-theme="light"] .cs > .shell .ev-cmd{border:1px solid #d6e7f9;border-radius:11px}
+:root[data-cs-theme="light"] .cs > .shell .ev-cmd-h{background:#eaf4ff;color:#125faf}
+:root[data-cs-theme="light"] .cs > .shell .ev-cmd.ev-t-ok .ev-cmd-h{background:#e6f8f0;color:#087858}
+:root[data-cs-theme="light"] .cs > .shell .ev-cmd.ev-t-wn .ev-cmd-h{background:#fff5e2;color:#956519}
+:root[data-cs-theme="light"] .cs > .shell .ev-reason,
+:root[data-cs-theme="light"] .cs > .shell .ev-note{background:#edf6ff;border-color:#d1e6fb;color:#2f608f}
+:root[data-cs-theme="light"] .cs > .shell .ev-toolgrid>div{background:#f7fbff;border-color:#deebfa}
+:root[data-cs-theme="light"] .cs > .shell .ev-demo{background:#fff6e8;border-color:#eddaad}
+:root[data-cs-theme="light"] .cs > .shell .ev-demo button[aria-pressed=true]{background:#e6f2ff;color:#155fac}
+:root[data-cs-theme="light"] .cs > .shell .ev-skel>div{background:linear-gradient(90deg,#edf4fc,#dfebf7,#edf4fc);background-size:200%}
+
+/* Detalle real de incidente en dos pantallas (evidence-*).
+   Los datos, comandos, descarga, marcas temporales y rollback NO se alteran. */
+:root[data-cs-theme="light"] .cs > .shell .evidence-real-page{max-width:1750px;min-width:0;color:#1a3e65}
+:root[data-cs-theme="light"] .cs > .shell .evidence-top-row h1{color:#153965}
+:root[data-cs-theme="light"] .cs > .shell .evidence-subtitle,
+:root[data-cs-theme="light"] .cs > .shell .evidence-breadcrumb{color:#6c86a3}
+:root[data-cs-theme="light"] .cs > .shell .evidence-back-button{
+  color:#1668bd;background:#eef7ff;border:1px solid #cde3fc;border-radius:10px;
+}
+:root[data-cs-theme="light"] .cs > .shell .evidence-two-panels{
+  grid-template-columns:minmax(0,1.06fr) minmax(0,.94fr);gap:16px;align-items:start;
+}
+:root[data-cs-theme="light"] .cs > .shell .evidence-screen {
+  background:#fff;border:1px solid #d7e6f7;border-radius:16px;padding:15px;
+  box-shadow:0 10px 28px #1b52850e;
+  color:#193b65;
+}
+:root[data-cs-theme="light"] .cs > .shell .evidence-screen-header h2{color:#123a69;font-size:17px}
+:root[data-cs-theme="light"] .cs > .shell .evidence-screen-header p{color:#6582a2;font-size:11px}
+:root[data-cs-theme="light"] .cs > .shell .evidence-screen-icon{
+  background:#e7f2ff;color:#1674d4;border:1px solid #d1e8ff;border-radius:12px;
+}
+:root[data-cs-theme="light"] .cs > .shell .evidence-summary-grid {
+  background:#f7fbff;border:1px solid #d5e6f9;border-radius:12px;padding:9px;
+}
+:root[data-cs-theme="light"] .cs > .shell .evidence-summary-grid>div{border-color:#dbe9f8}
+:root[data-cs-theme="light"] .cs > .shell .evidence-summary-grid small{color:#6483a6;font-size:10px}
+:root[data-cs-theme="light"] .cs > .shell .evidence-summary-grid strong{color:#193e68;font-size:12px}
+:root[data-cs-theme="light"] .cs > .shell .evidence-summary-grid span{color:#6c86a5}
+:root[data-cs-theme="light"] .cs > .shell .evidence-cyan{color:#126dcb}
+:root[data-cs-theme="light"] .cs > .shell .evidence-console-card,
+:root[data-cs-theme="light"] .cs > .shell .evidence-timeline-card,
+:root[data-cs-theme="light"] .cs > .shell .evidence-tools-card{
+  background:#fff;border:1px solid #dce8f6;border-radius:13px;
+}
+:root[data-cs-theme="light"] .cs > .shell .evidence-section-title strong{color:#193e68}
+:root[data-cs-theme="light"] .cs > .shell .evidence-section-title span{color:#6785a2}
+:root[data-cs-theme="light"] .cs > .shell .evidence-download{
+  border:1px solid #c4dffb;background:#edf6ff;color:#156ac4;border-radius:9px;
+}
+:root[data-cs-theme="light"] .cs > .shell .evidence-console,
+:root[data-cs-theme="light"] .cs > .shell .evidence-command-console{
+  background:#f3f7fe;color:#163960;border:1px solid #d3e4f8;border-radius:11px;
+  box-shadow:none;font-size:11px;line-height:1.7;max-height:620px;overflow:auto;
+}
+:root[data-cs-theme="light"] .cs > .shell .evidence-console span,
+:root[data-cs-theme="light"] .cs > .shell .evidence-command-console span{color:#00896e}
+:root[data-cs-theme="light"] .cs > .shell .evidence-timeline-step{color:#1c476f}
+:root[data-cs-theme="light"] .cs > .shell .evidence-timeline-step span{color:#6885a5}
+:root[data-cs-theme="light"] .cs > .shell .evidence-step-circle{
+  color:#1c71c8;background:#ebf6ff;border-color:#307fdf;box-shadow:0 3px 12px #2c83d11e;
+}
+:root[data-cs-theme="light"] .cs > .shell .evidence-step-green{color:#087d63;background:#e7f9f1;border-color:#10a783}
+:root[data-cs-theme="light"] .cs > .shell .evidence-step-red{color:#b73152;background:#fff0f4;border-color:#cf5274}
+:root[data-cs-theme="light"] .cs > .shell .evidence-result,
+:root[data-cs-theme="light"] .cs > .shell .evidence-reason-card{
+  border:1px solid #d6e7f8;background:#f1f8ff;border-radius:12px;color:#19436c;
+}
+:root[data-cs-theme="light"] .cs > .shell .evidence-result-success{
+  background:#e8f9f1;border-color:#bdebd7;color:#08785e;
+}
+:root[data-cs-theme="light"] .cs > .shell .evidence-result-failure{
+  background:#fff0f3;border-color:#f2c6d1;color:#b53750;
+}
+:root[data-cs-theme="light"] .cs > .shell .evidence-attack-type,
+:root[data-cs-theme="light"] .cs > .shell .evidence-command-header{
+  color:#b2344c;background:#fff0f2;border:1px solid #f0c7d0;border-radius:10px;
+}
+:root[data-cs-theme="light"] .cs > .shell .evidence-tools-grid>div{
+  color:#214c74;background:#f4f9ff;border:1px solid #deebfa;border-radius:10px;
+}
+:root[data-cs-theme="light"] .cs > .shell .evidence-tools-grid strong{color:#19426e;font-size:11px}
+:root[data-cs-theme="light"] .cs > .shell .evidence-tools-grid span{color:#64819b;font-size:10px}
+:root[data-cs-theme="light"] .cs > .shell .evidence-live.evidence-green{
+  background:#e2f7ee;color:#067d5b;border-color:#c4ebd9;
+}
+:root[data-cs-theme="light"] .cs > .shell .evidence-live.evidence-red{
+  background:#fff0f3;color:#b53650;border-color:#f0c7d0;
+}
+
+/* AuthShell oficial: formulario y validación originales, solo presentación. */
+.cs > .auth{
+  --bg:#f6faff;--sf:#ffffff;--sf2:#f2f7ff;--bd:#d8e6f7;
+  --ac:#176dce;--tx:#183b65;--mu:#738aa7;--ok:#087f64;--er:#b63550;
+  background:#fff;color:#16365e;
+  grid-template-columns:minmax(0,1.08fr) minmax(400px,.92fr);
+}
+.cs > .auth .auth-l{
+  color:#fff;border:0;position:relative;overflow:hidden;
+  padding:clamp(30px,5vw,74px);
+  background:
+    radial-gradient(ellipse at 78% 62%,#1d72cc72,transparent 49%),
+    radial-gradient(ellipse at 5% 8%,#2777d945,transparent 49%),
+    linear-gradient(145deg,#103b6a,#082b52 58%,#071c37);
+}
+.cs > .auth .auth-l:before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(#9ad1ff0d 1px,transparent 1px),linear-gradient(90deg,#9ad1ff0d 1px,transparent 1px);
+  background-size:48px 48px;
+}
+.cs > .auth .auth-l>*{position:relative}
+.cs > .auth .auth-l h1{
+  color:#fff;font-size:clamp(40px,4.5vw,67px);font-weight:850;line-height:1.07;letter-spacing:-2px;
+}
+.cs > .auth .auth-l .brand{color:#fff;font-weight:850;font-size:23px}
+.cs > .auth .auth-l .brand i{background:linear-gradient(145deg,#5eb4ff,#1b6fc9);border:0;color:#fff;width:48px;height:48px;border-radius:13px}
+.cs > .auth .auth-l .eyebrow{color:#81c8ff;font-weight:700}
+.cs > .auth .auth-l .mu{color:#bfdbf3}
+.cs > .auth .auth-l li{background:#ffffff0d;padding:15px;border:1px solid #ffffff24;border-radius:12px}
+.cs > .auth .auth-l li svg{color:#76c9ff}
+.cs > .auth .auth-r{background:linear-gradient(135deg,#fff,#f6faff);padding:clamp(24px,5vw,80px)}
+.cs > .auth .auth-r .form{max-width:435px}
+.cs > .auth .auth-r .form h2{color:#153a66;font-size:35px;font-weight:800;letter-spacing:-1px}
+.cs > .auth .auth-r .form .inp{background:#fff;border:1px solid #cedff3;border-radius:10px;min-height:47px}
+.cs > .auth .auth-r .form input{color:#183b65}
+.cs > .auth .auth-r .form .btn{
+  background:linear-gradient(110deg,#3089e8,#115fc0);color:#fff;
+  border-radius:10px;min-height:48px;box-shadow:0 8px 20px #186fca21;
+}
+.cs > .auth .auth-r .chip{background:#e8f4ff;color:#1567bb;border:1px solid #cfe4fc;border-radius:30px;padding:6px 12px}
+.cs > .auth .auth-r .note{background:#eaf5ff;color:#4f759b;border:1px solid #d7e8fa;border-radius:11px}
+.cs > .auth .auth-r .errbox{background:#fff0f3;color:#aa3551;border-color:#f0c8d1}
+.cs > .auth .auth-r .portal-card{background:#fff;border-color:#d7e6f7;border-radius:13px}
+.cs > .auth .auth-r .portal-card:hover{background:#f6fbff;border-color:#96c8f9}
+.cs > .auth .auth-r .portal-card-icon{background:#eaf4ff;color:#176dcc}
+.cs > .auth .auth-r .portal-choice-note{background:#edf6ff}
+@media(max-width:1150px){
+ :root[data-cs-theme="light"] .cs > .shell .evidence-two-panels{grid-template-columns:1fr}
+}
+@media(max-width:850px){
+ .cs > .auth{grid-template-columns:1fr}
+ .cs > .auth .auth-l{display:none}
+ :root[data-cs-theme="light"] .cs > .shell .main{padding:17px}
+}
+@media(prefers-reduced-motion:reduce){
+ :root[data-cs-theme="light"] .cs > .shell *{scroll-behavior:auto;transition:none}
+}
+
+
+/* Navegación oficial: azul marino como el prototipo, sin modificar NavLinks ni sus contadores. */
+:root[data-cs-theme="light"] .cs > .shell .side {
+  background:linear-gradient(177deg,#0d3467 0%,#0a2b57 43%,#071e3e 100%);
+  border-right:1px solid #204e82;
+  box-shadow:5px 0 23px #0a376229;
+  color:#e3efff;
+}
+:root[data-cs-theme="light"] .cs > .shell .side .side-brand{
+  border-bottom:1px solid #ffffff21;
+}
+:root[data-cs-theme="light"] .cs > .shell .side .brand{color:#fff}
+:root[data-cs-theme="light"] .cs > .shell .side .brand i{
+  background:linear-gradient(140deg,#287ecf,#0d579c);color:#eaf8ff;border:1px solid #3b8cd1;
+}
+:root[data-cs-theme="light"] .cs > .shell .side .sec{
+  color:#91b8e6;font-weight:850;letter-spacing:1.3px;
+}
+:root[data-cs-theme="light"] .cs > .shell .side .nav{
+  color:#c8ddf6;border:1px solid transparent;border-radius:10px;min-height:42px;
+}
+:root[data-cs-theme="light"] .cs > .shell .side .nav svg{color:#b5d5f8;flex:none}
+:root[data-cs-theme="light"] .cs > .shell .side .nav:hover{
+  background:#ffffff15;color:#fff;border-color:#ffffff1a;
+}
+:root[data-cs-theme="light"] .cs > .shell .side .nav.on{
+  background:linear-gradient(95deg,#1d6eaf99,#2077bb38);
+  color:#fff;border:1px solid #3f98df7a;
+  box-shadow:inset 3px 0 0 #55baff,0 4px 13px #001b3b25;
+}
+:root[data-cs-theme="light"] .cs > .shell .side .nav.on svg{color:#6ed7ff}
+:root[data-cs-theme="light"] .cs > .shell .side .bdg{
+  background:#b93556;color:#fff;font-weight:850;border:1px solid #df557755;
+}
+:root[data-cs-theme="light"] .cs > .shell .side .agent{
+  background:#ffffff0e;border:1px solid #ffffff21;color:#adcaea;border-radius:12px;
+}
+:root[data-cs-theme="light"] .cs > .shell .side .agent .sv.ok{
+  background:#093d40;color:#76f2cf;border:1px solid #2d9e8273;
+}
+:root[data-cs-theme="light"] .cs > .shell .side .agent .sv.wn{
+  background:#443318;color:#ffda8e;border:1px solid #c2914373;
+}
+:root[data-cs-theme="light"] .cs > .shell .side .agent .sv.er{
+  background:#451e30;color:#ffb1bf;border:1px solid #a9496473;
+}
+:root[data-cs-theme="light"] .cs > .shell .side::-webkit-scrollbar{width:6px}
+:root[data-cs-theme="light"] .cs > .shell .side::-webkit-scrollbar-thumb{background:#5a8cbd;border-radius:8px}

@@ -1,0 +1,16 @@
+[Unit]
+Description=CyberShield Intelligence - sincronización documental CISA y MITRE
+Wants=network-online.target
+After=network-online.target postgresql.service
+
+[Service]
+Type=oneshot
+User=yahir
+WorkingDirectory=/mnt/c/Users/Giovas128/downloads/CyberSHield
+ExecStart=/mnt/c/Users/Giovas128/downloads/CyberSHield/backend/venv-wsl/bin/python -m app.services.intelligence.scheduled_sync --apply
+Environment=PYTHONPATH=/mnt/c/Users/Giovas128/downloads/CyberSHield/backend
+NoNewPrivileges=true
+PrivateTmp=true
+# La configuración DATABASE_URL se carga desde backend/.env si existe.
+# No almacenar credenciales en este archivo ni enviarlas a GitHub.
+TimeoutStartSec=600

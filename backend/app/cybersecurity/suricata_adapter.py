@@ -1,3 +1,35 @@
+import hashlib
+import json
+
+
+def sc5_alert_fingerprint(raw_event: dict) -> str | None:
+    """Huella determinista para retransmisiones de una misma alerta EVE SC5.
+
+    Distingue alertas diferentes del mismo flow_id por timestamp y demás
+    campos. No se calcula si falta identidad mínima del registro.
+    """
+    alert = raw_event.get("alert") or {}
+    if (
+        raw_event.get("event_type") != "alert"
+        or str(alert.get("signature_id")) != "1000003"
+        or not raw_event.get("timestamp")
+        or raw_event.get("flow_id") is None
+    ):
+        return None
+    fields = {
+        "timestamp": raw_event["timestamp"],
+        "flow_id": str(raw_event["flow_id"]),
+        "signature_id": str(alert["signature_id"]),
+        "src_ip": raw_event.get("src_ip"),
+        "src_port": raw_event.get("src_port"),
+        "dest_ip": raw_event.get("dest_ip"),
+        "dest_port": raw_event.get("dest_port"),
+        "proto": raw_event.get("proto"),
+    }
+    encoded = json.dumps(fields, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
 def normalize_suricata_event(
     raw_event: dict,
     server_id: int | None = None,
@@ -205,6 +237,8 @@ def normalize_suricata_event(
         "original_timestamp": raw_event.get(
             "timestamp"
         ),
+
+        "suricata_sc5_fingerprint": sc5_alert_fingerprint(raw_event),
 
         "integration": "suricata_real",
     }

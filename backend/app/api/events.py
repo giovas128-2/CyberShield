@@ -11,6 +11,7 @@ from fastapi import (
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
+from app.core.auth_dependencies import require_roles
 from app.schemas.event import (
     SecurityEventRequest,
     RemoteLabEventRequest,
@@ -107,7 +108,10 @@ def _remote_lab_source_ip(
     )
 
 
-@router.post("/simulate")
+@router.post(
+    "/simulate",
+    dependencies=[Depends(require_roles("admin", "engineer"))],
+)
 def simulate_event(
     data: SecurityEventRequest,
     db: Session = Depends(get_db),

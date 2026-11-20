@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import (
     APIRouter,
     Depends,
@@ -5,6 +7,8 @@ from fastapi import (
     Query,
 )
 
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
@@ -17,6 +21,27 @@ from app.schemas.event import (
 
 from app.services.event_service import (
     process_security_event,
+)
+from app.services.intelligence.defensive_decision_engine import (
+    assess_from_database,
+)
+from app.services.intelligence.shadow_decision_store import (
+    save_shadow_decision,
+)
+from app.services.intelligence.privilege_decision_engine import (
+    assess_privilege_from_database,
+)
+from app.services.intelligence.fim_decision_engine import (
+    assess_fim_from_database,
+)
+from app.services.intelligence.ransomware_decision_engine import (
+    assess_ransomware_from_database,
+)
+from app.services.intelligence.lateral_decision_engine import (
+    assess_lateral_from_database,
+)
+from app.services.intelligence.network_decision_engine import (
+    assess_connection_from_database,
 )
 
 from app.cybersecurity.wazuh_adapter import (
@@ -36,6 +61,8 @@ from app.services.response_action_service import (
     register_execution_result,
     register_rollback_result,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/integrations",
@@ -93,19 +120,119 @@ def receive_wazuh_event(
         server_id,
     )
 
+    # El ID lo asigna Wazuh, no CyberShield. Requerirlo evita aceptar
+    # eventos sin clave de idempotencia. La autenticación del servicio
+    # no prueba por sí sola que el JSON proceda realmente del sensor.
+    wazuh_alert_id = raw_event.get("id")
+    if (
+        not isinstance(wazuh_alert_id, str)
+        or not wazuh_alert_id.strip()
+        or len(wazuh_alert_id) > 120
+    ):
+        raise HTTPException(
+            status_code=422,
+            detail="Falta identificador válido de alerta Wazuh",
+        )
+
     normalized = normalize_wazuh_event(
         raw_event=raw_event,
         server_id=server_id,
     )
+    normalized["details"] = dict(normalized.get("details") or {})
+    normalized["details"]["wazuh_alert_id"] = wazuh_alert_id
 
     event = SecurityEventRequest(
         **normalized
     )
 
-    return process_security_event(
-        db,
-        event,
-    )
+    try:
+        result = process_security_event(db, event)
+    except IntegrityError as exc:
+        # El índice único se aplica al INSERT inicial de events, antes de
+        # generar incidentes, notificaciones o response_actions.
+        constraint = getattr(
+            getattr(exc.orig, "diag", None), "constraint_name", None
+        )
+        db.rollback()
+        if constraint != "ux_events_wazuh_alert_id":
+            raise
+        previous = db.execute(text("""
+            SELECT id FROM events
+            WHERE source = 'wazuh'
+              AND details->>'wazuh_alert_id' = :alert_id
+            LIMIT 1
+        """), {"alert_id": wazuh_alert_id}).scalar_one_or_none()
+        if previous is None:
+            # La restricción no debería fallar sin que exista su registro.
+            raise
+        logger.info("Alerta Wazuh ya procesada: event_id=%s", previous)
+        return {
+            "success": True,
+            "duplicate": True,
+            "event": {"id": previous},
+            "autonomous_decision": {
+                "mode": "shadow",
+                "status": "already_processed",
+                "execution_allowed": False,
+                "executed": False,
+            },
+        }
+
+    # Motor CyberShield 2.0: observación posterior al almacenamiento.
+    # La evaluación NO crea acciones, NO ejecuta comandos y NO afecta la
+    # lógica de respuestas preexistente. Sólo esta ruta de integración
+    # autenticada utiliza el evaluador shadow; /events/simulate no.
+    #
+    # OJO: autenticar el integrador con una clave de servicio no prueba por
+    # sí mismo la autenticidad del sensor ni que su cuerpo JSON sea genuino.
+    # Antes de habilitar ejecución autónoma se requerirá validar esa cadena.
+    if normalized.get("event_type") in (
+        "multiple_login_attempts",
+        "authentication_burst",
+        "authentication_failure",
+        "privilege_escalation",
+        "suspicious_file_change",
+        "possible_ransomware_behavior",
+        "possible_lateral_movement",
+    ):
+        try:
+            stored = result["event"]
+            if stored["event_type"] == "privilege_escalation":
+                evaluator = assess_privilege_from_database
+            elif stored["event_type"] == "suspicious_file_change":
+                evaluator = assess_fim_from_database
+            elif stored["event_type"] == "possible_ransomware_behavior":
+                evaluator = assess_ransomware_from_database
+            elif stored["event_type"] == "possible_lateral_movement":
+                evaluator = assess_lateral_from_database
+            else:
+                evaluator = assess_from_database
+            decision = evaluator(db, {
+                "event_type": stored["event_type"],
+                "severity": stored["severity"],
+                "source": stored["source"],
+                "source_ip": stored["source_ip"],
+                "details": stored["details"],
+            })
+            # El evento ya fue confirmado por process_security_event.
+            # Guardamos una evaluación trazable, sin cambiar response_actions.
+            decision_id = save_shadow_decision(
+                db, int(stored["id"]), decision,
+            )
+            result["autonomous_decision"] = decision.to_dict()
+            result["autonomous_decision"]["mode"] = "shadow"
+            result["autonomous_decision"]["decision_id"] = decision_id
+        except Exception:
+            logger.exception("Evaluación shadow falló; no se ejecuta defensa")
+            db.rollback()
+            result["autonomous_decision"] = {
+                "mode": "shadow",
+                "status": "evaluation_unavailable",
+                "execution_allowed": False,
+                "executed": False,
+            }
+
+    return result
 
 
 @router.post("/suricata")
@@ -136,10 +263,77 @@ def receive_suricata_event(
         **normalized
     )
 
-    return process_security_event(
-        db,
-        event,
+    fingerprint = (normalized.get("details") or {}).get(
+        "suricata_sc5_fingerprint"
     )
+    try:
+        result = process_security_event(db, event)
+    except IntegrityError as exc:
+        constraint = getattr(
+            getattr(exc.orig, "diag", None), "constraint_name", None
+        )
+        db.rollback()
+        if constraint != "ux_events_suricata_sc5_fingerprint":
+            raise
+        previous = db.execute(text("""
+            SELECT id FROM events
+            WHERE source = 'suricata'
+              AND event_type = 'suspicious_network_traffic'
+              AND details->>'suricata_sc5_fingerprint' = :fingerprint
+            LIMIT 1
+        """), {"fingerprint": fingerprint}).scalar_one_or_none()
+        if previous is None:
+            raise
+        return {
+            "success": True,
+            "duplicate": True,
+            "event": {"id": previous},
+            "autonomous_decision": {
+                "mode": "shadow",
+                "status": "already_processed",
+                "execution_allowed": False,
+                "executed": False,
+            },
+        }
+
+    # Evaluar solamente el escenario SC5; nunca reinterpretar los eventos
+    # de exfiltración c6 ni el tráfico general como evidencia de c5.
+    # Este análisis es posterior al commit y no crea acciones.
+    details = normalized.get("details") or {}
+    if (
+        normalized.get("event_type") == "suspicious_network_traffic"
+        and details.get("integration") == "suricata_real"
+        and details.get("suricata_event_type") == "alert"
+        and str(details.get("signature_id")) == "1000003"
+    ):
+        try:
+            stored = result["event"]
+            decision = assess_connection_from_database(db, {
+                "event_type": stored["event_type"],
+                "severity": stored["severity"],
+                "source": stored["source"],
+                "source_ip": stored["source_ip"],
+                "details": stored["details"],
+            })
+            decision_id = save_shadow_decision(
+                db, int(stored["id"]), decision,
+            )
+            result["autonomous_decision"] = decision.to_dict()
+            result["autonomous_decision"]["mode"] = "shadow"
+            result["autonomous_decision"]["decision_id"] = decision_id
+        except Exception:
+            logger.exception("Evaluación shadow Suricata c5 falló; sin nuevas defensas")
+            db.rollback()
+            result["autonomous_decision"] = {
+                "mode": "shadow",
+                "status": "evaluation_unavailable",
+                "execution_allowed": False,
+                "executed": False,
+            }
+
+    return result
+
+
 @router.post("/wazuh/active-response")
 def receive_wazuh_active_response(
     data: ActiveResponseReport,

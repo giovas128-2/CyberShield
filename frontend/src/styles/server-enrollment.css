@@ -1,0 +1,59 @@
+/* Alta de agentes reales sin efectos sobre prototipo ni consola de incidentes. */
+.cs-enroll{background:linear-gradient(120deg,#fff,#f6fbff);border:1px solid #dce8f7;border-radius:17px;padding:22px;box-shadow:0 10px 30px #164f810c;color:#1d466f;min-width:0}
+.cs-enroll *{box-sizing:border-box}
+.cs-enroll button,.cs-enroll input,.cs-enroll select{font:inherit}
+.cs-enroll button{cursor:pointer}
+.cs-enroll button:focus-visible,.cs-enroll input:focus-visible,.cs-enroll select:focus-visible,.cs-enroll a:focus-visible{outline:3px solid #9bcaff;outline-offset:2px}
+.cs-enroll-top{display:flex;align-items:center;justify-content:space-between;gap:18px}
+.cs-enroll-title{display:flex;align-items:center;gap:14px;min-width:0}
+.cs-enroll-title>span{display:grid;place-items:center;width:49px;height:49px;flex:0 0 49px;color:#2279d3;border:1px solid #cfe6fc;border-radius:12px;background:#e6f3ff}
+.cs-enroll-title h2{color:#154273;font-size:17px;font-weight:850;margin:0 0 6px}
+.cs-enroll-title p{color:#6d8aa7;font-size:11px;line-height:1.55;margin:0}
+.cs-enroll-toggle,.cs-enroll-submit{display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap;border-radius:10px;padding:11px 15px;font-weight:800;font-size:11px}
+.cs-enroll-toggle{background:#eaf4ff;color:#176ac2;border:1px solid #c9e2fc}
+.cs-enroll-toggle:hover{background:#dceeff}
+.cs-enroll-tabs{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0}
+.cs-enroll-tabs button{border-radius:9px;border:1px solid #d4e5f8;padding:10px 13px;background:#f7fbff;color:#51769a;font-size:11px;font-weight:750}
+.cs-enroll-tabs button.is-active{background:#1f75d0;color:#fff;border-color:#1766b8}
+.cs-enroll-tabs button:disabled{cursor:not-allowed;opacity:.5}
+.cs-enroll-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.cs-enroll-form label,.cs-enroll-credentials label,.cs-enroll-connection label{display:grid;gap:7px;font-size:11px;font-weight:750;color:#416890;min-width:0}
+.cs-enroll input,.cs-enroll select{color:#183f6c;background:#fff;border:1px solid #cbdff3;border-radius:9px;min-height:43px;padding:10px 12px;outline:none;width:100%;min-width:0;font-size:12px}
+.cs-enroll input:focus,.cs-enroll select:focus{border-color:#348ce9;box-shadow:0 0 0 3px #8dc8ff25}
+.cs-enroll-form label:nth-child(3),.cs-enroll-form .cs-enroll-submit{grid-column:1/-1}
+.cs-enroll-existing{grid-column:1/-1;background:#edf7ff;border:1px solid #d5e9fc;padding:12px;border-radius:10px;color:#245c93;font-size:12px}
+.cs-enroll-submit{min-height:45px;background:linear-gradient(100deg,#3087e6,#1866bd);border:0;color:#fff;box-shadow:0 6px 18px #2474c91c}
+.cs-enroll-submit:disabled{opacity:.65}
+.cs-enroll-error{grid-column:1/-1;display:flex;gap:9px;align-items:flex-start;border:1px solid #f2c4d0;background:#fff1f3;color:#a53450;padding:12px;border-radius:9px;font-size:12px}
+.cs-enroll-error svg{flex:none}
+.cs-enroll-notice{display:flex;gap:10px;align-items:flex-start;color:#517a9f;background:#edf6ff;border:1px solid #d7e9fa;border-radius:11px;padding:13px;font-size:11px;line-height:1.6;margin-top:16px}
+.cs-enroll-notice svg{color:#237dca;flex:none}
+.cs-enroll-setup{margin-top:21px;border-top:1px solid #dfeaf8;padding-top:22px;display:grid;gap:18px}
+.cs-enroll-setup-heading{display:flex;align-items:flex-start;gap:12px;color:#087f65}
+.cs-enroll-setup-heading>div{flex:1}
+.cs-enroll-setup-heading h3{font-size:16px;color:#0f735b;margin:0 0 5px}
+.cs-enroll-setup-heading p{font-size:11px;color:#548379;line-height:1.6;margin:0}
+.cs-enroll-setup-heading button{background:transparent;color:#6686a4;border:0;padding:4px;border-radius:7px}
+.cs-enroll-credentials{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.cs-enroll-secret{display:flex;gap:6px}
+.cs-enroll-secret input{flex:1;min-width:0}
+.cs-enroll-secret button{border:1px solid #cbdff4;color:#1b6fc3;background:#eef7ff;border-radius:8px;padding:7px 9px;font-size:10px;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.cs-enroll-connection{display:grid;gap:7px}
+.cs-enroll-connection p{font-size:11px;color:#9b6719;margin:0;line-height:1.55}
+.cs-enroll-steps{background:#f8fbff;border:1px solid #dce9f8;border-radius:13px;padding:18px;min-width:0}
+.cs-enroll-steps h4{font-size:14px;margin:0 0 8px;color:#174b81}
+.cs-enroll-steps>p{font-size:11px;color:#6786a5;line-height:1.7}
+.cs-enroll-steps a{color:#166ecb;text-decoration:underline}
+.cs-enroll-commands{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.cs-enroll-commands>div{min-width:0;display:grid;gap:8px}
+.cs-enroll-commands b{font-size:11px;color:#2f6296}
+.cs-enroll-commands pre{margin:0;padding:13px;border:1px solid #2b5484;background:#0d2546;color:#c9eeff;border-radius:9px;white-space:pre-wrap;overflow-wrap:anywhere;font-family:Consolas,"Liberation Mono",monospace;font-size:10px;line-height:1.7;min-height:192px}
+.cs-enroll-connection input{margin-top:2px}
+@media(max-width:1180px){.cs-enroll-commands{grid-template-columns:1fr}}
+@media(max-width:760px){
+ .cs-enroll{padding:16px}
+ .cs-enroll-top{align-items:flex-start;flex-wrap:wrap}
+ .cs-enroll-form,.cs-enroll-credentials{grid-template-columns:1fr}
+ .cs-enroll-form label:nth-child(3),.cs-enroll-form .cs-enroll-submit{grid-column:auto}
+ .cs-enroll-secret{flex-wrap:wrap}
+}

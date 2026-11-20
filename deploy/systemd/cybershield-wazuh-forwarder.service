@@ -1,0 +1,24 @@
+[Unit]
+Description=CyberShield Wazuh Alerts Forwarder
+After=network-online.target wazuh-manager.service cybershield-api.service
+Wants=network-online.target
+Requires=cybershield-api.service
+
+[Service]
+Type=simple
+User=yahir
+Group=yahir
+SupplementaryGroups=wazuh
+WorkingDirectory=/mnt/c/Users/Giovas128/downloads/CyberSHield
+ExecStart=/mnt/c/Users/Giovas128/downloads/CyberSHield/backend/venv-wsl/bin/python -u /mnt/c/Users/Giovas128/downloads/CyberSHield/wazuh_forwarder.py
+Environment=PYTHONUNBUFFERED=1
+Environment=CYBERSHIELD_WAZUH_CURSOR=/var/lib/cybershield/wazuh-forwarder.cursor.json
+StateDirectory=cybershield
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=true
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
