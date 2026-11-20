@@ -125,14 +125,26 @@ def register_execution_result(
     success: bool,
     result: str,
 ):
-    action = get_response_action_by_id(
-        db,
-        action_id,
+    # Bloqueamos la fila antes de comprobar su estado.
+    # El bloqueo dura hasta finalizar la transacción.
+    action = (
+        db.query(ResponseAction)
+        .filter(ResponseAction.id == action_id)
+        .with_for_update()
+        .first()
     )
 
     if not action:
         raise ValueError(
             f"No existe la acción {action_id}"
+        )
+
+    # Solo una acción pendiente o aprobada puede
+    # recibir su primer resultado de ejecución.
+    if action.status not in ("pending", "approved"):
+        raise ValueError(
+            f"La acción {action_id} ya tiene "
+            f"estado {action.status}; resultado rechazado"
         )
 
     incident = (
@@ -154,9 +166,10 @@ def register_execution_result(
             timezone.utc
         )
 
-        # La acción defensiva fue ejecutada correctamente.
-        # Consideramos el incidente contenido/resuelto.
-        incident.status = "resolved"
+        # Ejecutado no significa contenido.
+        # El incidente mantiene su estado hasta que
+        # un verificador confirme la contención.
+        # No cerrar el incidente aquí.
 
     else:
         action.status = "failed"
@@ -194,9 +207,13 @@ def register_rollback_result(
     success: bool,
     result: str,
 ):
-    action = get_response_action_by_id(
-        db,
-        action_id,
+    # Bloqueamos la fila antes de comprobar su estado.
+    # El bloqueo dura hasta finalizar la transacción.
+    action = (
+        db.query(ResponseAction)
+        .filter(ResponseAction.id == action_id)
+        .with_for_update()
+        .first()
     )
 
     if not action:
@@ -207,6 +224,12 @@ def register_rollback_result(
     if not action.reversible:
         raise ValueError(
             "La acción no está marcada como reversible"
+        )
+
+    if action.status != "executed":
+        raise ValueError(
+            f"No se puede revertir la acción {action_id} "
+            f"porque su estado es {action.status}"
         )
 
     if success:

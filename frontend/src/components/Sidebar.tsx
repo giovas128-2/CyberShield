@@ -1,7 +1,8 @@
 import { NavLink } from "react-router-dom";
-import { Activity, Bell, FlaskConical, LayoutDashboard, Lock, Server, Settings, ShieldAlert, ShieldCheck, Smartphone, User as UserIcon, Wrench } from "lucide-react";
+import { Palette, Activity, Bell, FlaskConical, LayoutDashboard, Lock, Server, Settings, ShieldAlert, ShieldCheck, Smartphone, User as UserIcon, Wrench } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Brand } from "./Brand";
+import { formatClock } from "../preferences/cybershieldPreferences";
 
 /* Navegación única de la consola. Se reutiliza para el sidebar y para el breadcrumb del topbar. */
 export const NAV: { sec: string; items: [string, string, LucideIcon][] }[] = [
@@ -21,6 +22,7 @@ export const NAV: { sec: string; items: [string, string, LucideIcon][] }[] = [
   ] },
   { sec: "SISTEMA", items: [
     ["/security", "Seguridad", Lock],
+    ["/design-preview", "Prototipo UI", Palette],
     ["/config", "Configuración", Settings],
   ] },
 ];
@@ -60,7 +62,7 @@ export function Sidebar({ openIncidents, notifications, status, open, onClose }:
         <div className="agent">
           <span className={`sv ${status.stale || status.demo ? "wn" : "ok"}`}>● {label}</span>
           <div style={{ marginTop: 6 }}>{status.online} online · {status.offline} offline</div>
-          <div>Actualizado: {status.updatedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</div>
+          <div>Actualizado: {formatClock(status.updatedAt, true)}</div>
         </div>
       </aside>
       {open && <div className="scrim" onClick={onClose} aria-hidden="true" />}

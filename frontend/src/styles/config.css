@@ -48,3 +48,58 @@
 :root[data-cs-density="compact"] .cs .notification-row{padding:6px 0}
 @media(max-width:990px){.cfg-columns{grid-template-columns:1fr}}
 @media(max-width:640px){.cfg-card{padding:16px}.cfg-savebar{align-items:stretch;flex-direction:column}.cfg-save-actions .btn{flex:1}.cfg-switch-status{display:none}}
+
+
+/* === CYBERSHIELD CONFIG COMPLETA - BLOQUE AUTOCONTENIDO === */
+.cfg-filter-note{padding:10px 14px;border:1px solid var(--bd);border-radius:9px;background:var(--sf);color:var(--mu);font-size:12px}
+.cfg-warn{color:var(--wn);font-size:12px;line-height:1.5;margin-top:9px}
+.cfg-inline-tools{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-top:14px}
+.cfg-inline-tools .btn{margin:0}
+.cfg-severity-list{padding:10px 0 8px}
+.cfg-savebar{position:sticky;bottom:8px;z-index:10;box-shadow:0 12px 24px #0003}
+:root[data-cs-density="compact"] .cs .tw td,:root[data-cs-density="compact"] .cs .soc-eventtable td{padding:6px 10px}
+:root[data-cs-density="compact"] .cs .tw th,:root[data-cs-density="compact"] .cs .soc-eventtable th{padding:7px 10px}
+:root[data-cs-density="compact"] .cs .notification-row,:root[data-cs-density="compact"] .cs .soc-incident,:root[data-cs-density="compact"] .cs .soc-asset,:root[data-cs-density="compact"] .cs .soc-source{padding-top:5px;padding-bottom:5px}
+:root[data-cs-density="compact"] .cs .ic{padding:9px 12px}
+:root[data-cs-density="compact"] .cs .card{padding:13px}
+
+:root[data-cs-theme="light"] .cs{
+  --bg:#f4f7fb;--sf:#ffffff;--sf2:#edf2f7;--bd:#cbd6e2;
+  --ac:#126e80;--ok:#157447;--wn:#8a5600;--er:#a8223c;
+  --tx:#152536;--mu:#526578;
+}
+:root[data-cs-theme="light"] .cs .nav.on,:root[data-cs-theme="light"] .cs .ic.on{background:#dceef2}
+:root[data-cs-theme="light"] .cs .brand i,:root[data-cs-theme="light"] .cs .av{background:#dceef2;border-color:#accdd6}
+:root[data-cs-theme="light"] .cs .sv.ok,:root[data-cs-theme="light"] .cs .origin.ok{background:#d7f1e4;color:#157447;border-color:#a2d7bc}
+:root[data-cs-theme="light"] .cs .sv.wn,:root[data-cs-theme="light"] .cs .origin.wn{background:#fff0cf;color:#835100;border-color:#dfc189}
+:root[data-cs-theme="light"] .cs .sv.er,:root[data-cs-theme="light"] .cs .origin.er{background:#ffe3e5;color:#a8223c;border-color:#df9b9f}
+:root[data-cs-theme="light"] .cs .bdg{background:#ffe3e5;color:#a8223c}
+:root[data-cs-theme="light"] .cs .cfg-info{background:#e5f5f8;border-color:#a5d6df;border-left-color:var(--ac)}
+:root[data-cs-theme="light"] .cs .soc-panel,:root[data-cs-theme="light"] .cs .soc-kpi{background:#fff;border:1px solid var(--bd)}
+:root[data-cs-theme="light"] .cs .soc-hero-alert{background:linear-gradient(105deg,#ffe4e6,#fff);border-color:#e4adb6}
+:root[data-cs-theme="light"] .cs .soc-hero-contained,:root[data-cs-theme="light"] .cs .soc-hero-safe{background:linear-gradient(105deg,#e2f7ee,#fff);border-color:#b6dbc8}
+:root[data-cs-theme="light"] .cs .soc-hero-main>p,:root[data-cs-theme="light"] .cs .soc-bar-row>span{color:var(--mu)}
+:root[data-cs-theme="light"] .cs .soc-eventtable th{background:var(--sf2)}
+:root[data-cs-theme="light"] .cs .soc-track{background:#d5e1eb}
+:root[data-cs-theme="light"] .cs .soc-hero-facts b svg{color:var(--mu)}
+:root[data-cs-theme="light"] .cs .soc-pill.soc-cyan{background:#dceef2;color:#116578}
+:root[data-cs-theme="light"] .cs .soc-pill.soc-red{background:#ffe3e5;color:#ac2840}
+:root[data-cs-theme="light"] .cs .soc-pill.soc-amber{background:#fff0cd;color:#875100}
+:root[data-cs-theme="light"] .cs .soc-pill.soc-green{background:#dbf3e6;color:#14734a}
+:root[data-cs-theme="light"] .cs .soc-scope-blocked{background:#d7f1e4;color:#125d3c}
+:root[data-cs-theme="light"] .cs .soc-scope-reached{background:#fff0cd;color:#795000}
+:root[data-cs-theme="light"] .cs .soc-scope-impact{background:#ffe3e5;color:#ab2940}
+:root[data-cs-theme="light"] .cs .response-panel{background:#e6f4f6;border-color:#9cd4db}
+:root[data-cs-theme="light"] .cs .recommendation-panel,:root[data-cs-theme="light"] .cs .reco{background:#fff4da;border-color:#ddcc9e}
+:root[data-cs-theme="light"] .cs .ev-card{background:#fff;border-color:var(--bd)}
+:root[data-cs-theme="light"] .cs .ev-field,:root[data-cs-theme="light"] .cs .ev-command>div,:root[data-cs-theme="light"] .cs .ev-mitre{background:#ecf1f6}
+:root[data-cs-theme="light"] .cs .lab-result{background:#daf3e5;color:#156542;border-color:#9acfb0}
+:root[data-cs-theme="light"] .cs .labb,:root[data-cs-theme="light"] .cs .mc{background:#f1ecfa;color:#593ba1;border-color:#c4b7e0}
+:root[data-cs-theme="light"] .cs .labb small{color:var(--mu)}
+:root[data-cs-theme="light"] .cs .mb{background:#f1ecfa;color:#593ba1}
+:root[data-cs-theme="light"] .cs .demo{background:#dceef2;border-color:#b3d6df}
+:root[data-cs-theme="light"] .cs .portal-card-company .portal-card-copy{color:var(--tx)}
+:root[data-cs-theme="light"] .cs .btn:not(.gh){color:#fff}
+:root[data-cs-theme="light"] .cs .soc-action-primary,:root[data-cs-theme="light"] .cs .soc-sim{color:#fff}
+:root[data-cs-theme="light"] .cs .badge,:root[data-cs-theme="light"] .cs .origin{box-shadow:none}
+:root[data-cs-density="compact"] .cs table th,:root[data-cs-density="compact"] .cs table td{padding-top:6px;padding-bottom:6px}

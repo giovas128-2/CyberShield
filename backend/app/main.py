@@ -1,10 +1,15 @@
+from pathlib import Path
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.servers import router as servers_router
 from app.api.integrations import router as integrations_router
 from app.api.events import router as events_router
 from app.api.incidents import router as incidents_router
+from app.api.incident_assignments import router as incident_assignments_router
+from app.api.agents import router as agents_router
 from app.api.dashboard import router as dashboard_router
 from app.api.auth import router as auth_router
 from app.api.notifications import router as notifications_router
@@ -12,6 +17,7 @@ from app.api.response_actions import router as response_actions_router
 from app.api.device_trust import router as device_trust_router
 from app.api.protections import router as protections_router
 from app.api.lab import router as lab_router
+from app.api.intelligence import router as intelligence_router
 
 from app.core.config import FRONTEND_URL
 from app.database.connection import check_database_connection
@@ -45,6 +51,8 @@ app.include_router(auth_router)
 app.include_router(dashboard_router)
 app.include_router(events_router)
 app.include_router(incidents_router)
+app.include_router(incident_assignments_router)
+app.include_router(agents_router)
 app.include_router(integrations_router)
 app.include_router(servers_router)
 app.include_router(notifications_router)
@@ -52,17 +60,29 @@ app.include_router(response_actions_router)
 app.include_router(device_trust_router)
 app.include_router(protections_router)
 app.include_router(lab_router)
+app.include_router(intelligence_router)
 
 
 # ============================================================
 # ROOT
 # ============================================================
 
+FRONTEND_DIST = (
+    Path(__file__).resolve().parents[2]
+    / "frontend"
+    / "dist"
+)
+
+app.mount(
+    "/assets",
+    StaticFiles(directory=str(FRONTEND_DIST / "assets")),
+    name="frontend-assets",
+)
+
+
 @app.get("/")
 def root():
-    return {
-        "message": "CyberShield API funcionando"
-    }
+    return FileResponse(FRONTEND_DIST / "index.html")
 
 
 # ============================================================

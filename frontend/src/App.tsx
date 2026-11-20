@@ -1,3 +1,4 @@
+import CyberShieldDesignPreview from "./pages/CyberShieldDesignPreview";
 import { useEffect, useState } from "react";
 import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { Login } from "./pages/Login";
@@ -126,6 +127,7 @@ const guard = (el: JSX.Element) =>
             <Route path="/empresa-demo/administracion" element={<EDAdministracion />} />
             <Route path="/empresa-demo/acceso-restringido" element={<EDRestringido />} />
           </Route>
+          <Route path="/design-preview" element={guard(<CyberShieldDesignPreview />)} />
           <Route element={guard(<AppLayout user={user!} onLogout={logout} />)}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/servers" element={<ServersView />} />

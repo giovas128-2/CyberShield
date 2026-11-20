@@ -187,6 +187,15 @@ def receive_wazuh_active_response(
                 ),
             )
 
+        from app.services.wazuh_response_verification import (
+            evaluate_wazuh_execution,
+        )
+
+        verification = evaluate_wazuh_execution(
+            operation="add",
+            success=data.success,
+        )
+
         updated = register_execution_result(
             db=db,
             action_id=action.id,
@@ -198,6 +207,11 @@ def receive_wazuh_active_response(
             "success": True,
             "operation": "add",
             "response_action": updated,
+            "containment_verification": {
+                "status": verification.status,
+                "notify_engineer": verification.notify_engineer,
+                "reason": verification.reason,
+            },
         }
 
     # =========================================================

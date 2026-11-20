@@ -3,6 +3,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
+from app.core.auth_dependencies import require_roles
 from app.models.incident import Incident
 from app.models.event import Event
 from app.models.incident_mitre import IncidentMitre
@@ -237,12 +238,16 @@ def update_incident_status(
     incident_id: int,
     data: IncidentStatusUpdate,
     db: Session = Depends(get_db),
+    _current_user = Depends(
+        require_roles("admin", "engineer")
+    ),
 ):
     incident = (
         db.query(Incident)
         .filter(
             Incident.id == incident_id
         )
+        .with_for_update()
         .first()
     )
 
@@ -251,6 +256,44 @@ def update_incident_status(
             status_code=404,
             detail="Incidente no encontrado",
         )
+
+    # Los incidentes con flujo nuevo deben respetar
+    # el procedimiento de cierre con evidencias.
+    workflow = getattr(incident, "workflow_status", None)
+
+    if workflow is None:
+        # El modelo antiguo no declara workflow_status.
+        # Consultamos el campo real en PostgreSQL.
+        from sqlalchemy import text
+
+        workflow = db.execute(
+            text("""
+                SELECT workflow_status
+                FROM public.incidents
+                WHERE id = :iid
+            """),
+            {"iid": incident_id},
+        ).scalar_one()
+
+    if workflow is not None:
+        if data.status == "resolved" and workflow != "closed":
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "El incidente debe completar su flujo "
+                    "de cierre con evidencias antes "
+                    "de marcarse como resuelto"
+                ),
+            )
+
+        if workflow == "closed" and data.status != "resolved":
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "No se puede reabrir un flujo cerrado "
+                    "mediante la actualización de estado"
+                ),
+            )
 
     incident.status = data.status
 

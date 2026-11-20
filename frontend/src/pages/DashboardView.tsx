@@ -32,6 +32,8 @@ import type {
 import type { CyberShieldCtx } from "../hooks/useCyberShieldData";
 import { SeverityBadge } from "../components/SeverityBadge";
 import { SimBanner } from "../components/SimBanner";
+import { useVisibleSeverities } from "../hooks/useVisibleSeverities";
+import { formatClock, resolvedTimeZone } from "../preferences/cybershieldPreferences";
 import "../styles/dashboard-soc.css";
 
 const ATTACK_LEVELS: Severidad[] = ["HIGH", "CRITICAL"];
@@ -104,6 +106,7 @@ function last24Hours(events: Evento[]) {
     const date = new Date(start + (index + 1) * 3600000);
 
     return date.toLocaleTimeString("es-MX", {
+      timeZone: resolvedTimeZone(),
       hour: "2-digit",
       minute: "2-digit",
     });
@@ -756,8 +759,10 @@ export function DashboardView({
   ctx: CyberShieldCtx;
 }) {
   const nav = useNavigate();
+  const visibleLevels = useVisibleSeverities();
 
   const events = ctx.events;
+  const visibleEvents = events.filter((event) => visibleLevels.has(event.severidad));
   const incidents = ctx.incidents;
   const servers = ctx.servers;
   const modeDemo = ctx.demo;
@@ -835,7 +840,7 @@ export function DashboardView({
     ...relevant.filter(
       (incident) => incident.status === "resolved",
     ),
-  ];
+  ].filter((incident) => visibleLevels.has(incident.severidad));
 
   const goIncident = (id: number) => {
     nav(
@@ -1031,10 +1036,10 @@ export function DashboardView({
             </thead>
 
             <tbody>
-              {events.slice(0, 7).map((event) => (
+              {visibleEvents.slice(0, 7).map((event) => (
                 <tr key={event.id}>
                   <td className="soc-mono">
-                    {event.fecha}
+                    {event.createdAt ? formatClock(event.createdAt) : event.fecha}
                   </td>
 
                   <td>{pretty(event.tipo)}</td>
@@ -1076,7 +1081,7 @@ export function DashboardView({
                 </tr>
               ))}
 
-              {!events.length && (
+              {!visibleEvents.length && (
                 <tr>
                   <td
                     colSpan={7}

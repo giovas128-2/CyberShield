@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Check, ChevronDown, ChevronUp, Loader2, Search, X } from "lucide-react";
-import type { Incidente } from "../types";
+import type { Incidente, Severidad } from "../types";
 import { SeverityBadge } from "../components/SeverityBadge";
 import { MitreTechniqueCard } from "../components/mitre/MitreTechniqueCard";
 
@@ -13,12 +13,14 @@ const statusClass = (estado: string) => {
 
 export function IncidentsView({
   list,
+  visibleLevels,
   selId,
   setSelId,
   onInvestigate,
   onResolve,
 }: {
   list: Incidente[];
+  visibleLevels?: ReadonlySet<Severidad>;
   selId: string | null;
   setSelId: (v: string) => void;
   onInvestigate: (incident: Incidente) => Promise<boolean>;
@@ -30,10 +32,16 @@ export function IncidentsView({
   const [showGuide, setShowGuide] = useState(false);
 
   const shown = list.filter((i) =>
+    (!visibleLevels || visibleLevels.has(i.severidad)) &&
     (i.titulo + i.id + i.origen).toLowerCase().includes(q.toLowerCase()),
   );
-  const sel = list.find((i) => i.id === selId) || shown[0];
+  // El detalle también se restringe a la lista filtrada (no mostrar incidente oculto).
+  const sel = shown.find((i) => i.id === selId) || shown[0];
+  // El total de incidentes abiertos es real, independiente de filtros de pantalla.
   const abiertos = list.filter((i) => i.estado !== "Resuelto").length;
+  const hiddenBySeverity = visibleLevels
+    ? list.filter((i) => !visibleLevels.has(i.severidad)).length
+    : 0;
 
   useEffect(() => {
     setShowGuide(false);
@@ -67,6 +75,13 @@ export function IncidentsView({
         </div>
         <span className="sv er">{abiertos} incidentes abiertos</span>
       </div>
+
+      {hiddenBySeverity > 0 && (
+        <p className="mu" role="status">
+          Filtro personal activo: {hiddenBySeverity} incidentes
+          ocultos en esta vista. La detección continúa activa.
+        </p>
+      )}
 
       <div className="inp" style={{ maxWidth: 420 }}>
         <Search size={16} color="#8a9bb0" />

@@ -6,12 +6,19 @@ import { OriginChip } from "../components/OriginChip";
 import { Sidebar, NAV } from "../components/Sidebar";
 import { Toast } from "../components/Toast";
 import { useCyberShieldData } from "../hooks/useCyberShieldData";
+import { NoticeObserver } from "../components/NoticeObserver";
+import { currentUserDisplay, usePreferences } from "../preferences/cybershieldPreferences";
 import type { User } from "../types";
 
 export function AppLayout({ user, onLogout }: { user: User; onLogout: () => void }) {
   const loc = useLocation();
   const nav = useNavigate();
   const ctx = useCyberShieldData(user);
+  const prefs = usePreferences();
+  useEffect(() => {
+    document.documentElement.dataset.csTheme = prefs.theme;
+    document.documentElement.dataset.csDensity = prefs.density;
+  }, [prefs.theme, prefs.density]);
   const [menuOpen, setMenuOpen] = useState(false);
   const abiertos = ctx.incidents.filter((i) => i.status !== "resolved").length;
   const current = NAV.flatMap((g) => g.items).find(([p]) => loc.pathname.startsWith(p));
@@ -35,7 +42,7 @@ export function AppLayout({ user, onLogout }: { user: User; onLogout: () => void
           <span className="sp" />
           <OriginChip demo={ctx.demo} stale={ctx.stale} at={ctx.updatedAt} />
           <div className="av">{user?.name?.slice(0, 2).toUpperCase()}</div>
-          <div className="who" style={{ lineHeight: 1.2 }}>{user?.name}<div className="mu" style={{ fontSize: 11 }}>Administrador</div></div>
+          <div className="who" style={{ lineHeight: 1.2 }}>{user?.name}<div className="mu" style={{ fontSize: 11 }}>{currentUserDisplay().role}</div></div>
           <button className="lnk" style={{ color: "var(--mu)" }} onClick={onLogout}>Salir</button>
         </header>
         <main className="main"><Outlet context={ctx} /></main>
@@ -52,6 +59,8 @@ export function AppLayout({ user, onLogout }: { user: User; onLogout: () => void
           }}
         />
       )}
+      <NoticeObserver events={ctx.events} incidents={ctx.incidents}
+        isLive={!ctx.demo && !ctx.stale && !ctx.loading} onToast={ctx.setToast} />
       <Toast toast={ctx.toast} onClose={() => ctx.setToast(null)} />
     </div>
   );

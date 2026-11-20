@@ -1,4 +1,5 @@
 import type { Evento, Severidad } from "../types";
+import { formatClock, formatDateTime } from "../preferences/cybershieldPreferences";
 
 export const SEV: Record<Severidad, string> = {
   NORMAL: "NORMAL",
@@ -23,18 +24,10 @@ export const toSeverity = (s: unknown): Severidad => {
 };
 
 export const emailOk = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-export const hhmm = (d = new Date()) => d.toTimeString().slice(0, 5);
+export const hhmm = (d = new Date()) => formatClock(d);
 
-export const stamp = (value?: string | Date) => {
-  const date = value ? new Date(value) : new Date();
-  return date.toLocaleString("es", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
+export const stamp = (value?: string | Date) =>
+  formatDateTime(value ?? new Date());
 
 export const timeAgo = (value?: string | null) => {
   if (!value) return "Sin actividad";

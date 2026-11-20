@@ -18,7 +18,7 @@ import type {
 import { hhmm, stamp, toSeverity } from "../utils/format";
 
 export const http = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? "http://localhost:8000",
+  baseURL: import.meta.env.VITE_API_URL ?? "/",
 })
 
 http.interceptors.request.use((cfg) => {

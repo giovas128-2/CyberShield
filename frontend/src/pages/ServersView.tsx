@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, RefreshCw, Server } from "lucide-react";
 import { getServers } from "../api/client";
 import type { ServerItem, ServerStatus } from "../types";
@@ -19,22 +19,45 @@ const statusClass: Record<ServerStatus, string> = {
 export function ServersView() {
   const [servers, setServers] = useState<ServerItem[] | null>(null);
   const [error, setError] = useState("");
+  const inFlight = useRef(false);
+  const mounted = useRef(false);
 
   const load = useCallback(async () => {
-    setError("");
-    setServers(null);
+    if (inFlight.current) return;
+
+    inFlight.current = true;
 
     try {
-      setServers(await getServers());
+      const freshServers = await getServers();
+
+      if (!mounted.current) return;
+
+      setServers(freshServers);
+      setError("");
     } catch (err) {
       console.error("GET /servers falló:", err);
-      setServers([]);
-      setError("No se pudo cargar la lista de servidores. Verifica que el backend esté activo.");
+
+      if (!mounted.current) return;
+
+      setServers((previous) => previous ?? []);
+      setError("No se pudo actualizar la lista de servidores. Se conservan los últimos datos disponibles.");
+    } finally {
+      inFlight.current = false;
     }
   }, []);
 
   useEffect(() => {
+    mounted.current = true;
     load();
+
+    const timer = window.setInterval(() => {
+      load();
+    }, 5000);
+
+    return () => {
+      mounted.current = false;
+      window.clearInterval(timer);
+    };
   }, [load]);
 
   return (
@@ -57,7 +80,7 @@ export function ServersView() {
 
       {error && <div className="errbox"><b>Error</b>{error}</div>}
 
-      {servers && !error && servers.length > 0 && (
+      {servers && servers.length > 0 && (
         <div className="tw">
           <table>
             <thead>
