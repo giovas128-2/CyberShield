@@ -3,7 +3,7 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from unittest.mock import MagicMock
-from fastapi import HTTPException
+from fastapi import HTTPException, Response
 from pydantic import ValidationError
 
 from app.api.servers import ServerOnboardRequest, get_servers, onboard_server
@@ -31,7 +31,7 @@ class ServerOnboardingTests(unittest.TestCase):
         db=MagicMock()
         db.execute.return_value.scalar_one.return_value=None
         with self.assertRaises(HTTPException) as ctx:
-            onboard_server(self.payload(),db=db,_current_user=SimpleNamespace(role="engineer"))
+            onboard_server(self.payload(),response=Response(),db=db,_current_user=SimpleNamespace(role="engineer"))
         self.assertEqual(ctx.exception.status_code,503)
         db.add.assert_not_called()
 
