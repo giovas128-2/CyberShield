@@ -2,6 +2,7 @@ import { Link, useOutletContext, useParams } from "react-router-dom";
 import type { CyberShieldCtx } from "../hooks/useCyberShieldData";
 import { SeverityBadge } from "../components/SeverityBadge";
 import { MitreTechniqueCard } from "../components/mitre/MitreTechniqueCard";
+import IncidentAnalysisPanel from "../components/IncidentAnalysisPanel";
 
 export default function IncidentDetailPage() {
   const { id } = useParams();
@@ -71,6 +72,7 @@ export default function IncidentDetailPage() {
     </span>
   )}
 </div>
+        <IncidentAnalysisPanel incidentId={inc.backendId} />
         <div className="reco recommendation-panel"><b>Recomendación</b><span>{inc.reco}</span></div>
         <div className="investigation-guide detail-section"><div className="guide-content" style={{ display: "block" }}><b>Qué revisar</b><ol>{inc.investigationSteps.map((s, idx) => <li key={idx}>{s}</li>)}</ol><b>Criterio de resolución</b><p className="mu">{inc.resolutionCriteria}</p></div></div>
       </div>
