@@ -228,7 +228,7 @@ def list_protection_proposals(
     }
     clause = """
         FROM cybershield_protection_proposals
-        WHERE (:status IS NULL OR status = :status)
+        WHERE (CAST(:status AS TEXT) IS NULL OR status = CAST(:status AS TEXT))
     """
     total = db.execute(
         text("SELECT COUNT(*) " + clause), params
