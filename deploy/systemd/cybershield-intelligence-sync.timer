@@ -1,0 +1,11 @@
+[Unit]
+Description=CyberShield Intelligence - comprobar nuevas amenazas cada día
+
+[Timer]
+OnCalendar=*-*-* 03:30:00
+Persistent=true
+RandomizedDelaySec=15min
+Unit=cybershield-intelligence-sync.service
+
+[Install]
+WantedBy=timers.target
