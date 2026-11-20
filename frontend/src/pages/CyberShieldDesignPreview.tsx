@@ -13,20 +13,29 @@ import {
 import type { LucideIcon } from "lucide-react";
 import "../styles/cybershield-design-preview.css";
 
-type View = "dashboard" | "incidents" | "incident-detail" | "intelligence" | "catalog" | "analysis" | "servers" | "notifications" | "settings";
+type View = "login" | "dashboard" | "servers" | "events" | "incidents" | "incident-detail" | "notifications" | "actions" | "protections" | "code-review" | "intelligence" | "catalog" | "analysis" | "settings";
 type SourceMode = "github" | "zip" | "code";
 type TerminalMode = "response" | "audit" | "configuration";
 
 type NavItem = { id: View; label: string; icon: LucideIcon };
 const NAV: { title: string; items: NavItem[] }[] = [
+  { title: "ACCESO", items: [
+    { id: "login", label: "Login · vista previa", icon: LockKeyhole },
+  ]},
   { title: "OPERACIONES", items: [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { id: "servers", label: "Servidores", icon: Server },
+    { id: "events", label: "Eventos", icon: Activity },
     { id: "incidents", label: "Incidentes", icon: ShieldAlert },
+    { id: "notifications", label: "Notificaciones", icon: Bell },
+  ]},
+  { title: "GESTIÓN Y DEFENSA", items: [
+    { id: "actions", label: "Acciones", icon: Terminal },
+    { id: "protections", label: "Protecciones", icon: ShieldCheck },
+    { id: "code-review", label: "Auditoría de código", icon: FileCode2 },
     { id: "intelligence", label: "Inteligencia", icon: BookOpen },
     { id: "catalog", label: "Ataques registrados", icon: Activity },
-    { id: "servers", label: "Servidores", icon: Server },
-    { id: "analysis", label: "Análisis con IA", icon: BrainCircuit },
-    { id: "notifications", label: "Notificaciones", icon: Bell },
+    { id: "analysis", label: "Conceptos de análisis futuro", icon: BrainCircuit },
   ]},
   { title: "SISTEMA", items: [
     { id: "settings", label: "Configuración", icon: Settings },
@@ -34,6 +43,11 @@ const NAV: { title: string; items: NavItem[] }[] = [
 ];
 
 const VIEW_TITLES: Record<View, string> = {
+  login: "Acceso a la plataforma",
+  events: "Eventos de seguridad",
+  actions: "Acciones defensivas",
+  protections: "Controles de protección",
+  "code-review": "Auditoría de código",
   dashboard: "Centro de operaciones",
   incidents: "Incidentes de seguridad",
   "incident-detail": "Centro de incidente",
@@ -58,6 +72,30 @@ const INCIDENTS = [
   { id: "INC-DEMO-002", title: "Actividad de exfiltración sospechosa", technique: "T1041", host: "srv-lab-02", severity: "Crítica", badge: "critical", status: "Revisión necesaria" },
   { id: "INC-DEMO-003", title: "Movimiento lateral por SSH", technique: "T1021", host: "srv-lab-03", severity: "Alta", badge: "high", status: "En investigación" },
   { id: "INC-DEMO-004", title: "Cambio sospechoso en archivo", technique: "T1486", host: "srv-lab-01", severity: "Media", badge: "medium", status: "Por verificar" },
+];
+
+const EVENTS_DEMO = [
+  { id:"EVT-2001", time:"10:42:16", type:"multiple_login_attempts", source:"Wazuh", host:"srv-lab-01", severity:"Alta", scope:"BLOCKED", tone:"high", incident:"INC-DEMO-001" },
+  { id:"EVT-2002", time:"10:39:02", type:"possible_ransomware_behavior", source:"Laboratorio", host:"srv-lab-02", severity:"Crítica", scope:"IMPACT", tone:"critical", incident:"INC-DEMO-002" },
+  { id:"EVT-2003", time:"10:36:54", type:"possible_lateral_movement", source:"Laboratorio", host:"srv-lab-03", severity:"Alta", scope:"REACHED", tone:"high", incident:"INC-DEMO-003" },
+  { id:"EVT-2004", time:"10:31:12", type:"suspicious_file_change", source:"Wazuh", host:"srv-lab-01", severity:"Media", scope:"REACHED", tone:"medium", incident:"INC-DEMO-004" },
+  { id:"EVT-2005", time:"10:25:43", type:"suricata_network_alert", source:"Suricata", host:"srv-lab-02", severity:"Media", scope:"BLOCKED", tone:"medium", incident:"—" },
+];
+const ACTIONS_DEMO = [
+  { id:"ACT-101", type:"BLOCK_SOURCE_IP", incident:"INC-DEMO-001", target:"IP de origen", state:"Ejecutada", tone:"teal", reversible:"Sí", source:"Wazuh Active Response" },
+  { id:"ACT-102", type:"RESTRICT_LATERAL_COMMUNICATION", incident:"INC-DEMO-003", target:"SSH / origen", state:"Revertida", tone:"blue", reversible:"Sí", source:"CyberShield Bridge" },
+  { id:"ACT-103", type:"PROTECT_CRITICAL_FILE", incident:"INC-DEMO-004", target:"Archivo protegido", state:"Pendiente", tone:"amber", reversible:"Según control", source:"CyberShield" },
+  { id:"ACT-104", type:"RESTRICT_DATA_FLOW", incident:"INC-DEMO-002", target:"Tráfico saliente", state:"Falló", tone:"red", reversible:"Sí", source:"CyberShield Bridge" },
+];
+const PROTECTIONS_DEMO = [
+  { id:"CS-C01", title:"Protección ante fuerza bruta", source:"Wazuh", mitre:"T1110", state:"Integrada", tone:"teal", desc:"Detección de intentos de acceso y respuesta con controles autorizados." },
+  { id:"CS-C02", title:"Restricción de dispositivos", source:"CyberShield", mitre:"T1091", state:"Integrada", tone:"teal", desc:"Restricciones defensivas de acceso ante señales registradas." },
+  { id:"CS-C03", title:"Integridad de archivos críticos", source:"Wazuh / CyberShield", mitre:"T1486", state:"Integrada", tone:"teal", desc:"Monitoreo y preservación de integridad con evidencia verificable." },
+  { id:"CS-C04", title:"Movimiento lateral", source:"Wazuh / Bridge", mitre:"T1021", state:"Integrada", tone:"teal", desc:"Correlación y respuesta defensiva de comunicación lateral." },
+  { id:"CS-C05", title:"Prevención de exfiltración", source:"Suricata / Bridge", mitre:"T1041", state:"En revisión", tone:"amber", desc:"Requiere verificar la evidencia de restricción del flujo de datos." },
+  { id:"CS-C06", title:"Protección de credenciales", source:"Wazuh", mitre:"T1078", state:"En revisión", tone:"amber", desc:"Vigilar el uso anómalo de identidad y accesos." },
+  { id:"CS-C07", title:"Protección de privilegios", source:"CyberShield", mitre:"T1548", state:"Simulada", tone:"blue", desc:"Validar el modo de operación del control antes de atribuir contención." },
+  { id:"CS-C08", title:"Respuesta ante ransomware", source:"CyberShield", mitre:"T1486", state:"Simulada", tone:"blue", desc:"Demostración controlada de análisis, respuesta y verificación." },
 ];
 
 function Pill({ children, tone = "blue" }: { children: ReactNode; tone?: string }) {
@@ -98,6 +136,19 @@ export default function CyberShieldDesignPreview() {
   const [compact, setCompact] = useState(false);
   const [copied, setCopied] = useState(false);
   const [searchIncident, setSearchIncident] = useState("");
+  const [eventSeverity, setEventSeverity] = useState("Todas");
+  const [eventScope, setEventScope] = useState("Todos");
+  const [selectedEvent, setSelectedEvent] = useState("EVT-2001");
+  const [actionStatus, setActionStatus] = useState("Todas");
+  const [selectedProtection, setSelectedProtection] = useState("CS-C01");
+  const [auditSource, setAuditSource] = useState<"files" | "github">("files");
+  const [auditAi, setAuditAi] = useState(false);
+  const [auditDemo, setAuditDemo] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginVisible, setLoginVisible] = useState(false);
+  const [loginInfo, setLoginInfo] = useState(false);
+
 
   function navigate(next: View) { setView(next); setMobileMenu(false); window.scrollTo({ top: 0, behavior: "smooth" }); }
   const filteredAttacks = useMemo(() => ATTACKS.filter(a =>
