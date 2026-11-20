@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { ChangeEvent, DragEvent } from "react";
 import {
   AlertCircle, AlertTriangle, ArrowRight, BrainCircuit, CheckCircle2,
-  CircleHelp, Code2, FileCheck2, FileCode2, FileSearch, FolderOpen,
+  CircleHelp, Code2, FileArchive, FileCheck2, FileCode2, FileSearch, FolderOpen,
   Github, Info, Layers3, Loader2, LockKeyhole, Search, Shield,
   ShieldAlert, ShieldCheck, Sparkles, UploadCloud,
 } from "lucide-react";
@@ -18,6 +18,9 @@ type Scan = {
   files_scanned: number; findings_total: number; findings: Finding[];
   analysis: { mode: string; summary: string };
   note: string; execution: string;
+  archive?: { zip_entries: number; skipped_noncode: number; skipped_oversized: number; skipped_binary: number; source_bytes: number };
+  ai_files_sampled?: number;
+  findings_limited?: boolean;
 };
 type SourceFile = {path: string; content: string};
 
@@ -49,7 +52,8 @@ function severityLabel(severity: string): string {
 }
 
 export default function CodeSecurityReviewPage() {
-  const [mode, setMode] = useState<"files" | "github">("files");
+  const [mode, setMode] = useState<"files" | "github" | "zip">("files");
+  const [zipFile, setZipFile] = useState<File | null>(null);
   const [files, setFiles] = useState<SourceFile[]>([]);
   const [owner, setOwner] = useState("");
   const [repo, setRepo] = useState("");
@@ -100,6 +104,43 @@ export default function CodeSecurityReviewPage() {
     setDragging(false);
     void readFiles(Array.from(event.dataTransfer.files || []));
   }
+  function selectZip(picked: File | null) {
+    setZipFile(null);
+    setError("");
+    setResult(null);
+    if (!picked) return;
+    if (!picked.name.toLowerCase().endsWith(".zip")) {
+      setError("Selecciona un archivo de proyecto con extensión .zip.");
+    } else if (picked.size > 8_000_000 || picked.size === 0) {
+      setError("El archivo ZIP debe pesar entre 1 byte y 8 MB.");
+    } else {
+      setZipFile(picked);
+    }
+  }
+  async function zipToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error("No se pudo leer el archivo ZIP."));
+      reader.onload = () => {
+        const data = reader.result;
+        if (typeof data !== "string" || !data.includes(",")) {
+          reject(new Error("No se pudo codificar el archivo ZIP."));
+          return;
+        }
+        resolve(data.slice(data.indexOf(",") + 1));
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+  function selectZipFromInput(event: ChangeEvent<HTMLInputElement>) {
+    selectZip(event.target.files?.[0] ?? null);
+    event.target.value = "";
+  }
+  function dropZip(event: DragEvent<HTMLLabelElement>) {
+    event.preventDefault();
+    setDragging(false);
+    selectZip(event.dataTransfer.files?.[0] ?? null);
+  }
   function parseGithub() {
     const value = owner.trim();
     const match = value.match(/^(?:https?:\/\/github\.com\/)?([\w.-]+)\/([\w.-]+?)(?:\.git)?\/?$/i);
@@ -111,12 +152,17 @@ export default function CodeSecurityReviewPage() {
     setBusy(true); setError(""); setResult(null);
     try {
       if (mode === "files" && !files.length) throw new Error("Primero selecciona al menos un archivo de código.");
+      if (mode === "zip" && !zipFile) throw new Error("Selecciona un archivo .zip del proyecto.");
       const parsed = parseGithub();
       if (mode === "github" && (!parsed.owner || !parsed.repo)) {
         throw new Error("Indica el propietario y el repositorio público de GitHub.");
       }
-      const path = mode === "files" ? "/intelligence/code-review/files" : "/intelligence/code-review/github";
-      const body = mode === "files" ? {files, use_ai: ai} : {...parsed, branch: branch.trim(), use_ai: ai};
+      const path = mode === "files"
+        ? "/intelligence/code-review/files"
+        : mode === "github" ? "/intelligence/code-review/github" : "/intelligence/code-review/zip";
+      const body = mode === "files" ? {files, use_ai: ai}
+        : mode === "github" ? {...parsed, branch: branch.trim(), use_ai: ai}
+        : {filename: zipFile!.name, archive_base64: await zipToBase64(zipFile!), use_ai: ai};
       const data = await api<Scan>(path, "POST", body);
       if (!Array.isArray(data?.findings)) throw new Error("El servidor devolvió una respuesta de análisis no válida.");
       setResult(data);
@@ -129,7 +175,7 @@ export default function CodeSecurityReviewPage() {
 
   const critical = result?.findings.filter(f => f.severity.toLowerCase() === "critical").length || 0;
   const high = result?.findings.filter(f => f.severity.toLowerCase() === "high").length || 0;
-  const hasSource = mode === "files" ? files.length > 0 : Boolean(parseGithub().owner && parseGithub().repo);
+  const hasSource = mode === "files" ? files.length > 0 : mode === "zip" ? Boolean(zipFile) : Boolean(parseGithub().owner && parseGithub().repo);
 
   return (
     <div className="cs-audit">
@@ -165,6 +211,14 @@ export default function CodeSecurityReviewPage() {
                 <small>Sube archivos de tu equipo</small>
                 <span className="cs-audit-source-check"><CheckCircle2 size={17}/></span>
               </button>
+              <button type="button" className={"cs-audit-source" + (mode === "zip" ? " is-selected" : "")}
+                aria-pressed={mode === "zip"} disabled={busy || reading}
+                onClick={() => {setMode("zip");setResult(null);setError("");}}>
+                <span className="cs-audit-source-icon"><FileArchive size={24}/></span>
+                <strong>Proyecto ZIP</strong>
+                <small>Analiza un proyecto comprimido real</small>
+                <span className="cs-audit-source-check"><CheckCircle2 size={17}/></span>
+              </button>
               <button type="button" className={"cs-audit-source" + (mode === "github" ? " is-selected" : "")}
                 aria-pressed={mode === "github"} disabled={busy || reading}
                 onClick={() => {setMode("github");setResult(null);setError("");}}>
@@ -198,6 +252,21 @@ export default function CodeSecurityReviewPage() {
                   )}</div>
                 </div>}
               </div>
+            ) : mode === "zip" ? (
+              <div className="cs-audit-source-form">
+                <label htmlFor="cs-audit-zip-input" className={"cs-audit-dropzone" + (dragging ? " is-dragging" : "")}
+                  onDragOver={event => {event.preventDefault();setDragging(true);}}
+                  onDragLeave={() => setDragging(false)}
+                  onDrop={dropZip}>
+                  <span className="cs-audit-upload-icon"><FileArchive size={28}/></span>
+                  <strong>{zipFile ? zipFile.name : "Arrastra el ZIP de tu proyecto aquí"}</strong>
+                  <span>{zipFile ? `${(zipFile.size / 1_000_000).toFixed(2)} MB seleccionados` : <>o <b>haz clic para seleccionar un ZIP</b></>}</span>
+                  <small>Hasta 8 MB comprimidos · 160 archivos de código · 3 MB de código fuente UTF-8</small>
+                  <input id="cs-audit-zip-input" className="cs-audit-file-input" type="file" accept=".zip,application/zip"
+                    aria-label="Seleccionar proyecto ZIP para auditar" disabled={busy} onChange={selectZipFromInput}/>
+                </label>
+                <p className="cs-audit-hint"><Info size={15}/> Se excluyen dependencias, compilados y carpetas como node_modules y .git. No se descomprime en disco ni se ejecuta el proyecto.</p>
+              </div>
             ) : (
               <div className="cs-audit-source-form cs-audit-github-form">
                 <div className="cs-audit-field">
@@ -227,7 +296,9 @@ export default function CodeSecurityReviewPage() {
             <div className="cs-audit-ai-option">
               <div className="cs-audit-ai-icon"><BrainCircuit size={21}/></div>
               <div className="cs-audit-ai-copy"><strong>Explicación adicional con IA</strong>
-                <span>Opcional. Si hay un modelo configurado, enviará únicamente metadatos y resúmenes de los hallazgos, nunca el código fuente.</span>
+                <span>{mode === "zip"
+                  ? "Al activarla autorizas enviar al proveedor externo fragmentos limitados de código del ZIP (hasta 16 archivos). Podrían contener datos confidenciales: elimínalos antes. Sin activar, el análisis local por reglas sigue siendo real."
+                  : "Opcional. Si hay un modelo configurado, enviará únicamente metadatos y resúmenes de los hallazgos, nunca el código fuente."}</span>
               </div>
               <label className="cs-audit-switch">
                 <input type="checkbox" checked={ai} disabled={busy} onChange={event => setAi(event.target.checked)}
@@ -241,7 +312,7 @@ export default function CodeSecurityReviewPage() {
               {busy ? <><Loader2 size={18} className="spin"/> Analizando archivos y buscando patrones...</> :
                 <><Search size={19}/> Analizar seguridad <ArrowRight size={18}/></>}
             </button>
-            <p className="cs-audit-form-foot"><LockKeyhole size={14}/> Solo se realiza análisis pasivo. No se ejecutan archivos ni se generan ataques.</p>
+            <p className="cs-audit-form-foot"><LockKeyhole size={14}/> Análisis de archivos reales sin ejecución. Los hallazgos son preliminares; no demuestran explotación.</p>
           </section>
 
           {!result && <section className="cs-audit-empty cs-audit-card" aria-live="polite">
@@ -261,11 +332,19 @@ export default function CodeSecurityReviewPage() {
                 <div><span>Críticas</span><strong>{critical}</strong><ShieldAlert size={19}/></div>
                 <div><span>Altas</span><strong>{high}</strong><AlertTriangle size={19}/></div>
               </div>
+              {result.archive && <div className="cs-audit-archive-stats">
+                <div><strong>{result.archive.zip_entries}</strong><span>Entradas del ZIP</span></div>
+                <div><strong>{result.archive.skipped_noncode}</strong><span>Archivos/carpetas excluidos</span></div>
+                <div><strong>{result.archive.skipped_oversized + result.archive.skipped_binary}</strong><span>Archivos omitidos por tamaño o formato</span></div>
+                <div><strong>{(result.archive.source_bytes / 1_000_000).toFixed(2)} MB</strong><span>Código inspeccionado</span></div>
+              </div>}
+              {result.findings_limited && <p className="cs-audit-hint">Se alcanzó el límite de hallazgos mostrados. Revisa y reduce el alcance del ZIP si necesitas más detalle.</p>}
               <div className="cs-audit-engine"><Sparkles size={18}/><div>
-                <strong>Motor: {result.analysis.mode === "llm_explanation" ? "Reglas estáticas + explicación con IA" : "Análisis estático mediante reglas"}</strong>
+                <strong>Motor: {result.analysis.mode === "llm_code_review" ? "Análisis estático + revisión de fragmentos mediante IA" : result.analysis.mode === "llm_explanation" ? "Reglas estáticas + explicación con IA" : "Análisis estático real mediante reglas"}</strong>
                 <p>{result.analysis.summary}</p>
               </div></div>
               <p className="cs-audit-muted">{result.note}</p>
+              {typeof result.ai_files_sampled === "number" && <p className="cs-audit-muted">IA: {result.ai_files_sampled} archivos examinados parcialmente mediante fragmentos. Los resultados son hipótesis y requieren validación.</p>}
             </section>
 
             <section className="cs-audit-card">
