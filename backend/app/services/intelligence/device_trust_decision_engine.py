@@ -177,7 +177,7 @@ def assess_device_from_database(
         "source": event.get("source"),
         "allowed": details.get("allowed"),
         "access_allowed": (
-            row["access_allowed"] == "false" if row
+            row["access_allowed"] == "true" if row
             else None
         ),
         "uuid_matches": (
