@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.core.auth_dependencies import get_current_user
+from app.core.auth_dependencies import get_current_user, require_roles
 from app.database.connection import get_db
 
 router = APIRouter(
@@ -202,3 +202,76 @@ def protection_coverage(db: Session = Depends(get_db)):
             "El campo execution_status no certifica una respuesta aplicada."
         ),
     }
+
+
+# ============================================================
+# PROPUESTAS MITRE: BANDEJA DE SOLO LECTURA
+# Roles: engineer, admin. Sin endpoints POST/PATCH/DELETE.
+# ============================================================
+
+@router.get("/protection-proposals")
+def list_protection_proposals(
+    status: str | None = Query(default=None),
+    page: int = Query(default=1, ge=1),
+    size: int = Query(default=20, ge=1, le=100),
+    db: Session = Depends(get_db),
+    _reviewer = Depends(require_roles("admin", "engineer")),
+):
+    """Lista propuestas persistidas, sin capacidad de aprobar ni ejecutar."""
+    allowed = {"review_required", "under_review", "rejected"}
+    if status is not None and status not in allowed:
+        raise HTTPException(status_code=422, detail="Estado de propuesta inválido")
+    params = {
+        "status": status,
+        "limit": size,
+        "offset": (page - 1) * size,
+    }
+    clause = """
+        FROM cybershield_protection_proposals
+        WHERE (:status IS NULL OR status = :status)
+    """
+    total = db.execute(
+        text("SELECT COUNT(*) " + clause), params
+    ).scalar_one()
+    rows = db.execute(text("""
+        SELECT id, technique_id, technique_name, title,
+               candidate_sensor, required_evidence, validation_plan,
+               priority, status, generation_mode,
+               telemetry_verified, detection_verified,
+               execution_allowed, executed,
+               review_notes, reviewed_by, reviewed_at, created_at, updated_at
+    """ + clause + """
+        ORDER BY priority ASC, id ASC
+        LIMIT :limit OFFSET :offset
+    """), params).mappings().all()
+    return {
+        "page": page,
+        "size": size,
+        "total": total,
+        "items": [dict(row) for row in rows],
+        "read_only": True,
+    }
+
+
+@router.get("/protection-proposals/{proposal_id}")
+def protection_proposal_detail(
+    proposal_id: int,
+    db: Session = Depends(get_db),
+    _reviewer = Depends(require_roles("admin", "engineer")),
+):
+    """Detalle de propuesta para ingeniero autenticado, solo SELECT."""
+    if proposal_id < 1:
+        raise HTTPException(status_code=422, detail="ID de propuesta inválido")
+    row = db.execute(text("""
+        SELECT id, technique_id, technique_name, title,
+               candidate_sensor, required_evidence, validation_plan,
+               priority, status, generation_mode,
+               telemetry_verified, detection_verified,
+               execution_allowed, executed,
+               review_notes, reviewed_by, reviewed_at, created_at, updated_at
+        FROM cybershield_protection_proposals
+        WHERE id = :proposal_id
+    """), {"proposal_id": proposal_id}).mappings().first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Propuesta no encontrada")
+    return dict(row)
