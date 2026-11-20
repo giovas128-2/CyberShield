@@ -7,7 +7,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
@@ -56,6 +56,7 @@ class ServerOnboardRequest(BaseModel):
 @router.post("/onboard", status_code=201)
 def onboard_server(
     data: ServerOnboardRequest,
+    response: Response,
     db: Session = Depends(get_db),
     _current_user=Depends(require_roles("admin", "engineer")),
 ):
@@ -103,6 +104,7 @@ def onboard_server(
         db.rollback()
         raise
 
+    response.headers["Cache-Control"] = "no-store"
     return {
         "success": True,
         "server": {
