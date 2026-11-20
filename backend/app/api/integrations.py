@@ -23,6 +23,9 @@ from app.services.event_service import (
 from app.services.intelligence.defensive_decision_engine import (
     assess_from_database,
 )
+from app.services.intelligence.shadow_decision_store import (
+    save_shadow_decision,
+)
 
 from app.cybersecurity.wazuh_adapter import (
     normalize_wazuh_event,
@@ -136,9 +139,14 @@ def receive_wazuh_event(
                 "source_ip": stored["source_ip"],
                 "details": stored["details"],
             })
-            # Campos nuevos exclusivamente informativos.
+            # El evento ya fue confirmado por process_security_event.
+            # Guardamos una evaluación trazable, sin cambiar response_actions.
+            decision_id = save_shadow_decision(
+                db, int(stored["id"]), decision,
+            )
             result["autonomous_decision"] = decision.to_dict()
             result["autonomous_decision"]["mode"] = "shadow"
+            result["autonomous_decision"]["decision_id"] = decision_id
         except Exception:
             logger.exception("Evaluación shadow T1110 falló; no se ejecuta defensa")
             db.rollback()
