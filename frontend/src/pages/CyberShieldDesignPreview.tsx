@@ -13,7 +13,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import "../styles/cybershield-design-preview.css";
 
-type View = "login" | "dashboard" | "servers" | "events" | "incidents" | "incident-detail" | "notifications" | "actions" | "protections" | "code-review" | "intelligence" | "catalog" | "analysis" | "settings";
+type View = "login" | "dashboard" | "servers" | "events" | "incidents" | "incident-detail" | "notifications" | "devices" | "sessions" | "actions" | "protections" | "proposals" | "code-review" | "lab" | "intelligence" | "catalog" | "analysis" | "settings";
 type SourceMode = "github" | "zip" | "code";
 type TerminalMode = "response" | "audit" | "configuration";
 
@@ -30,9 +30,13 @@ const NAV: { title: string; items: NavItem[] }[] = [
     { id: "notifications", label: "Notificaciones", icon: Bell },
   ]},
   { title: "GESTIÓN Y DEFENSA", items: [
+    { id: "devices", label: "Dispositivos", icon: HardDrive },
+    { id: "sessions", label: "Sesiones", icon: LockKeyhole },
     { id: "actions", label: "Acciones", icon: Terminal },
     { id: "protections", label: "Protecciones", icon: ShieldCheck },
+    { id: "proposals", label: "Propuestas", icon: ListChecks },
     { id: "code-review", label: "Auditoría de código", icon: FileCode2 },
+    { id: "lab", label: "Laboratorio", icon: Play },
     { id: "intelligence", label: "Inteligencia", icon: BookOpen },
     { id: "catalog", label: "Ataques registrados", icon: Activity },
     { id: "analysis", label: "Conceptos de análisis futuro", icon: BrainCircuit },
@@ -45,7 +49,11 @@ const NAV: { title: string; items: NavItem[] }[] = [
 const VIEW_TITLES: Record<View, string> = {
   login: "Acceso a la plataforma",
   events: "Eventos de seguridad",
+  devices: "Dispositivos",
+  sessions: "Sesiones",
   actions: "Acciones defensivas",
+  proposals: "Propuestas de protección",
+  lab: "Laboratorio",
   protections: "Controles de protección",
   "code-review": "Auditoría de código",
   dashboard: "Centro de operaciones",
@@ -152,6 +160,10 @@ export default function CyberShieldDesignPreview() {
   const [auditFileName, setAuditFileName] = useState("");
   const [auditRepo, setAuditRepo] = useState("");
   const [auditBranch, setAuditBranch] = useState("");
+  const [selectedDevice, setSelectedDevice] = useState("DEV-01");
+  const [selectedSession, setSelectedSession] = useState("SES-01");
+  const [proposalFilter, setProposalFilter] = useState("Todos");
+  const [selectedLab, setSelectedLab] = useState("SC1");
 
 
 
@@ -279,6 +291,61 @@ export default function CyberShieldDesignPreview() {
     </Panel>
   </>;
 
+
+  const devicesDemo = [
+    {id:"DEV-01",name:"Estación del ingeniero",user:"operador.soc",os:"Windows 11",status:"Confiable",tone:"teal",last:"Hace 3 minutos"},
+    {id:"DEV-02",name:"Servidor laboratorio",user:"servicio.monitor",os:"Ubuntu",status:"Confiable",tone:"teal",last:"Hace 8 minutos"},
+    {id:"DEV-03",name:"Dispositivo no identificado",user:"No identificado",os:"Por confirmar",status:"Desconocido",tone:"amber",last:"Hace 22 minutos"},
+  ];
+  const renderDevices = () => <>
+    {header("INVENTARIO Y CONFIANZA", "Dispositivos", "Consulta activos asociados a usuarios, su sistema operativo y el último estado conocido.", <Pill tone="slate">Muestra de diseño</Pill>)}
+    <div className="csd-stats"><Stat icon={HardDrive} label="Dispositivos" value="03" hint="Datos de ejemplo"/><Stat icon={CheckCircle2} label="Confiables" value="02" hint="Verificación ilustrativa" tone="teal"/><Stat icon={AlertTriangle} label="Desconocidos" value="01" hint="Requieren validar" tone="amber"/><Stat icon={Clock3} label="Último contacto" value="3 min" hint="Valor de muestra"/></div>
+    <div className="csd-two-thirds"><Panel><SectionHead title="Inventario de dispositivos" desc="Elige un dispositivo para revisar su ficha" icon={HardDrive}/>{devicesDemo.map(d=><button key={d.id} className={"csd-serverrow"+(selectedDevice===d.id?" is-selected":"")} onClick={()=>setSelectedDevice(d.id)}><span className="csd-iconbox"><HardDrive size={18}/></span><span><b>{d.name}</b><small>{d.os} · {d.user}</small></span><Pill tone={d.tone}>{d.status}</Pill><ChevronRight size={16}/></button>)}</Panel>
+    <Panel><SectionHead title="Ficha del dispositivo" desc="Información de una fuente real cuando esté disponible" icon={Info}/>{devicesDemo.filter(d=>d.id===selectedDevice).map(d=><div key={d.id}><div className="csd-highlight"><Pill tone={d.tone}>{d.status}</Pill><h3>{d.name}</h3><p>{d.id} · {d.os}</p></div><div className="csd-detail-grid"><div><small>Usuario</small><b>{d.user}</b></div><div><small>Última actividad</small><b>{d.last}</b></div></div></div>)}<Callout>La etiqueta de confianza se obtiene del inventario operativo; este prototipo no autoriza ni bloquea dispositivos.</Callout></Panel></div>
+  </>;
+
+  const sessionsDemo = [
+    {id:"SES-01",user:"operador.soc",device:"Estación del ingeniero",ip:"Red de laboratorio",started:"Hace 18 minutos",status:"Activa",tone:"teal"},
+    {id:"SES-02",user:"analista.seguridad",device:"Equipo secundario",ip:"Red de laboratorio",started:"Ayer",status:"Expirada",tone:"amber"},
+    {id:"SES-03",user:"cuenta.prueba",device:"Dispositivo desconocido",ip:"Sin dato",started:"Hace 2 días",status:"Revocada",tone:"red"},
+  ];
+  const renderSessions = () => <>
+    {header("IDENTIDAD Y ACCESO", "Sesiones de usuario", "Visualiza los accesos a la plataforma y su asociación con dispositivos.", <Pill tone="slate">Sin revocar sesiones en prototipo</Pill>)}
+    <div className="csd-stats"><Stat icon={LockKeyhole} label="Sesiones de ejemplo" value="03" hint="Registros ilustrativos"/><Stat icon={CheckCircle2} label="Activas" value="01" hint="Vigentes en ejemplo" tone="teal"/><Stat icon={Clock3} label="Expiradas" value="01" hint="Fuera de vigencia" tone="amber"/><Stat icon={ShieldAlert} label="Revocadas" value="01" hint="Cerradas en ejemplo" tone="red"/></div>
+    <div className="csd-two-thirds"><Panel><SectionHead title="Historial de acceso" desc="Elige una sesión para ampliar información" icon={LockKeyhole}/><div className="csd-table-wrap"><table className="csd-table"><thead><tr><th>Usuario / sesión</th><th>Dispositivo</th><th>Estado</th><th></th></tr></thead><tbody>{sessionsDemo.map(d=><tr key={d.id} className={selectedSession===d.id?"csd-tr-selected":""}><td><b>{d.user}</b><small>{d.id}</small></td><td>{d.device}</td><td><Pill tone={d.tone}>{d.status}</Pill></td><td><button className="csd-linkbtn" onClick={()=>setSelectedSession(d.id)}>Detalle</button></td></tr>)}</tbody></table></div></Panel>
+    <Panel><SectionHead title="Detalle de sesión" desc="Información contextual de una sesión" icon={FileText}/>{sessionsDemo.filter(d=>d.id===selectedSession).map(d=><div key={d.id}><div className="csd-highlight"><Pill tone={d.tone}>{d.status}</Pill><h3>{d.user}</h3><p>{d.id}</p></div><div className="csd-detail-grid"><div><small>Dispositivo</small><b>{d.device}</b></div><div><small>IP de ejemplo</small><b>{d.ip}</b></div><div><small>Inicio</small><b>{d.started}</b></div><div><small>Estado</small><b>{d.status}</b></div></div></div>)}<Callout>En la interfaz real, los datos se muestran respetando permisos; esta vista no modifica sesiones.</Callout></Panel></div>
+  </>;
+
+  const proposalsDemo = [
+    {technique:"T1059",name:"Command and Scripting Interpreter",sensor:"Wazuh",status:"En revisión",tone:"amber"},
+    {technique:"T1001.003",name:"Protocol Impersonation",sensor:"Suricata",status:"Pendiente",tone:"blue"},
+    {technique:"T1003.008",name:"OS Credential Dumping",sensor:"Wazuh",status:"Pendiente",tone:"blue"},
+    {technique:"T1005",name:"Data from Local System",sensor:"Wazuh / File integrity",status:"Pendiente",tone:"blue"},
+  ];
+  const renderProposals = () => <>
+    {header("GESTIÓN DE DETECCIONES", "Propuestas de protección", "Hipótesis de detección inspiradas en MITRE, pendientes de revisión y validación humana.", <Pill tone="amber">No son detecciones verificadas</Pill>)}
+    <div className="csd-stats"><Stat icon={BookOpen} label="Hipótesis de muestra" value="04" hint="Mismo catálogo conceptual"/><Stat icon={Clock3} label="En revisión" value="01" hint="Estado ilustrativo" tone="amber"/><Stat icon={ShieldAlert} label="Por validar" value="03" hint="No ejecutar automáticamente"/><Stat icon={CheckCircle2} label="Ejecución permitida" value="No" hint="Solo propuesta" tone="teal"/></div>
+    <Panel><div className="csd-between csd-section-margin"><SectionHead title="Candidatas a detección" desc="Revisión técnica previa a cualquier integración" icon={ListChecks}/><select className="csd-select" aria-label="Filtrar propuestas" value={proposalFilter} onChange={e=>setProposalFilter(e.target.value)}>{["Todos","Pendiente","En revisión"].map(f=><option key={f}>{f}</option>)}</select></div><div className="csd-table-wrap"><table className="csd-table"><thead><tr><th>MITRE</th><th>Técnica</th><th>Sensor candidato</th><th>Estado</th></tr></thead><tbody>{proposalsDemo.filter(p=>proposalFilter==="Todos"||p.status===proposalFilter).map(p=><tr key={p.technique}><td><Pill>{p.technique}</Pill></td><td><b>{p.name}</b></td><td>{p.sensor}</td><td><Pill tone={p.tone}>{p.status}</Pill></td></tr>)}</tbody></table></div><Callout>Las propuestas no crean incidentes ni activan sensores. En producción existe revisión con notas y cambios de estado autorizados.</Callout><div className="csd-preview-live-link"><Link to="/protection-proposals" className="csd-btn csd-btn-primary">Ir a propuestas reales <ArrowRight size={16}/></Link></div></Panel>
+  </>;
+
+  const labDemo = [
+    {id:"SC1",name:"Fuerza bruta SSH",mitre:"T1110"},
+    {id:"SC2",name:"Dispositivo no autorizado",mitre:"T1091"},
+    {id:"SC3",name:"Integridad de archivo",mitre:"T1486"},
+    {id:"SC4",name:"Uso de privilegios",mitre:"T1548"},
+    {id:"SC5",name:"Salida de datos",mitre:"T1041"},
+    {id:"SC6",name:"Exfiltración",mitre:"T1041"},
+    {id:"SC7",name:"Comportamiento ransomware",mitre:"T1486"},
+    {id:"SC8",name:"Movimiento lateral",mitre:"T1021"},
+  ];
+  const renderLab = () => <>
+    {header("ESCENARIOS CONTROLADOS", "Laboratorio", "Diseño del recorrido señal → detección → incidente → respuesta → evidencia.", <Pill tone="amber">Simulaciones autorizadas</Pill>)}
+    <Callout>Esta vista es solo de navegación y demostración. No ejecuta ataques, pruebas remotas ni respuestas defensivas. La función operativa existente se mantiene separada.</Callout>
+    <div className="csd-stats"><Stat icon={Activity} label="Escenarios" value="08" hint="SC1 a SC8"/><Stat icon={ShieldAlert} label="Eventos" value="Señal" hint="Origen declarado"/><Stat icon={BookOpen} label="Clasificación" value="MITRE" hint="Marco documental"/><Stat icon={Database} label="Evidencia" value="Verificar" hint="Solo si existe registro"/></div>
+    <Panel><SectionHead title="Escenarios de demostración" desc="Selecciona una tarjeta para ver su cadena de validación" icon={Play}/><div className="csd-protection-grid">{labDemo.map(s=><button key={s.id} onClick={()=>setSelectedLab(s.id)} className={"csd-protection-item"+(selectedLab===s.id?" is-selected":"")}><Pill>{s.id}</Pill><b>{s.name}</b><small>Referencia {s.mitre}</small></button>)}</div></Panel>
+    <Panel><SectionHead title="Cadena de demostración" desc="La comprobación final siempre requiere evidencia real" icon={ListChecks}/><div className="csd-detail-grid"><div><small>Escenario seleccionado</small><b>{selectedLab}</b></div><div><small>Técnica de referencia</small><b>{labDemo.find(s=>s.id===selectedLab)?.mitre}</b></div></div><div className="csd-checkrow">{["Señal","Clasificación","Incidente","Acción","Evidencia"].map((step,i)=><span key={step}><Pill tone={i===4?"amber":"blue"}>{i+1} · {step}</Pill></span>)}</div><div className="csd-preview-live-link"><Link to="/lab" className="csd-btn csd-btn-outline">Abrir laboratorio real <ArrowRight size={16}/></Link></div></Panel>
+  </>;
+
   const renderDashboard = () => <>
     {header("VISIÓN GENERAL", "Centro de operaciones", "Una vista clara de los riesgos, eventos y equipos que requieren tu atención.", <div className="csd-select-wrap"><Clock3 size={16}/><select value={period} onChange={e => setPeriod(e.target.value)} aria-label="Periodo"><option>24 horas</option><option>7 días</option><option>30 días</option></select><ChevronDown size={15}/></div>)}
     <div className="csd-stats">
@@ -364,6 +431,10 @@ export default function CyberShieldDesignPreview() {
     switch(view) {
       case "login": return renderLogin();
       case "events": return renderEvents();
+      case "devices": return renderDevices();
+      case "sessions": return renderSessions();
+      case "proposals": return renderProposals();
+      case "lab": return renderLab();
       case "actions": return renderActions();
       case "protections": return renderProtections();
       case "code-review": return renderCodeReview();
