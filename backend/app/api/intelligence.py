@@ -502,3 +502,19 @@ def check_official_frameworks(
         "automatic_application": False,
         "note": "Consulta verificada de fuentes oficiales; sin modificar las defensas.",
     }
+
+
+@router.post("/official-frameworks/ai-review")
+def official_frameworks_ai_review(
+    db: Session = Depends(get_db),
+    _reviewer=Depends(require_roles("admin", "engineer")),
+):
+    """Solo tras petición explícita, interpretar metadatos públicos verificados."""
+    from app.services.intelligence.official_frameworks import (
+        explain_official_changes_with_ai, table_exists,
+    )
+    if not table_exists(db):
+        raise HTTPException(
+            status_code=503, detail="Falta migración 013_official_framework_checks.sql"
+        )
+    return explain_official_changes_with_ai(db)
