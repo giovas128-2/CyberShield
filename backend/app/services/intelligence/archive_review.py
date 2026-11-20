@@ -39,6 +39,10 @@ def _safe_archive_path(path: str) -> str:
     if not isinstance(path, str) or not path or "\x00" in path:
         raise ValueError("Nombre de archivo inválido dentro del ZIP")
     normalized = path.replace("\\", "/")
+    while normalized.startswith("./"):
+        normalized = normalized[2:]
+    if not normalized:
+        raise ValueError("Nombre de archivo inválido dentro del ZIP")
     parts = normalized.split("/")
     if normalized.startswith("/") or re.match(r"^[A-Za-z]:", normalized) or ".." in parts or "." in parts:
         raise ValueError("ZIP rechazado: se detectó una ruta insegura")
@@ -58,6 +62,8 @@ def load_zip_sources(raw: bytes) -> tuple[list[dict[str, str]], dict[str, int]]:
                 raise ValueError("El ZIP contiene demasiadas entradas; excluye dependencias y archivos generados")
             counts["zip_entries"] = len(members)
             for member in members:
+                if member.is_dir() and member.filename in {".", "./"}:
+                    continue
                 path = _safe_archive_path(member.filename)
                 if member.is_dir():
                     continue
