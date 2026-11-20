@@ -34,6 +34,9 @@ from app.services.intelligence.privilege_decision_engine import (
 from app.services.intelligence.fim_decision_engine import (
     assess_fim_from_database,
 )
+from app.services.intelligence.network_decision_engine import (
+    assess_connection_from_database,
+)
 
 from app.cybersecurity.wazuh_adapter import (
     normalize_wazuh_event,
@@ -248,10 +251,46 @@ def receive_suricata_event(
         **normalized
     )
 
-    return process_security_event(
-        db,
-        event,
-    )
+    result = process_security_event(db, event)
+
+    # Evaluar solamente el escenario SC5; nunca reinterpretar los eventos
+    # de exfiltración c6 ni el tráfico general como evidencia de c5.
+    # Este análisis es posterior al commit y no crea acciones.
+    details = normalized.get("details") or {}
+    if (
+        normalized.get("event_type") == "suspicious_network_traffic"
+        and details.get("integration") == "suricata_real"
+        and details.get("suricata_event_type") == "alert"
+        and str(details.get("signature_id")) == "1000003"
+    ):
+        try:
+            stored = result["event"]
+            decision = assess_connection_from_database(db, {
+                "event_type": stored["event_type"],
+                "severity": stored["severity"],
+                "source": stored["source"],
+                "source_ip": stored["source_ip"],
+                "details": stored["details"],
+            })
+            decision_id = save_shadow_decision(
+                db, int(stored["id"]), decision,
+            )
+            result["autonomous_decision"] = decision.to_dict()
+            result["autonomous_decision"]["mode"] = "shadow"
+            result["autonomous_decision"]["decision_id"] = decision_id
+        except Exception:
+            logger.exception("Evaluación shadow Suricata c5 falló; sin nuevas defensas")
+            db.rollback()
+            result["autonomous_decision"] = {
+                "mode": "shadow",
+                "status": "evaluation_unavailable",
+                "execution_allowed": False,
+                "executed": False,
+            }
+
+    return result
+
+
 @router.post("/wazuh/active-response")
 def receive_wazuh_active_response(
     data: ActiveResponseReport,
