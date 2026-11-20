@@ -30,6 +30,20 @@ class ProposalReadApiTests(unittest.TestCase):
                          "review_required")
         db.commit.assert_not_called()
 
+    def test_optional_status_parameter_has_explicit_postgres_type(self):
+        db = MagicMock()
+        db.execute.side_effect = [
+            MagicMock(scalar_one=lambda: 0),
+            MagicMock(mappings=lambda: MagicMock(all=lambda: [])),
+        ]
+        list_protection_proposals(
+            status=None, page=1, size=20, db=db, _reviewer=object()
+        )
+        for call in db.execute.call_args_list:
+            statement = str(call.args[0])
+            self.assertIn("CAST(:status AS TEXT)", statement)
+        db.commit.assert_not_called()
+
     def test_invalid_status_no_query(self):
         db = MagicMock()
         with self.assertRaises(HTTPException) as exc:
