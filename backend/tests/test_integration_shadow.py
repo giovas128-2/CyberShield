@@ -4,6 +4,7 @@ Las pruebas NO escriben en PostgreSQL y NO invocan ejecutores.
 """
 import unittest
 from unittest.mock import MagicMock, patch
+from sqlalchemy.exc import IntegrityError
 
 from app.api.integrations import receive_wazuh_event
 
@@ -43,7 +44,7 @@ class IntegrationShadowTests(unittest.TestCase):
             "executed": False,
         }
         evaluate.return_value = decision
-        result = receive_wazuh_event({}, server_id=2, db=self.db)
+        result = receive_wazuh_event({"id": "test-alert-001"}, server_id=2, db=self.db)
         self.assertEqual(result["autonomous_decision"]["mode"], "shadow")
         self.assertFalse(result["autonomous_decision"]["executed"])
         evaluate.assert_called_once()
@@ -59,11 +60,43 @@ class IntegrationShadowTests(unittest.TestCase):
     ):
         normalize.return_value = self.normalized
         process.return_value = self.stored_result.copy()
-        result = receive_wazuh_event({}, server_id=2, db=self.db)
+        result = receive_wazuh_event({"id": "test-alert-001"}, server_id=2, db=self.db)
         self.assertTrue(result["success"])
         self.assertEqual(result["autonomous_decision"]["status"], "evaluation_unavailable")
         self.assertFalse(result["autonomous_decision"]["execution_allowed"])
         self.assertFalse(result["autonomous_decision"]["executed"])
+
+    @patch("app.api.integrations.validate_server")
+    def test_missing_wazuh_alert_id_is_rejected(self, check):
+        from fastapi import HTTPException
+        with self.assertRaises(HTTPException) as context:
+            receive_wazuh_event({}, server_id=2, db=self.db)
+        self.assertEqual(context.exception.status_code, 422)
+
+    @patch("app.api.integrations.validate_server")
+    @patch("app.api.integrations.normalize_wazuh_event")
+    @patch("app.api.integrations.process_security_event")
+    def test_duplicate_is_acknowledged_without_new_processing(
+        self, process, normalize, check
+    ):
+        class FakeDiag:
+            constraint_name = "ux_events_wazuh_alert_id"
+
+        class FakeDatabaseError(Exception):
+            diag = FakeDiag()
+
+        normalize.return_value = self.normalized
+        process.side_effect = IntegrityError("INSERT", {}, FakeDatabaseError())
+        self.db.execute.return_value.scalar_one_or_none.return_value = 39318
+
+        result = receive_wazuh_event(
+            {"id": "1795141364.258252"}, server_id=1, db=self.db,
+        )
+        self.assertTrue(result["duplicate"])
+        self.assertEqual(result["event"]["id"], 39318)
+        self.assertEqual(result["autonomous_decision"]["status"], "already_processed")
+        self.db.rollback.assert_called_once()
+
 
 
 if __name__ == "__main__":
