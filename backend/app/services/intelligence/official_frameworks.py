@@ -115,14 +115,16 @@ def read_official_source(key: str, *, transport=None) -> dict:
         if not entries:
             raise ValueError("Catálogo CISA KEV vacío")
         ids = []
+        cve_ids = set()
         for item in entries:
             if not isinstance(item, dict) or not re.fullmatch(
                 r"CVE-\d{4}-\d{4,}", str(item.get("cveID", ""))
             ):
                 raise ValueError("Entrada CISA KEV inválida")
+            if item["cveID"] in cve_ids:
+                raise ValueError("Catálogo CISA con CVE duplicadas")
+            cve_ids.add(item["cveID"])
             ids.append(f'{item["cveID"]}|{str(item.get("dateAdded", ""))}')
-        if len(set(ids)) != len(ids):
-            raise ValueError("Catálogo CISA con identificadores duplicados")
         version = str(data.get("catalogVersion") or "").strip()
         if not version or len(version) > 100:
             raise ValueError("Versión CISA KEV inválida")
