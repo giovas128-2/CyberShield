@@ -251,7 +251,38 @@ def receive_suricata_event(
         **normalized
     )
 
-    result = process_security_event(db, event)
+    fingerprint = (normalized.get("details") or {}).get(
+        "suricata_sc5_fingerprint"
+    )
+    try:
+        result = process_security_event(db, event)
+    except IntegrityError as exc:
+        constraint = getattr(
+            getattr(exc.orig, "diag", None), "constraint_name", None
+        )
+        db.rollback()
+        if constraint != "ux_events_suricata_sc5_fingerprint":
+            raise
+        previous = db.execute(text("""
+            SELECT id FROM events
+            WHERE source = 'suricata'
+              AND event_type = 'suspicious_network_traffic'
+              AND details->>'suricata_sc5_fingerprint' = :fingerprint
+            LIMIT 1
+        """), {"fingerprint": fingerprint}).scalar_one_or_none()
+        if previous is None:
+            raise
+        return {
+            "success": True,
+            "duplicate": True,
+            "event": {"id": previous},
+            "autonomous_decision": {
+                "mode": "shadow",
+                "status": "already_processed",
+                "execution_allowed": False,
+                "executed": False,
+            },
+        }
 
     # Evaluar solamente el escenario SC5; nunca reinterpretar los eventos
     # de exfiltración c6 ni el tráfico general como evidencia de c5.
