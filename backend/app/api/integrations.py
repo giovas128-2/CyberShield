@@ -7,6 +7,8 @@ from fastapi import (
     Query,
 )
 
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
@@ -103,19 +105,63 @@ def receive_wazuh_event(
         server_id,
     )
 
+    # El ID lo asigna Wazuh, no CyberShield. Requerirlo evita aceptar
+    # eventos sin clave de idempotencia. La autenticación del servicio
+    # no prueba por sí sola que el JSON proceda realmente del sensor.
+    wazuh_alert_id = raw_event.get("id")
+    if (
+        not isinstance(wazuh_alert_id, str)
+        or not wazuh_alert_id.strip()
+        or len(wazuh_alert_id) > 120
+    ):
+        raise HTTPException(
+            status_code=422,
+            detail="Falta identificador válido de alerta Wazuh",
+        )
+
     normalized = normalize_wazuh_event(
         raw_event=raw_event,
         server_id=server_id,
     )
+    normalized["details"] = dict(normalized.get("details") or {})
+    normalized["details"]["wazuh_alert_id"] = wazuh_alert_id
 
     event = SecurityEventRequest(
         **normalized
     )
 
-    result = process_security_event(
-        db,
-        event,
-    )
+    try:
+        result = process_security_event(db, event)
+    except IntegrityError as exc:
+        # El índice único se aplica al INSERT inicial de events, antes de
+        # generar incidentes, notificaciones o response_actions.
+        constraint = getattr(
+            getattr(exc.orig, "diag", None), "constraint_name", None
+        )
+        db.rollback()
+        if constraint != "ux_events_wazuh_alert_id":
+            raise
+        previous = db.execute(text("""
+            SELECT id FROM events
+            WHERE source = 'wazuh'
+              AND details->>'wazuh_alert_id' = :alert_id
+            LIMIT 1
+        """), {"alert_id": wazuh_alert_id}).scalar_one_or_none()
+        if previous is None:
+            # La restricción no debería fallar sin que exista su registro.
+            raise
+        logger.info("Alerta Wazuh ya procesada: event_id=%s", previous)
+        return {
+            "success": True,
+            "duplicate": True,
+            "event": {"id": previous},
+            "autonomous_decision": {
+                "mode": "shadow",
+                "status": "already_processed",
+                "execution_allowed": False,
+                "executed": False,
+            },
+        }
 
     # Motor CyberShield 2.0: observación posterior al almacenamiento.
     # La evaluación NO crea acciones, NO ejecuta comandos y NO afecta la
