@@ -19,6 +19,7 @@ class ExfilFlowSummary:
     window_start: str
     alerts: int
     distinct_timestamps: int
+    raw_alert_records: int
     max_bytes_toserver: int
     bulk_transfer_observed: bool
     status: str = "simulation_only"
@@ -91,9 +92,11 @@ def consolidate_exfiltration_flows(
         bucket = int(ts.timestamp()) // window_seconds * window_seconds
         key = (str(flow_id), bucket)
         group = groups.setdefault(
-            key, {"timestamps": set(), "max_bytes": 0, "bulk": False}
+            key, {"timestamps": set(), "raw_alert_records": 0, "max_bytes": 0, "bulk": False}
         )
         group["timestamps"].add(ts.isoformat())
+        if sensor_type == "alert":
+            group["raw_alert_records"] += 1
         group["max_bytes"] = max(group["max_bytes"], bytes_up)
         group["bulk"] = group["bulk"] or (
             sensor_type == "flow" and bytes_up >= MIN_BYTES
@@ -108,6 +111,7 @@ def consolidate_exfiltration_flows(
             ).isoformat(),
             alerts=len(group["timestamps"]),
             distinct_timestamps=len(group["timestamps"]),
+            raw_alert_records=group["raw_alert_records"],
             max_bytes_toserver=group["max_bytes"],
             bulk_transfer_observed=group["bulk"],
         ))
