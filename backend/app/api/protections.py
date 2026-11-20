@@ -146,7 +146,7 @@ class ProtectionProposal(BaseModel):
     name: str = Field(min_length=3, max_length=160)
     description: str = Field(min_length=10, max_length=1000)
     sensor: str = Field(min_length=2, max_length=120)
-    technique_id: str = Field(pattern=r"^T\\d{4}(?:\\.\\d{3})?$")
+    technique_id: str = Field(pattern=r"^T\d{4}(?:\.\d{3})?$")
 
 
 def catalog_exists(db: Session) -> bool:
