@@ -148,6 +148,11 @@ export default function CyberShieldDesignPreview() {
   const [loginPassword, setLoginPassword] = useState("");
   const [loginVisible, setLoginVisible] = useState(false);
   const [loginInfo, setLoginInfo] = useState(false);
+  const [selectedAction, setSelectedAction] = useState("ACT-101");
+  const [auditFileName, setAuditFileName] = useState("");
+  const [auditRepo, setAuditRepo] = useState("");
+  const [auditBranch, setAuditBranch] = useState("");
+
 
 
   function navigate(next: View) { setView(next); setMobileMenu(false); window.scrollTo({ top: 0, behavior: "smooth" }); }
@@ -175,6 +180,104 @@ export default function CyberShieldDesignPreview() {
   }
   const header = (eyebrow: string, title: string, subtitle: string, action?: ReactNode) =>
     <div className="csd-page-heading"><div><span className="csd-eyebrow">{eyebrow}</span><h1>{title}</h1><p>{subtitle}</p></div>{action}</div>;
+
+
+  const renderLogin = () => <div className="csd-login-screen">
+    <div className="csd-login-branding">
+      <div className="csd-login-logo"><span className="csd-login-logo-symbol"><ShieldCheck size={25}/></span><div><strong>CyberShield</strong><small>SECURITY OPERATIONS CENTER</small></div></div>
+      <div className="csd-login-hero">
+        <span className="csd-login-kicker"><span className="csd-live-dot"/> CENTRO DE OPERACIONES DE SEGURIDAD</span>
+        <h1>Protege lo que<br/><em>más importa.</em></h1>
+        <p>Monitorea tu infraestructura, investiga incidentes y da seguimiento a respuestas defensivas desde un único entorno.</p>
+        <div className="csd-login-hero-grid">
+          <div><Activity size={22}/><b>Visibilidad</b><small>Eventos de Wazuh y Suricata</small></div>
+          <div><ShieldAlert size={22}/><b>Investigación</b><small>Evidencias y MITRE ATT&CK</small></div>
+          <div><BrainCircuit size={22}/><b>Inteligencia</b><small>Análisis explicable del riesgo</small></div>
+        </div>
+      </div>
+      <div className="csd-login-footer">CyberShield · Diseño conceptual 2026 <span>Protección · Evidencia · Confianza</span></div>
+    </div>
+    <div className="csd-login-panel">
+      <div className="csd-login-form-wrap">
+        <span className="csd-login-form-logo"><LockKeyhole size={21}/></span>
+        <span className="csd-eyebrow">ACCESO RESTRINGIDO</span>
+        <h2>Bienvenido de nuevo</h2>
+        <p className="csd-muted">Ingresa tus credenciales para acceder a tu consola de seguridad.</p>
+        <form onSubmit={e=>{e.preventDefault();setLoginInfo(true);}} className="csd-login-form">
+          <label className="csd-field"><span>Correo electrónico</span><input type="email" value={loginEmail} onChange={e=>{setLoginEmail(e.target.value);setLoginInfo(false);}} placeholder="ingeniero@empresa.com" autoComplete="off" required/></label>
+          <label className="csd-field"><span>Contraseña</span><span className="csd-password-field"><input type={loginVisible?"text":"password"} value={loginPassword} onChange={e=>{setLoginPassword(e.target.value);setLoginInfo(false);}} placeholder="Introduce tu contraseña" autoComplete="off" required/><button type="button" onClick={()=>setLoginVisible(v=>!v)} aria-label={loginVisible?"Ocultar contraseña":"Mostrar contraseña"}>{loginVisible?"Ocultar":"Mostrar"}</button></span></label>
+          <p className="csd-login-policy"><ShieldCheck size={15}/> Acceso sujeto a autenticación y políticas de origen.</p>
+          <button className="csd-btn csd-btn-primary csd-login-submit" type="submit">Iniciar sesión <ArrowRight size={17}/></button>
+          {loginInfo&&<Callout>Vista previa visual: no se enviaron credenciales ni se inició sesión. Para acceder realmente utiliza el login actual.</Callout>}
+        </form>
+        <div className="csd-login-preview-actions"><button className="csd-btn csd-btn-outline" onClick={()=>navigate("dashboard")}><LayoutDashboard size={16}/> Explorar el diseño</button><Link className="csd-btn csd-btn-ghost" to="/login/cybershield"><LockKeyhole size={16}/> Login operativo</Link></div>
+        <p className="csd-login-caption">Prototipo aislado · Tus credenciales reales no se usan aquí.</p>
+      </div>
+    </div>
+  </div>;
+
+  const filteredEvents = EVENTS_DEMO.filter(e =>
+    (eventSeverity==="Todas"||e.severity===eventSeverity) &&
+    (eventScope==="Todos"||e.scope===eventScope)
+  );
+  const eventSelected = EVENTS_DEMO.find(e=>e.id===selectedEvent) || EVENTS_DEMO[0];
+  const renderEvents = () => <>
+    {header("TELEMETRÍA Y CORRELACIÓN", "Eventos de seguridad", "Explora señales normalizadas por sensor, nivel de riesgo y alcance; distingue evento de incidente.", <Pill>Wazuh · Suricata · Laboratorio</Pill>)}
+    <div className="csd-stats"><Stat icon={Activity} label="Eventos en la muestra" value="05" hint="Datos demostrativos"/><Stat icon={ShieldAlert} label="Eventos críticos" value="01" hint="Prioridad ilustrativa" tone="red"/><Stat icon={Server} label="Fuentes" value="03" hint="Wazuh · Suricata · Lab"/><Stat icon={CheckCircle2} label="Bloqueados" value="02" hint="Alcance declarado" tone="teal"/></div>
+    <Panel><div className="csd-between csd-section-margin"><SectionHead title="Flujo de eventos" desc="Filtros interactivos para inspección" icon={Activity}/><div className="csd-toolbar"><select className="csd-select" aria-label="Filtrar severidad" value={eventSeverity} onChange={e=>setEventSeverity(e.target.value)}>{["Todas","Crítica","Alta","Media"].map(x=><option key={x}>{x}</option>)}</select><select className="csd-select" aria-label="Filtrar alcance" value={eventScope} onChange={e=>setEventScope(e.target.value)}>{["Todos","BLOCKED","REACHED","IMPACT"].map(x=><option key={x}>{x}</option>)}</select></div></div>
+      <div className="csd-table-wrap"><table className="csd-table"><thead><tr><th>Hora / ID</th><th>Evento</th><th>Sensor</th><th>Servidor</th><th>Severidad</th><th>Alcance</th><th></th></tr></thead><tbody>{filteredEvents.map(e=><tr key={e.id} className={selectedEvent===e.id?"csd-tr-selected":""}><td><b>{e.time}</b><small>{e.id}</small></td><td><b>{e.type.replaceAll("_"," ")}</b></td><td>{e.source}</td><td>{e.host}</td><td><Pill tone={e.tone}>{e.severity}</Pill></td><td><Pill tone={e.scope==="BLOCKED"?"teal":e.scope==="IMPACT"?"red":"amber"}>{e.scope}</Pill></td><td><button className="csd-linkbtn" onClick={()=>setSelectedEvent(e.id)}>Inspeccionar <ChevronRight size={15}/></button></td></tr>)}</tbody></table>{filteredEvents.length===0&&<p className="csd-muted">No hay eventos de ejemplo con esos filtros.</p>}</div>
+    </Panel>
+    <Panel><SectionHead title="Información del evento seleccionado" desc="Conserva la trazabilidad sin asumir impacto" icon={FileText}/><div className="csd-detail-grid"><div><small>Identificador</small><b>{eventSelected.id}</b></div><div><small>Sensor declarado</small><b>{eventSelected.source}</b></div><div><small>Alcance</small><b>{eventSelected.scope}</b></div><div><small>Incidente asociado</small><b>{eventSelected.incident}</b></div></div><Callout>En producción, los filtros continuarán consultando eventos reales. Aquí solo se visualiza el diseño.</Callout></Panel>
+  </>;
+
+  const filteredActions = ACTIONS_DEMO.filter(a=>actionStatus==="Todas"||a.state===actionStatus);
+  const actionSelected = ACTIONS_DEMO.find(a=>a.id===selectedAction) || ACTIONS_DEMO[0];
+  const renderActions = () => <>
+    {header("RESPUESTA DEFENSIVA", "Acciones y trazabilidad", "Consulta qué respuesta se solicitó, su estado, la herramienta involucrada y su reversibilidad.", <Pill tone="teal">Sin ejecución desde esta vista</Pill>)}
+    <div className="csd-stats"><Stat icon={Terminal} label="Acciones ilustrativas" value="04" hint="Solo para el rediseño"/><Stat icon={CheckCircle2} label="Ejecutadas" value="01" hint="Estado de demostración" tone="teal"/><Stat icon={Clock3} label="Pendientes" value="01" hint="En revisión" tone="amber"/><Stat icon={AlertTriangle} label="Fallidas" value="01" hint="Solicitan atención" tone="red"/></div>
+    <div className="csd-two-thirds"><Panel><div className="csd-between csd-section-margin"><SectionHead title="Registro de respuestas" desc="Selecciona una acción para revisar su ficha" icon={ListChecks}/><select className="csd-select" aria-label="Filtrar estado de acciones" value={actionStatus} onChange={e=>setActionStatus(e.target.value)}>{["Todas","Ejecutada","Revertida","Pendiente","Falló"].map(x=><option key={x}>{x}</option>)}</select></div>
+      <div className="csd-table-wrap"><table className="csd-table"><thead><tr><th>Acción / ID</th><th>Incidente</th><th>Estado</th><th></th></tr></thead><tbody>{filteredActions.map(a=><tr key={a.id} className={selectedAction===a.id?"csd-tr-selected":""}><td><b>{a.type}</b><small>{a.id}</small></td><td>{a.incident}</td><td><Pill tone={a.tone}>{a.state}</Pill></td><td><button className="csd-linkbtn" onClick={()=>setSelectedAction(a.id)}>Detalle <ChevronRight size={15}/></button></td></tr>)}</tbody></table>{filteredActions.length===0&&<p className="csd-muted">Sin coincidencias.</p>}</div>
+    </Panel><Panel><SectionHead title="Ficha de respuesta" desc="Datos que debe mostrar el sistema" icon={ShieldCheck}/><div className="csd-highlight"><Pill tone={actionSelected.tone}>{actionSelected.state}</Pill><h3>{actionSelected.type}</h3><p>{actionSelected.source}</p></div><div className="csd-detail-grid"><div><small>Incidente</small><b>{actionSelected.incident}</b></div><div><small>Objetivo</small><b>{actionSelected.target}</b></div><div><small>Reversible</small><b>{actionSelected.reversible}</b></div><div><small>Origen</small><b>{actionSelected.source}</b></div></div><Callout>Un estado «Ejecutada» es un dato registrado, no demuestra por sí solo que una defensa haya sido efectiva. La evidencia se revisa en el centro de incidente.</Callout><button className="csd-btn csd-btn-outline" onClick={()=>navigate("incident-detail")}><FileText size={16}/> Ver demostración de evidencia</button></Panel></div>
+  </>;
+
+  const protectionSelected = PROTECTIONS_DEMO.find(p=>p.id===selectedProtection) || PROTECTIONS_DEMO[0];
+  const renderProtections = () => <>
+    {header("COBERTURA DEFENSIVA", "Protecciones", "Visualiza cobertura, sensores, técnicas MITRE y la distinción entre integración, simulación y revisión.", <Pill tone="slate">Cobertura ilustrativa</Pill>)}
+    <div className="csd-stats"><Stat icon={ShieldCheck} label="Controles de ejemplo" value="08" hint="Catálogo visual c1–c8"/><Stat icon={CheckCircle2} label="Integrados" value="04" hint="Estados ilustrativos" tone="teal"/><Stat icon={Clock3} label="En revisión" value="02" hint="Verificar evidencia" tone="amber"/><Stat icon={Activity} label="Simulados" value="02" hint="No equivalen a ejecución"/></div>
+    <Panel><SectionHead title="Matriz de cobertura" desc="La clasificación de muestra no representa el estado actual del backend" icon={ShieldCheck}/><div className="csd-coverage-track"><span style={{width:"50%"}}/></div><div className="csd-coverage-legend"><span><span className="csd-live-dot"/> 4 integrados</span><span>2 en revisión</span><span>2 simulados</span></div><div className="csd-protection-grid">{PROTECTIONS_DEMO.map(p=><button key={p.id} className={"csd-protection-item"+(selectedProtection===p.id?" is-selected":"")} onClick={()=>setSelectedProtection(p.id)}><div className="csd-between"><span className="csd-eyebrow">{p.id}</span><Pill tone={p.tone}>{p.state}</Pill></div><b>{p.title}</b><small>{p.source} · MITRE {p.mitre}</small></button>)}</div></Panel>
+    <Panel><div className="csd-between"><SectionHead title="Detalle del control" desc="Información disponible para auditar cada protección" icon={LockKeyhole}/><Pill tone={protectionSelected.tone}>{protectionSelected.state}</Pill></div><div className="csd-detail-grid"><div><small>Control</small><b>{protectionSelected.id}</b></div><div><small>Sensor / origen</small><b>{protectionSelected.source}</b></div><div><small>MITRE ATT&CK</small><b>{protectionSelected.mitre}</b></div><div><small>Verificación</small><b>Pendiente en prototipo</b></div></div><p className="csd-copy">{protectionSelected.desc}</p><Callout>La pantalla operativa conserva el catálogo real, las propuestas de detección y sus estados. Esta vista solo propone una presentación más clara.</Callout><Link to="/protections" className="csd-btn csd-btn-outline"><ShieldCheck size={16}/> Ver controles reales</Link></Panel>
+  </>;
+
+  const renderCodeReview = () => <>
+    {header("SEGURIDAD DE APLICACIONES", "Auditoría de código", "Inspección estática de archivos y repositorios GitHub públicos. No ejecuta código ni genera incidentes.", <Pill tone="teal">Solo lectura</Pill>)}
+    <div className="csd-two-thirds">
+      <Panel><SectionHead title="Origen del código" desc="Como en el módulo real: archivos permitidos o GitHub público" icon={FileCode2}/><div className="csd-source-tabs csd-audit-tabs"><button className={auditSource==="files"?"is-active":""} onClick={()=>{setAuditSource("files");setAuditDemo(false);}}><FileCode2 size={22}/><b>Subir archivos</b><small>Hasta 20 archivos de código</small></button><button className={auditSource==="github"?"is-active":""} onClick={()=>{setAuditSource("github");setAuditDemo(false);}}><Github size={22}/><b>Repositorio GitHub</b><small>Solo repositorios públicos</small></button></div>
+        <div className="csd-source-input">
+          {auditSource==="files" ? <label className="csd-filedrop"><UploadCloud size={24}/><b>{auditFileName||"Elegir archivos para la vista previa"}</b><span>Máx. 60 KB por archivo y 180 KB en total</span><input type="file" multiple accept=".py,.js,.jsx,.ts,.tsx,.php,.java,.go,.rb,.json,.yml,.yaml,.sql" onChange={e=>{setAuditFileName(Array.from(e.target.files||[]).map(f=>f.name).join(", "));setAuditDemo(false);}}/></label>
+          : <><label className="csd-field"><span>Propietario / repositorio</span><input type="text" value={auditRepo} onChange={e=>{setAuditRepo(e.target.value);setAuditDemo(false);}} placeholder="usuario/repositorio"/></label><label className="csd-field"><span>Rama (opcional)</span><input type="text" value={auditBranch} onChange={e=>setAuditBranch(e.target.value)} placeholder="main"/></label></>}
+          <label className="csd-toggle"><span><b>Explicación generativa opcional</b><small>En producción requiere OPENAI_API_KEY</small></span><input type="checkbox" checked={auditAi} onChange={e=>setAuditAi(e.target.checked)}/></label>
+          <div className="csd-source-footer"><span><LockKeyhole size={16}/> No se suben archivos desde la vista previa</span><button className="csd-btn csd-btn-primary" onClick={()=>setAuditDemo(true)}><Play size={16}/> Ver análisis de ejemplo</button></div>
+        </div>
+      </Panel>
+      <Panel><SectionHead title="Cobertura del escáner" desc="Capacidades de la implementación actual" icon={ShieldCheck}/>{[
+        ["CWE-95", "Ejecución dinámica de código"],
+        ["CWE-78", "Comandos de sistema con shell"],
+        ["CWE-89", "Posible inyección SQL"],
+        ["CWE-295", "TLS sin verificación"],
+        ["CWE-489", "Depuración habilitada"],
+        ["CWE-798", "Posibles secretos embebidos"],
+      ].map(([cwe,name])=><div className="csd-norm" key={cwe}><Pill>{cwe}</Pill><div><b>{name}</b><small>Coincidencia de patrón · requiere validación humana</small></div></div>)}<Callout>No detecta todas las vulnerabilidades; un resultado sin hallazgos no garantiza seguridad.</Callout></Panel>
+    </div>
+    <Panel><div className="csd-between"><SectionHead title="Resultados del análisis" desc="Muestra del formato de hallazgos, archivos y recomendaciones" icon={BrainCircuit}/><Pill tone={auditDemo?"blue":"slate"}>{auditDemo?"Resultados ilustrativos":"Sin ejecutar análisis"}</Pill></div>
+      {!auditDemo ? <div className="csd-empty"><span className="csd-empty-icon"><FileCode2 size={32}/></span><h3>El informe aparecerá aquí</h3><p>Pulsa «Ver análisis de ejemplo». Para realizar una auditoría real, utiliza el módulo operativo.</p></div> : <>
+        <div className="csd-stats"><Stat icon={FileCode2} label="Archivos" value="01" hint="Archivo ficticio"/><Stat icon={AlertTriangle} label="Coincidencias" value="02" hint="Sin explotación comprobada" tone="red"/><Stat icon={ShieldAlert} label="Riesgo más alto" value="Crítico" hint="Prioridad de revisión" tone="red"/><Stat icon={ListChecks} label="Recomendaciones" value="02" hint="Acciones preventivas"/></div>
+        <div className="csd-finding"><Pill tone="high">HIGH · CWE-489</Pill><div><b>Modo de depuración habilitado</b><small>prueba_seguridad.py:1 · CS-CODE-05</small><p>Es recomendable desactivar la depuración en producción.</p><p className="csd-fix"><CheckCircle2 size={15}/> Desactiva la depuración y evita exponer información sensible.</p></div></div>
+        <div className="csd-finding"><Pill tone="critical">CRITICAL · CWE-95</Pill><div><b>Posible ejecución dinámica</b><small>prueba_seguridad.py:2 · CS-CODE-01</small><p>Este patrón necesita una revisión contextual de los datos de entrada.</p><p className="csd-fix"><CheckCircle2 size={15}/> Evita eval/exec sobre datos externos.</p></div></div>
+        {auditAi&&<Callout>La IA sería opcional y solo recibiría metadatos permitidos. Esta vista no ha consultado un modelo.</Callout>}
+      </>}
+      <div className="csd-preview-live-link"><Link to="/code-review" className="csd-btn csd-btn-primary"><FileCode2 size={16}/> Abrir auditoría real <ArrowRight size={15}/></Link></div>
+    </Panel>
+  </>;
 
   const renderDashboard = () => <>
     {header("VISIÓN GENERAL", "Centro de operaciones", "Una vista clara de los riesgos, eventos y equipos que requieren tu atención.", <div className="csd-select-wrap"><Clock3 size={16}/><select value={period} onChange={e => setPeriod(e.target.value)} aria-label="Periodo"><option>24 horas</option><option>7 días</option><option>30 días</option></select><ChevronDown size={15}/></div>)}
@@ -259,6 +362,11 @@ export default function CyberShieldDesignPreview() {
 
   function content() {
     switch(view) {
+      case "login": return renderLogin();
+      case "events": return renderEvents();
+      case "actions": return renderActions();
+      case "protections": return renderProtections();
+      case "code-review": return renderCodeReview();
       case "dashboard": return renderDashboard();
       case "incidents": return renderIncidents();
       case "incident-detail": return renderIncidentDetail();
@@ -270,6 +378,7 @@ export default function CyberShieldDesignPreview() {
       case "settings": return renderSettings();
     }
   }
+  if (view === "login") return renderLogin();
   return <div className={`csd-shell ${compact?"csd-compact":""}`}>
     {mobileMenu && <button className="csd-mobile-overlay" onClick={()=>setMobileMenu(false)} aria-label="Cerrar navegación"/>}
     <aside className={`csd-sidebar ${mobileMenu?"csd-sidebar-open":""}`}>
