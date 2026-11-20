@@ -81,7 +81,7 @@ export default function ProtectionIntelligenceCoverage() {
             <input required minLength={2} maxLength={120} value={proposal.sensor} onChange={e=>setProposal(p=>({...p,sensor:e.target.value}))} placeholder="Wazuh, Suricata, aplicación…" style={{padding:10,border:"1px solid #cbdcf0",borderRadius:9}}/>
           </label>
           <label style={{display:"grid",gap:6}}>Técnica MITRE
-            <input required pattern="T[0-9]{4}(\\.[0-9]{3})?" value={proposal.technique_id} onChange={e=>setProposal(p=>({...p,technique_id:e.target.value.toUpperCase()}))} placeholder="T1110" style={{padding:10,border:"1px solid #cbdcf0",borderRadius:9}}/>
+            <input required pattern="T[0-9]{4}(\.[0-9]{3})?" value={proposal.technique_id} onChange={e=>setProposal(p=>({...p,technique_id:e.target.value.toUpperCase()}))} placeholder="T1110" style={{padding:10,border:"1px solid #cbdcf0",borderRadius:9}}/>
           </label>
           <label style={{display:"grid",gap:6,gridColumn:"1 / -1"}}>Descripción
             <textarea required minLength={10} maxLength={1000} rows={3} value={proposal.description} onChange={e=>setProposal(p=>({...p,description:e.target.value}))} placeholder="Describe el comportamiento y la forma de detectarlo; sin introducir secretos ni comandos de ataque." style={{padding:10,border:"1px solid #cbdcf0",borderRadius:9}}/>
