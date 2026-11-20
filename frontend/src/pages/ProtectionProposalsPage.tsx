@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { BookOpen, ChevronLeft, ChevronRight, ClipboardList, RefreshCw, ShieldCheck, TriangleAlert } from "lucide-react";
-import { api, ApiError } from "../api/client";
+import { api, ApiError, http } from "../api/client";
 
 type ProposalStatus = "review_required" | "under_review" | "rejected";
 type Proposal = {
@@ -57,6 +57,10 @@ export default function ProtectionProposalsPage() {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [error, setError] = useState("");
   const [detailError, setDetailError] = useState("");
+  const [reviewNotes, setReviewNotes] = useState("");
+  const [savingReview, setSavingReview] = useState(false);
+  const [reviewFeedback, setReviewFeedback] = useState("");
+  const [reviewError, setReviewError] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -82,14 +86,53 @@ export default function ProtectionProposalsPage() {
     setLoadingDetail(true);
     setDetailError("");
     setSelected(null);
+    setReviewFeedback("");
+    setReviewError("");
+    setReviewNotes("");
     try {
       const data = await api<Proposal>(`/intelligence/protection-proposals/${id}`);
       if (typeof data?.technique_id !== "string") throw new Error("Detalle inválido");
       setSelected(data);
+      setReviewNotes(data.review_notes ?? "");
     } catch (err) {
       setDetailError(message(err));
     } finally {
       setLoadingDetail(false);
+    }
+  }
+
+  async function saveReview(nextStatus: "under_review" | "rejected") {
+    if (!selected || savingReview) return;
+    const notes = reviewNotes.trim();
+    if (notes.length < 10 || notes.length > 2000) {
+      setReviewError("Escribe observaciones de 10 a 2000 caracteres.");
+      return;
+    }
+    if (nextStatus === "rejected" && !window.confirm(
+      "¿Rechazar esta propuesta? No se puede revertir desde la bandeja."
+    )) return;
+    setSavingReview(true);
+    setReviewError("");
+    setReviewFeedback("");
+    try {
+      await http.patch(
+        `/intelligence/protection-proposals/${selected.id}/review`,
+        { status: nextStatus, notes }
+      );
+      const detail = await api<Proposal>(
+        `/intelligence/protection-proposals/${selected.id}`
+      );
+      setSelected(detail);
+      setReviewNotes(detail.review_notes ?? "");
+      setResult(prev => prev ? {
+        ...prev,
+        items: prev.items.map(item => item.id === detail.id ? detail : item),
+      } : prev);
+      setReviewFeedback("Revisión guardada. No se activó ninguna protección.");
+    } catch (err) {
+      setReviewError(message(err));
+    } finally {
+      setSavingReview(false);
     }
   }
 
@@ -164,7 +207,28 @@ export default function ProtectionProposalsPage() {
         <p><strong>Notas de revisión:</strong> {selected.review_notes || "Todavía no hay notas."}</p>
         <p className="mu">Origen: {selected.generation_mode}. Telemetría verificada: {selected.telemetry_verified ? "Sí" : "No"}. Detección verificada: {selected.detection_verified ? "Sí" : "No"}.</p>
         <p className="mu"><ShieldCheck size={15}/> Ejecución autónoma: {selected.execution_allowed || selected.executed ? "REVISAR INMEDIATAMENTE" : "Deshabilitada"}.</p>
-        <p className="mu">Vista de solo lectura. La aprobación y activación requieren un procedimiento independiente.</p>
+        <div style={{borderTop:"1px solid #d1dce9",paddingTop:15,marginTop:15}}>
+          <h3>Revisión del ingeniero</h3>
+          <p className="mu">Las observaciones quedan asociadas a tu usuario autenticado. Este proceso no aprueba ni activa defensas.</p>
+          <label htmlFor="proposal-review-notes"><strong>Observaciones (obligatorias)</strong></label>
+          <textarea id="proposal-review-notes" value={reviewNotes}
+            maxLength={2000} rows={4}
+            disabled={savingReview || selected.status==="rejected"}
+            onChange={(e)=>setReviewNotes(e.target.value)}
+            placeholder="Explica la evidencia que falta y los siguientes pasos..."
+            style={{display:"block",width:"100%",boxSizing:"border-box",padding:10,marginTop:8,marginBottom:12,borderRadius:8}}
+          />
+          {selected.status==="rejected" && <p className="mu">Propuesta rechazada; su revisión ahora es de solo lectura.</p>}
+          {selected.status!=="rejected" && <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+            <button className="btn sm gh" type="button" disabled={savingReview || reviewNotes.trim().length<10}
+              onClick={()=>saveReview("under_review")}>Guardar en revisión</button>
+            <button className="btn sm gh" type="button" disabled={savingReview || reviewNotes.trim().length<10}
+              onClick={()=>saveReview("rejected")}>Rechazar propuesta</button>
+          </div>}
+          {reviewFeedback && <p role="status" className="mu">{reviewFeedback}</p>}
+          {reviewError && <p role="alert" className="mu">{reviewError}</p>}
+        </div>
+        <p className="mu">La aprobación, validación y activación requieren un procedimiento independiente.</p>
       </section>}
     </div>
   );
