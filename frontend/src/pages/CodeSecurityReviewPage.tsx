@@ -183,7 +183,7 @@ export default function CodeSecurityReviewPage() {
         <div className="cs-audit-hero-main">
           <span className="cs-audit-eyebrow"><Shield size={14}/> CYBERSHIELD / APPLICATION SECURITY</span>
           <h1>Auditoría de código</h1>
-          <p>Detecta posibles debilidades en archivos de código y repositorios GitHub públicos. Revisa cada hallazgo con su clasificación CWE y una recomendación concreta.</p>
+          <p>Revisa archivos individuales, proyectos ZIP y repositorios GitHub públicos. Revisa cada hallazgo con su clasificación CWE y una recomendación concreta.</p>
           <div className="cs-audit-hero-tags">
             <span><CheckCircle2 size={15}/> Análisis estático</span>
             <span><LockKeyhole size={15}/> Sin ejecutar código</span>
@@ -205,7 +205,7 @@ export default function CodeSecurityReviewPage() {
             <div className="cs-audit-source-options" role="group" aria-label="Origen del código">
               <button type="button" className={"cs-audit-source" + (mode === "files" ? " is-selected" : "")}
                 aria-pressed={mode === "files"} disabled={busy || reading}
-                onClick={() => {setMode("files");setResult(null);setError("");}}>
+                onClick={() => {setMode("files");setAi(false);setResult(null);setError("");}}>
                 <span className="cs-audit-source-icon"><FolderOpen size={24}/></span>
                 <strong>Archivos locales</strong>
                 <small>Sube archivos de tu equipo</small>
@@ -213,7 +213,7 @@ export default function CodeSecurityReviewPage() {
               </button>
               <button type="button" className={"cs-audit-source" + (mode === "zip" ? " is-selected" : "")}
                 aria-pressed={mode === "zip"} disabled={busy || reading}
-                onClick={() => {setMode("zip");setResult(null);setError("");}}>
+                onClick={() => {setMode("zip");setAi(false);setResult(null);setError("");}}>
                 <span className="cs-audit-source-icon"><FileArchive size={24}/></span>
                 <strong>Proyecto ZIP</strong>
                 <small>Analiza un proyecto comprimido real</small>
@@ -221,7 +221,7 @@ export default function CodeSecurityReviewPage() {
               </button>
               <button type="button" className={"cs-audit-source" + (mode === "github" ? " is-selected" : "")}
                 aria-pressed={mode === "github"} disabled={busy || reading}
-                onClick={() => {setMode("github");setResult(null);setError("");}}>
+                onClick={() => {setMode("github");setAi(false);setResult(null);setError("");}}>
                 <span className="cs-audit-source-icon"><Github size={24}/></span>
                 <strong>Repositorio GitHub</strong>
                 <small>Consulta un repositorio público</small>
@@ -302,7 +302,7 @@ export default function CodeSecurityReviewPage() {
               </div>
               <label className="cs-audit-switch">
                 <input type="checkbox" checked={ai} disabled={busy} onChange={event => setAi(event.target.checked)}
-                  aria-label="Solicitar explicación adicional con IA"/>
+                  aria-label={mode === "zip" ? "Autorizar envío de fragmentos de código al proveedor de IA" : "Solicitar explicación adicional con IA"}/>
                 <span aria-hidden="true"/>
               </label>
             </div>
