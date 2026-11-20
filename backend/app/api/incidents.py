@@ -846,3 +846,45 @@ def get_incident_evidence(
 
         "timeline": timeline,
     }
+
+@router.get("/{incident_id}/analysis")
+def get_incident_analysis(
+    incident_id: int,
+    db: Session = Depends(get_db),
+    _reviewer = Depends(require_roles("admin", "engineer")),
+):
+    """Análisis explicable de un incidente existente; exclusivamente SELECT."""
+    from app.services.intelligence.incident_analysis import analyze_incident
+
+    if incident_id < 1:
+        raise HTTPException(status_code=422, detail="ID de incidente inválido")
+    incident = db.query(Incident).filter(Incident.id == incident_id).first()
+    if incident is None:
+        raise HTTPException(status_code=404, detail="Incidente no encontrado")
+    event = db.query(Event).filter(Event.id == incident.event_id).first()
+    if event is None:
+        raise HTTPException(status_code=404, detail="Evento asociado no encontrado")
+    mitre = (
+        db.query(IncidentMitre)
+        .filter(IncidentMitre.incident_id == incident_id)
+        .order_by(IncidentMitre.is_primary.desc(), IncidentMitre.id.asc())
+        .first()
+    )
+    response = (
+        db.query(ResponseAction)
+        .filter(ResponseAction.incident_id == incident_id)
+        .order_by(ResponseAction.id.desc())
+        .first()
+    )
+    incident_record = {"id": incident.id, "severity": incident.severity, "status": incident.status}
+    event_record = {
+        "event_type": event.event_type, "source": event.source,
+        "scope": event.scope, "details": event.details,
+    }
+    mitre_record = ({
+        "technique_id": mitre.technique_id,
+        "technique_name": mitre.technique_name,
+        "tactic": mitre.tactic,
+    } if mitre else None)
+    response_record = ({"status": response.status} if response else None)
+    return analyze_incident(incident_record, event_record, mitre_record, response_record)
