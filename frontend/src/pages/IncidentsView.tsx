@@ -4,6 +4,7 @@ import { Check, ChevronDown, ChevronUp, Loader2, Search, X } from "lucide-react"
 import type { Incidente, Severidad } from "../types";
 import { SeverityBadge } from "../components/SeverityBadge";
 import { MitreTechniqueCard } from "../components/mitre/MitreTechniqueCard";
+import IncidentAnalysisPanel from "../components/IncidentAnalysisPanel";
 
 const statusClass = (estado: string) => {
   if (estado === "Resuelto") return "ok";
@@ -240,6 +241,7 @@ export function IncidentsView({
     </span>
   </div>
 )}
+            <IncidentAnalysisPanel incidentId={sel.backendId} />
             <div className="reco recommendation-panel">
               <b>Recomendación</b>
               {sel.reco}

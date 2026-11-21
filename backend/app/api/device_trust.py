@@ -25,6 +25,13 @@ from app.services.device_trust_service import (
 
 from app.schemas.event import SecurityEventRequest
 from app.services.event_service import process_security_event
+from app.services.intelligence.device_trust_decision_engine import (
+    assess_device_from_database,
+)
+from app.services.intelligence.shadow_decision_store import save_shadow_decision
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Device Trust"])
 
@@ -152,7 +159,7 @@ def post_access_evaluate(
         source_ip=source_ip,
     )
 
-    create_access_event(
+    access_event = create_access_event(
         db,
         user_id=user_id,
         device_id=result.get("device_id"),
@@ -190,12 +197,27 @@ def post_access_evaluate(
                 "device_uuid": device_uuid,
                 "allowed": result["allowed"],
                 "device_trust_real": True,
+                "access_event_id": access_event.id,
             },
         )
 
-        process_security_event(
+        processed = process_security_event(
             db,
             security_event,
         )
+
+        # Auditoría c2 posterior a la transacción principal.
+        # Nunca cambia el resultado de acceso ni las respuestas existentes.
+        try:
+            stored = processed["event"]
+            decision = assess_device_from_database(
+                db, stored, access_event_id=access_event.id,
+            )
+            save_shadow_decision(db, int(stored["id"]), decision)
+        except Exception:
+            logger.exception(
+                "Evaluación shadow Device Trust no disponible; sin nuevas defensas"
+            )
+            db.rollback()
 
     return result

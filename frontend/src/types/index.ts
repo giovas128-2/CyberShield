@@ -48,6 +48,13 @@ export interface ServerItem {
   agent: string | null;
   createdAt?: string | null;
   lastSeen: string | null;
+  agentConnection?: {
+    state: "connected" | "disconnected" | "awaiting_heartbeat" | "revoked" | "not_enrolled";
+    agentId: string | null;
+    platform: string | null;
+    agentVersion: string | null;
+    lastSeen: string | null;
+  };
 }
 
 export interface Stats {
