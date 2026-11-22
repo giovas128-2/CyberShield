@@ -11,6 +11,21 @@ MITRE_ID = re.compile(r"^T\d{4}(?:\.\d{3})?$")
 CVE_ID = re.compile(r"^CVE-\d{4}-\d{4,}$")
 CISA_CATALOG_URL = "https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
 
+# El importador histórico guarda \`requiredAction\` concatenado a description.
+# Interpretar solo el separador exacto escrito por import_cisa_kev.prepare_records.
+CISA_ACTION_SEPARATOR = "\n\nAcción recomendada por CISA: "
+
+
+def split_cisa_imported_action(description: str | None) -> tuple[str | None, str | None]:
+    """Separa el requiredAction ya guardado, sin generar recomendaciones."""
+    if not description:
+        return description, None
+    before, separator, action = description.rpartition(CISA_ACTION_SEPARATOR)
+    if not separator or not action.strip():
+        return description, None
+    return before.strip() or None, action.strip()
+
+
 ENTRIES_SQL = """
 WITH entries AS (
     SELECT
@@ -100,6 +115,19 @@ def list_documented_threats(db, *, kind: str = "all", page: int = 1,
     items = []
     for row in rows:
         item = dict(row)
+        if item["kind"] == "cisa":
+            clean_description, required_action = split_cisa_imported_action(
+                item["description"]
+            )
+            item["description"] = clean_description
+            item["cisa_required_action"] = required_action
+            item["cisa_action_origin"] = (
+                "requiredAction del catálogo CISA KEV importado"
+                if required_action else None
+            )
+        else:
+            item["cisa_required_action"] = None
+            item["cisa_action_origin"] = None
         item["reference_url"] = official_record_url(item["kind"], item["external_id"])
         item["evidence_status"] = "official_catalog_imported"
         item["protection_installed"] = False
