@@ -2,6 +2,7 @@ import { useEffect, useId, useState } from "react";
 import { AlertTriangle, BookOpen, ChevronDown, ChevronUp, Loader2, ShieldCheck } from "lucide-react";
 import { api } from "../api/client";
 import TechniqueResearchPanel from "./TechniqueResearchPanel";
+import LocalAIInterpretation from "./LocalAIInterpretation";
 
 type Mitigation = {
   mitigation_id: string;
@@ -104,6 +105,7 @@ export default function MitreMitigations({ attackId }: { attackId: string }) {
           {showAll ? "Mostrar solo tres" : "Ver todas las " + detail.mitigations.length + " mitigaciones"}
         </button>}
         <TechniqueResearchPanel attackId={attackId}/>
+        <LocalAIInterpretation attackId={attackId}/>
         <p className="cs-threat-mitigations-caution">
           Esta relación es documental. No confirma que el servidor esté protegido,
           ni propone ejecutar automáticamente una regla.
