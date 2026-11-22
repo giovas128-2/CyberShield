@@ -518,3 +518,21 @@ def official_frameworks_ai_review(
             status_code=503, detail="Falta migración 013_official_framework_checks.sql"
         )
     return explain_official_changes_with_ai(db)
+
+# ============================================================
+# CATALOGO DOCUMENTAL UNIFICADO (MITRE + CISA) — SOLO LECTURA
+# Reutiliza migraciones 005/006. Nunca habilita defensas.
+# ============================================================
+
+@router.get("/threat-catalog")
+def documented_threat_catalog(
+    kind: Literal["all", "mitre", "cisa"] = Query(default="all"),
+    page: int = Query(default=1, ge=1),
+    size: int = Query(default=20, ge=1, le=100),
+    search: str = Query(default="", max_length=100),
+    db: Session = Depends(get_db),
+):
+    from app.services.intelligence.threat_catalog import list_documented_threats
+    return list_documented_threats(
+        db, kind=kind, page=page, size=size, search=search,
+    )
