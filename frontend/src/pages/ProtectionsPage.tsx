@@ -3,6 +3,7 @@ import { Activity, BookOpen, CheckCircle2, ChevronRight, CircleHelp, LockKeyhole
 import { ModeBadge, ResourceView } from "../components/ui";
 import ProtectionIntelligenceCoverage from "../components/ProtectionIntelligenceCoverage";
 import ProtectionOfficialResearch from "../components/ProtectionOfficialResearch";
+import ThreatCatalogPanel from "../components/ThreatCatalogPanel";
 import { MitreBadge } from "../components/mitre/MitreTechniqueCard";
 import { useResource } from "../hooks/useResource";
 import { getProtections } from "../services/management";
@@ -75,6 +76,7 @@ export default function ProtectionsPage() {
       </section>
     </ResourceView>
     <section className="cs-ops-intel"><ProtectionOfficialResearch /></section>
+    <section className="cs-ops-intel"><ThreatCatalogPanel /></section>
     <section className="cs-ops-intel"><ProtectionIntelligenceCoverage /></section>
   </div>;
 }
