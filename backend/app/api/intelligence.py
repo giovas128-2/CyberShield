@@ -370,9 +370,20 @@ class CodeFilePayload(BaseModel):
     content: str = Field(max_length=60000)
 
 
+class ProjectContextPayload(BaseModel):
+    """Declaraciones opcionales del usuario; no equivalen a hallazgos técnicos."""
+    name: str = Field(default="", max_length=100)
+    description: str = Field(default="", max_length=1500)
+    project_type: Literal["unspecified", "web", "api", "mobile", "desktop", "automation", "other"] = "unspecified"
+    internet_exposed: bool = False
+    uses_authentication: bool = False
+    handles_sensitive_data: bool = False
+
+
 class CodeReviewPayload(BaseModel):
     files: list[CodeFilePayload] = Field(min_length=1, max_length=20)
     use_ai: bool = False
+    context: ProjectContextPayload | None = None
 
 
 class GithubReviewPayload(BaseModel):
@@ -380,6 +391,7 @@ class GithubReviewPayload(BaseModel):
     repo: str = Field(min_length=1, max_length=100)
     branch: str = Field(default="", max_length=100)
     use_ai: bool = False
+    context: ProjectContextPayload | None = None
 
 
 @router.post("/code-review/files")
@@ -394,6 +406,10 @@ def review_code_files(
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     scan["analysis"] = explain_with_llm(scan, payload.use_ai)
+    from app.services.intelligence.project_advisor import project_advice
+    scan["project_advice"] = project_advice(
+        scan, scan["files"], payload.context.model_dump() if payload.context else None
+    )
     return scan
 
 
@@ -418,6 +434,10 @@ def review_github_repository(
             detail="No se pudo leer el repositorio público. Comprueba nombre, rama y conectividad.",
         )
     scan["analysis"] = explain_with_llm(scan, payload.use_ai)
+    from app.services.intelligence.project_advisor import project_advice
+    scan["project_advice"] = project_advice(
+        scan, scan["files"], payload.context.model_dump() if payload.context else None
+    )
     return scan
 
 
@@ -426,6 +446,7 @@ class ZipReviewPayload(BaseModel):
     filename: str = Field(default="proyecto.zip",max_length=200)
     archive_base64: str = Field(min_length=4,max_length=10_666_672)
     use_ai: bool = False
+    context: ProjectContextPayload | None = None
 
 
 @router.post("/code-review/zip")
@@ -449,6 +470,10 @@ def review_zip_project(
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     scan["analysis"] = review_zip_with_ai(scan, sources, payload.use_ai)
+    from app.services.intelligence.project_advisor import project_advice
+    scan["project_advice"] = project_advice(
+        scan, scan["files"], payload.context.model_dump() if payload.context else None
+    )
     return scan
 
 
