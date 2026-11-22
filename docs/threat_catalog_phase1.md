@@ -281,3 +281,43 @@ npm run build
 
 El conjunto anterior solo prueba llamadas simuladas. La generación real con
 Ollama queda pendiente de la evaluación del equipo y una prueba aislada.
+
+
+## Fase 2D — Acciones CISA KEV a partir del importador existente
+
+El archivo `backend/app/services/intelligence/import_cisa_kev.py`
+ya conserva el valor `requiredAction` del catálogo CISA KEV dentro
+de `intelligence_threats.description`, concatenado mediante el marcador
+`\n\nAcción recomendada por CISA: `.
+
+La respuesta de `GET /intelligence/threat-catalog` separa este texto,
+únicamente para las fichas de tipo CISA:
+- `description`: descripción corta sin duplicar el campo de acción;
+- `cisa_required_action`: texto exacto importado, sin modificaciones de IA;
+- `cisa_action_origin`: procedencia documental cuando la acción existe.
+
+La interfaz incorpora `CisaRemediationPanel.tsx` con el botón
+**Ver acción recomendada por CISA**, fuente oficial y advertencia
+de verificación del producto y versión afectada. Si el registro histórico
+no contiene el marcador, no inventa ninguna acción.
+
+No hay nuevas tablas, migraciones, escritura SQL, solicitudes a sitios externos,
+ejecución de defensas ni inferencias IA para esta vista.
+Al cambiar el filtro MITRE/CISA se limpia la búsqueda previa para
+no mezclar identificadores Txxxx con CVE-xxxx.
+
+### Pruebas en el worktree aislado
+
+```bash
+cd /mnt/c/Users/Giovas128/downloads/CyberShield-ThreatCatalog
+git pull --ff-only
+PYTHONPATH=backend /mnt/c/Users/Giovas128/downloads/CyberSHield/backend/venv-wsl/bin/python \
+  -m unittest discover -s backend/tests -p 'test_cisa_required_action.py' -v
+cd frontend && npm run build
+```
+
+El backend de pruebas que ya está ejecutándose en puerto 8001
+requiere reinicio **solo de ese proceso** para cargar la separación del
+campo CISA. Antes de reiniciar, comprobar su PID/directorio de trabajo
+para no tocar el proceso principal del puerto 8000. La RAM y el servicio
+de Ollama permanecen independientes.
