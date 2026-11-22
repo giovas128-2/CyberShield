@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { AlertTriangle, BookOpen, ChevronLeft, ChevronRight, Database, ExternalLink, Search, ShieldAlert } from "lucide-react";
 import { api } from "../api/client";
+import MitreMitigations from "./MitreMitigations";
 import "../styles/threat-catalog.css";
 
 type CatalogKind = "all" | "mitre" | "cisa";
@@ -141,6 +142,7 @@ export default function ThreatCatalogPanel() {
             <span>Versión: {item.source_version || "No registrada"}</span>
             <span>Fecha documental: {friendlyDate(item.documented_at)}</span>
           </div>
+          {item.kind === "mitre" && <MitreMitigations attackId={item.external_id}/>}
           {item.reference_url && <a href={item.reference_url} target="_blank" rel="noopener noreferrer">
             Consultar referencia oficial <ExternalLink size={14}/>
           </a>}
