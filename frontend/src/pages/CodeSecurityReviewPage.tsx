@@ -197,7 +197,7 @@ export default function CodeSecurityReviewPage() {
         <div className="cs-audit-hero-main">
           <span className="cs-audit-eyebrow"><Shield size={14}/> CYBERSHIELD / APPLICATION SECURITY</span>
           <h1>Análisis de proyectos</h1>
-          <p>Revisa archivos individuales, proyectos ZIP y repositorios GitHub públicos. Revisa cada hallazgo con su clasificación CWE y una recomendación concreta.</p>
+          <p>Sube un ZIP, revisa GitHub o selecciona archivos. Describe para qué sirve tu aplicación y obtén hallazgos preliminares con protecciones sugeridas según la evidencia y tu contexto.</p>
           <div className="cs-audit-hero-tags">
             <span><CheckCircle2 size={15}/> Análisis estático</span>
             <span><LockKeyhole size={15}/> Sin ejecutar código</span>
