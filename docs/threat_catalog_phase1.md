@@ -78,3 +78,34 @@ npm run build
 pruebas; el servicio principal sigue usando su directorio habitual. Antes
 de integrar este cambio allí se hará revisión de diff, prueba de conexión
 PostgreSQL y despliegue planificado.
+
+## Navegación: sección independiente Catálogo
+
+La investigación documental ya no se muestra dentro de **Protecciones**.
+El menú lateral (**GESTIÓN**) incluye **Catálogo**, que abre la ruta
+`/#/catalog` en la interfaz React. La pantalla integra:
+
+- Buscador y filtros para el catálogo MITRE/CISA, paginado y obtenido de PostgreSQL.
+- Vigilancia de versiones y fuentes oficiales MITRE, NIST, CIS, CISA.
+- Interpretación opcional de metadatos oficiales con IA bajo solicitud explícita,
+  si ya está configurada.
+
+**Protecciones** mantiene el catálogo de controles c1–c8 y las propuestas
+pendientes, sin cambios en sus capacidades de ejecución.
+
+### Para probar la nueva pantalla sin alterar el sistema principal
+
+Desde el worktree `CyberShield-ThreatCatalog`:
+
+```bash
+cd /mnt/c/Users/Giovas128/downloads/CyberShield-ThreatCatalog
+git pull --ff-only
+cd frontend
+npm run build
+```
+
+Si ya está corriendo un FastAPI de pruebas en el puerto 8001 con este worktree,
+refrescar `http://localhost:8001/#/catalog` (la ruta usa HashRouter).
+El backend de pruebas sirve su propio `frontend/dist`. Para usar este puerto
+no hace falta editar `vite.config.ts`, cuyo proxy del modo de desarrollo sigue
+apuntando a 8000. Mantener el servidor de producción independiente.
