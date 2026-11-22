@@ -49,3 +49,32 @@ desde una sesión autorizada. No compartir JWT en chats o registros.
 4. Relación explicable amenaza→mitigación→protección (sin instalar).
 5. Propuestas opcionales con IA, únicamente a partir de metadatos públicos
    verificados y con revisión humana.
+
+
+## Interfaz de Protecciones: panel de amenazas (segunda entrega)
+
+Se ha añadido `frontend/src/components/ThreatCatalogPanel.tsx` y
+`frontend/src/styles/threat-catalog.css`. El panel aparece en
+`ProtectionsPage.tsx`, después de la vigilancia normativa. Tiene filtros
+MITRE/CISA, búsqueda literal y paginación de diez elementos por página.
+
+El panel solicita el endpoint anterior con el JWT de la sesión actual.
+No muestra registros ficticios ni interpreta que una técnica MITRE sea
+una vulnerabilidad explotada. El estado vacío indica que los catálogos
+pueden no estar importados.
+
+Antes de habilitar en el laboratorio real, validar en el worktree:
+
+```bash
+cd /mnt/c/Users/Giovas128/downloads/CyberShield-ThreatCatalog
+PYTHONPATH=backend /mnt/c/Users/Giovas128/downloads/CyberSHield/backend/venv-wsl/bin/python \
+  -m unittest discover -s backend/tests -p 'test_threat_catalog.py' -v
+cd frontend
+npm ci
+npm run build
+```
+
+**No reiniciar** `cybershield-api.service` para apuntarlo al worktree de
+pruebas; el servicio principal sigue usando su directorio habitual. Antes
+de integrar este cambio allí se hará revisión de diff, prueba de conexión
+PostgreSQL y despliegue planificado.
