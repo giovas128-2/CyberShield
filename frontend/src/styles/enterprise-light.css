@@ -377,3 +377,43 @@
 }
 :root[data-cs-theme="light"] .cs > .shell .side::-webkit-scrollbar{width:6px}
 :root[data-cs-theme="light"] .cs > .shell .side::-webkit-scrollbar-thumb{background:#5a8cbd;border-radius:8px}
+
+
+/* CYBERSHIELD 2.0 — más azul en las pantallas operativas.
+   Cambios exclusivamente visuales del tema claro; los modos oscuros y EmpresaDemo
+   conservan sus estilos. La sección Catálogo utiliza su propio diseño. */
+:root[data-cs-theme="light"] .cs > .shell{
+  background:
+    radial-gradient(ellipse at 85% 0%,#d0e7ff 0,transparent 49%),
+    linear-gradient(180deg,#e4f1ff,#edf6ff 55%,#e7f3ff);
+}
+:root[data-cs-theme="light"] .cs > .shell .top{
+  background:linear-gradient(100deg,#dcecff,#f7fbff 75%);
+  border-bottom:1px solid #b5d2f0;
+  box-shadow:0 3px 18px #174b8420;
+}
+:root[data-cs-theme="light"] .cs > .shell .cs-ops:not(.cs-catalog) .cs-ops-hero{
+  background:linear-gradient(113deg,#08274e,#135a9c 63%,#2788ce);
+  border:1px solid #2b76be;
+  box-shadow:0 14px 31px #103e7233;
+}
+:root[data-cs-theme="light"] .cs > .shell .cs-ops:not(.cs-catalog) .cs-ops-hero h1{
+  color:#fff;
+}
+:root[data-cs-theme="light"] .cs > .shell .cs-ops:not(.cs-catalog) .cs-ops-hero .cs-ops-eyebrow{
+  color:#a9dcff;
+}
+:root[data-cs-theme="light"] .cs > .shell .cs-ops:not(.cs-catalog) .cs-ops-hero .cs-ops-hero-copy p{
+  color:#d5eaff;
+}
+:root[data-cs-theme="light"] .cs > .shell .cs-ops:not(.cs-catalog) .cs-ops-hero .cs-ops-hero-icon{
+  color:#c4e9ff;border-color:#ffffff42;background:#ffffff19;
+}
+:root[data-cs-theme="light"] .cs > .shell .cs-ops:not(.cs-catalog) .cs-ops-hero .cs-ops-hero-chip{
+  color:#e4f5ff;background:#ffffff20;border-color:#ffffff46;
+}
+:root[data-cs-theme="light"] .cs > .shell .cs-ops:not(.cs-catalog) .cs-ops-card{
+  background:linear-gradient(170deg,#ffffff,#f0f7ff);
+  border-color:#b9d7f4;
+  box-shadow:0 10px 25px #0b4b8920;
+}
