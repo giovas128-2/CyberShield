@@ -536,3 +536,21 @@ def documented_threat_catalog(
     return list_documented_threats(
         db, kind=kind, page=page, size=size, search=search,
     )
+
+# ============================================================
+# INVESTIGACIÓN DOCUMENTAL EN ESPAÑOL (SIN IA GENERATIVA)
+# MITRE importado, solo consultas, sin modificaciones de defensas.
+# ============================================================
+
+@router.get("/techniques/{attack_id}/research")
+def technique_documentary_research(
+    attack_id: str,
+    db: Session = Depends(get_db),
+):
+    from app.services.intelligence.technique_research import build_documentary_report
+    try:
+        return build_documentary_report(db, attack_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
