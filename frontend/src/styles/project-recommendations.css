@@ -1,0 +1,75 @@
+/* CyberShield | Auditoría contextual. Estilos aislados dentro de .cs-audit */
+.cs-audit .cs-project-context{border:1px solid #9bc5f2;border-radius:16px;background:linear-gradient(150deg,#e5f2ff,#f6faff);padding:20px;display:grid;gap:16px;margin-top:18px}
+.cs-audit .cs-project-context-heading{display:flex;align-items:flex-start;gap:12px}
+.cs-audit .cs-project-context-heading>svg{color:#125da8;flex:none;margin-top:2px}
+.cs-audit .cs-project-context-heading h3{color:#0b386d;margin:0 0 6px;font-size:18px}
+.cs-audit .cs-project-context-heading p{color:#37648f;margin:0;font-size:12px;line-height:1.6}
+.cs-audit .cs-project-context-step{margin-left:auto;background:#d2e8ff;color:#0d548f;padding:6px 9px;border-radius:8px;font-weight:800;font-size:11px;flex:none}
+.cs-audit .cs-project-context-fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.cs-audit .cs-project-context-field{display:grid;gap:7px;min-width:0}
+.cs-audit .cs-project-context-field.is-wide{grid-column:1/-1}
+.cs-audit .cs-project-context-field label{font-size:12px;font-weight:800;color:#0b3e77}
+.cs-audit .cs-project-context-field input,.cs-audit .cs-project-context-field textarea,.cs-audit .cs-project-context-field select{
+ display:block;width:100%;padding:11px 12px;border:1px solid #a3c7ec;border-radius:9px;
+ background:#f9fcff;color:#154b7d;font:inherit;font-size:12px;min-width:0;
+}
+.cs-audit .cs-project-context-field textarea{resize:vertical;min-height:94px;line-height:1.6}
+.cs-audit .cs-project-context-field input:focus-visible,.cs-audit .cs-project-context-field textarea:focus-visible,.cs-audit .cs-project-context-field select:focus-visible{outline:2px solid #267fcf;outline-offset:2px}
+.cs-audit .cs-project-context-checks{display:grid;gap:9px;background:#d3e8ff;padding:14px;border-radius:11px}
+.cs-audit .cs-project-context-checks>strong{color:#0b407c;font-size:12px}
+.cs-audit .cs-project-context-checks label{display:flex;align-items:flex-start;gap:9px;color:#245c91;font-size:12px;cursor:pointer}
+.cs-audit .cs-project-context-checks input{margin-top:2px;accent-color:#125da8}
+.cs-audit .cs-project-context-warning{display:flex;gap:8px;align-items:flex-start;color:#326392;font-size:11px;line-height:1.6}
+.cs-audit .cs-project-context-warning svg{flex:none}
+.cs-audit .cs-project-report{display:grid;gap:16px}
+.cs-audit .cs-project-report-profile{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cs-audit .cs-project-profile-description,.cs-audit .cs-project-profile-observed{
+ padding:16px;border:1px solid #accbed;border-radius:12px;background:linear-gradient(150deg,#e1f0ff,#f6faff);display:grid;align-content:start;gap:9px;min-width:0
+}
+.cs-audit .cs-project-kicker{font-size:10px;letter-spacing:.08em;font-weight:850;color:#3575b2}
+.cs-audit .cs-project-profile-description h3{color:#083767;font-size:17px;margin:0}
+.cs-audit .cs-project-profile-description p{color:#315e87;font-size:12px;line-height:1.6;margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.cs-audit .cs-project-profile-description>strong{font-size:11px;color:#0c579c}
+.cs-audit .cs-project-profile-observed>strong{color:#0d457d;font-size:13px}
+.cs-audit .cs-project-profile-observed small{color:#527da6;font-size:11px;line-height:1.5}
+.cs-audit .cs-project-chips{display:flex;flex-wrap:wrap;gap:6px}
+.cs-audit .cs-project-chips span{padding:6px 8px;background:#cce6ff;border:1px solid #add2f5;border-radius:8px;color:#125794;font-weight:800;font-size:11px}
+.cs-audit .cs-project-declared{display:flex;align-items:flex-start;gap:8px;color:#205e9a;background:#e3f1ff;border:1px solid #bcddfa;padding:12px;border-radius:10px}
+.cs-audit .cs-project-declared svg{flex:none}
+.cs-audit .cs-project-declared>div{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.cs-audit .cs-project-declared strong{font-size:11px}
+.cs-audit .cs-project-declared span{padding:5px 7px;border-radius:6px;background:#cce6ff;color:#15538c;font-size:10px;font-weight:800}
+.cs-audit .cs-project-report-subtitle{display:flex;align-items:flex-start;gap:10px;padding-top:8px;border-top:1px solid #b7d5f2}
+.cs-audit .cs-project-report-subtitle svg{color:#1472bf}
+.cs-audit .cs-project-report-subtitle h3{color:#0b3971;font-size:16px;margin:0}
+.cs-audit .cs-project-report-subtitle p{color:#44749f;font-size:12px;margin:5px 0 0}
+.cs-audit .cs-project-no-advice{display:flex;align-items:flex-start;gap:11px;padding:15px;background:#e5f2ff;border:1px solid #b3d6f7;border-radius:10px;color:#154d87}
+.cs-audit .cs-project-no-advice p{margin:5px 0 0;font-size:11px;line-height:1.5}
+.cs-audit .cs-project-advice-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
+.cs-audit .cs-project-advice{display:grid;gap:11px;background:linear-gradient(150deg,#f9fcff,#deeeff);border:1px solid #aacff1;border-left:4px solid #207bc4;border-radius:11px;padding:15px;min-width:0}
+.cs-audit .cs-project-advice-heading{display:flex;align-items:flex-start;gap:10px}
+.cs-audit .cs-project-advice-index{background:#145b9d;color:#fff;font-size:11px;font-weight:900;padding:7px 9px;border-radius:8px}
+.cs-audit .cs-project-advice-heading h4{margin:0 0 7px;color:#113f78;font-size:13px;line-height:1.5}
+.cs-audit .cs-project-advice-badges{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+.cs-audit .cs-project-advice-badges span{padding:5px 7px;border-radius:7px;background:#d2e9ff;color:#1a5792;font-size:10px;font-weight:800}
+.cs-audit .cs-project-advice-badges .is-critical{background:#ffe0e0;color:#a02638}
+.cs-audit .cs-project-advice-badges .is-high{background:#ffe9d0;color:#95511f}
+.cs-audit .cs-project-advice-badges .from-code{background:#c0e2ff;color:#075795}
+.cs-audit .cs-project-advice-badges .from-profile{background:#e3ebf4;color:#435d76}
+.cs-audit .cs-project-advice>p{margin:0;color:#3d678d;font-size:11px;line-height:1.6}
+.cs-audit .cs-project-advice-action,.cs-audit .cs-project-advice-verify,.cs-audit .cs-project-evidence{display:flex;align-items:flex-start;gap:9px;padding:10px;border-radius:9px;background:#e5f3ff}
+.cs-audit .cs-project-advice-action svg,.cs-audit .cs-project-advice-verify svg,.cs-audit .cs-project-evidence svg{color:#1763a9;flex:none}
+.cs-audit .cs-project-advice-action strong,.cs-audit .cs-project-advice-verify strong,.cs-audit .cs-project-evidence strong{display:block;color:#124c86;font-size:11px}
+.cs-audit .cs-project-advice-action p,.cs-audit .cs-project-advice-verify p{margin:4px 0 0;font-size:11px;color:#325e86;line-height:1.6}
+.cs-audit .cs-project-evidence code{display:block;max-width:100%;overflow-wrap:anywhere;font-family:monospace;color:#1b5b95;font-size:10px;margin-top:5px}
+.cs-audit .cs-project-advice>a{color:#0b61ab;display:flex;align-items:center;gap:7px;font-size:11px;font-weight:850}
+.cs-audit .cs-project-report-note{display:flex;align-items:flex-start;gap:8px;font-size:11px;line-height:1.65;color:#456f99;margin:0}
+.cs-audit .cs-project-report-note svg{flex:none}
+@media(max-width:1040px){
+ .cs-audit .cs-project-report-profile,.cs-audit .cs-project-advice-list{grid-template-columns:1fr}
+}
+@media(max-width:620px){
+ .cs-audit .cs-project-context-fields{grid-template-columns:1fr}
+ .cs-audit .cs-project-context-step{display:none}
+ .cs-audit .cs-project-context{padding:14px}
+}
