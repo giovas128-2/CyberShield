@@ -181,3 +181,4 @@ export default function ProtectionOfficialResearch() {
       <p className="cs-official-foot"><FileSearch size={15}/> CISA KEV se consulta como catálogo general de vulnerabilidades explotadas conocidas: una CVE no se atribuye a ninguna de las ocho protecciones sin comprobar el producto afectado y su relevancia. Los cambios de referencia no se implementan automáticamente.</p>
     </>}
   </section>;
+}
