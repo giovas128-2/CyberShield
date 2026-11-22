@@ -1,15 +1,15 @@
 # Fase 1 — Catálogo documental unificado (MITRE + CISA)
 
-Rama: \`feature/threat-catalog-foundation\`. Esta primera entrega usa solo las
+Rama: `feature/threat-catalog-foundation`. Esta primera entrega usa solo las
 tablas existentes de las migraciones **005** y **006**; **no hay nueva migración**.
 
 ## Qué se añade
 
-Endpoint autenticado de solo lectura: \`GET /intelligence/threat-catalog\`.
+Endpoint autenticado de solo lectura: `GET /intelligence/threat-catalog`.
 
-Parámetros: \`kind=all|mitre|cisa\`, \`search\`, \`page\`, \`size\` (1 a 100).
+Parámetros: `kind=all|mitre|cisa`, `search`, `page`, `size` (1 a 100).
 La respuesta ofrece entradas con fuente, versión observada, enlace documental,
-fecha, conteo total y etiqueta \`official_catalog_imported\`.
+fecha, conteo total y etiqueta `official_catalog_imported`.
 
 Los datos provienen de PostgreSQL después de que los importadores **ya
 existentes** hayan validado e importado MITRE ATT&CK Enterprise y CISA KEV.
@@ -26,19 +26,19 @@ amenazas imaginarias y no equivale a 1,000 protecciones.
 
 ## Validación en Ubuntu WSL
 
-Antes de cambiar de rama, ejecutar \`git status --short\` y proteger cambios locales.
+Antes de cambiar de rama, ejecutar `git status --short` y proteger cambios locales.
 Una vez en esta rama, ejecutar desde la raíz:
 
-\`\`\`bash
+```bash
 backend/venv-wsl/bin/python -m py_compile \
   backend/app/services/intelligence/threat_catalog.py \
   backend/app/api/intelligence.py
 PYTHONPATH=backend backend/venv-wsl/bin/python -m unittest \
   discover -s backend/tests -p test_threat_catalog.py -v
-\`\`\`
+```
 
 Tras la revisión y con el servicio de backend reiniciado de forma controlada
-(vía \`cybershield-api.service\`), verificar OpenAPI y consultar la ruta con JWT
+(vía `cybershield-api.service`), verificar OpenAPI y consultar la ruta con JWT
 desde una sesión autorizada. No compartir JWT en chats o registros.
 
 ## Siguientes entregas
