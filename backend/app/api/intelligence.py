@@ -554,3 +554,35 @@ def technique_documentary_research(
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+# ============================================================
+# IA LOCAL OPCIONAL — OLLAMA EN LOOPBACK (SIN COSTO DE API)
+# Acceso solo admin/engineer; deshabilitada por defecto.
+# ============================================================
+
+@router.get("/local-ai/status")
+def local_ai_status_endpoint(
+    _reviewer = Depends(require_roles("admin", "engineer")),
+):
+    from app.services.intelligence.local_ollama import local_ai_status
+    return local_ai_status()
+
+
+@router.post("/local-ai/techniques/{attack_id}/interpret")
+def local_ai_interpret_technique(
+    attack_id: str,
+    db: Session = Depends(get_db),
+    _reviewer = Depends(require_roles("admin", "engineer")),
+):
+    from app.services.intelligence.local_ollama import (
+        LocalAIUnavailable,
+        interpret_mitre_with_local_ai,
+    )
+    try:
+        return interpret_mitre_with_local_ai(db, attack_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except LocalAIUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
