@@ -126,3 +126,37 @@ apuntando a 8000. Mantener el servidor de producción independiente.
 `cd frontend && npm run build`, luego abrir
 `http://localhost:8001/#/catalog` con FastAPI de pruebas levantado
 desde el mismo worktree. No modificar el servicio principal del puerto 8000.
+
+
+## Fase 2A — Mitigaciones documentadas MITRE en las fichas
+
+Se incorpora `MitreMitigations.tsx` en la página Catálogo. Por cada técnica
+MITRE, el botón **Ver mitigaciones documentadas** solicita bajo demanda
+`GET /intelligence/techniques/{attack_id}`, endpoint autenticado que ya
+existía en la aplicación y consulta exclusivamente las relaciones persistidas
+por el importador de MITRE.
+
+- Muestra códigos, nombres y descripciones MITRE asociadas a cada técnica.
+- Si no existen relaciones, lo indica sin inventar mitigaciones.
+- Las CVE de CISA conservan sus fichas documentales; no se les atribuye
+  automáticamente una mitigación MITRE sin evidencia adicional.
+- La consulta no instala defensas, no cambia las reglas Wazuh, no crea
+  incidentes y no requiere migraciones ni credenciales adicionales.
+- El paso siguiente será la **interpretación asistida con IA**, solo con
+  evidencias oficiales verificadas y revisión humana, sin afirmar que
+  una defensa propuesta está desplegada.
+
+Validación requerida en el worktree de pruebas:
+
+```bash
+cd /mnt/c/Users/Giovas128/downloads/CyberShield-ThreatCatalog
+git pull --ff-only
+cd frontend
+npm run build
+```
+
+Después, en la instancia de pruebas en puerto 8001, abrir
+`http://localhost:8001/#/catalog`, filtrar MITRE y consultar una técnica
+con mitigaciones conocidas como T1110. Comprobar también un registro sin
+relaciones MITRE para verificar que informa correctamente. Mantener separado
+el servicio principal en puerto 8000.
