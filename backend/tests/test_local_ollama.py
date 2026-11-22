@@ -63,7 +63,9 @@ class LocalAITests(unittest.TestCase):
                 self.assertEqual(payload["model"], "qwen3:0.6b")
                 self.assertEqual(payload["keep_alive"], 0)
                 self.assertFalse(payload["stream"])
-                self.assertNotIn("ip", payload["prompt"].lower().replace("description",""))
+                self.assertIn(\'"attack_id": "T1110"\', payload["prompt"])
+                self.assertNotIn("192.168.", payload["prompt"])
+                self.assertNotIn("incident_id", payload["prompt"])
                 self.assertEqual(db.execute.call_count, 2)
                 db.commit.assert_not_called()
 
