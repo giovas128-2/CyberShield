@@ -7,6 +7,8 @@ import {
   ShieldAlert, ShieldCheck, Sparkles, UploadCloud,
 } from "lucide-react";
 import { api, ApiError } from "../api/client";
+import ProjectRecommendationReport from "../components/ProjectRecommendationReport";
+import type { ProjectContext, ProjectAdvice } from "../components/ProjectRecommendationReport";
 import "../styles/code-security-review.css";
 
 type Finding = {
@@ -21,6 +23,7 @@ type Scan = {
   archive?: { zip_entries: number; skipped_noncode: number; skipped_oversized: number; skipped_binary: number; source_bytes: number };
   ai_files_sampled?: number;
   findings_limited?: boolean;
+  project_advice?: ProjectAdvice;
 };
 type SourceFile = {path: string; content: string};
 
@@ -52,7 +55,7 @@ function severityLabel(severity: string): string {
 }
 
 export default function CodeSecurityReviewPage() {
-  const [mode, setMode] = useState<"files" | "github" | "zip">("files");
+  const [mode, setMode] = useState<"files" | "github" | "zip">("zip");
   const [zipFile, setZipFile] = useState<File | null>(null);
   const [files, setFiles] = useState<SourceFile[]>([]);
   const [owner, setOwner] = useState("");
@@ -64,6 +67,17 @@ export default function CodeSecurityReviewPage() {
   const [reading, setReading] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState("");
+  const [context, setContext] = useState<ProjectContext>({
+    name: "", description: "", project_type: "unspecified",
+    internet_exposed: false, uses_authentication: false,
+    handles_sensitive_data: false,
+  });
+
+  function updateContext<K extends keyof ProjectContext>(key: K, value: ProjectContext[K]) {
+    setContext(current => ({...current, [key]: value}));
+    setResult(null);
+    setError("");
+  }
 
   async function readFiles(picked: File[]) {
     setResult(null);
@@ -160,9 +174,9 @@ export default function CodeSecurityReviewPage() {
       const path = mode === "files"
         ? "/intelligence/code-review/files"
         : mode === "github" ? "/intelligence/code-review/github" : "/intelligence/code-review/zip";
-      const body = mode === "files" ? {files, use_ai: ai}
-        : mode === "github" ? {...parsed, branch: branch.trim(), use_ai: ai}
-        : {filename: zipFile!.name, archive_base64: await zipToBase64(zipFile!), use_ai: ai};
+      const body = mode === "files" ? {files, use_ai: ai, context}
+        : mode === "github" ? {...parsed, branch: branch.trim(), use_ai: ai, context}
+        : {filename: zipFile!.name, archive_base64: await zipToBase64(zipFile!), use_ai: ai, context};
       const data = await api<Scan>(path, "POST", body);
       if (!Array.isArray(data?.findings)) throw new Error("El servidor devolvió una respuesta de análisis no válida.");
       setResult(data);
@@ -293,12 +307,71 @@ export default function CodeSecurityReviewPage() {
               </div>
             )}
 
+
+            <section className="cs-project-context" aria-label="Contexto del proyecto">
+              <header className="cs-project-context-heading">
+                <Info size={23}/>
+                <div>
+                  <h3>¿De qué trata tu proyecto?</h3>
+                  <p>Describe la aplicación para que CyberShield proponga medidas acordes
+                    a su uso. Lo declarado se diferencia de lo encontrado en el código.</p>
+                </div>
+                <span className="cs-project-context-step">PASO 02 · CONTEXTO</span>
+              </header>
+
+              <div className="cs-project-context-fields">
+                <div className="cs-project-context-field">
+                  <label htmlFor="cs-project-name">Nombre del proyecto (opcional)</label>
+                  <input id="cs-project-name" value={context.name} maxLength={100} disabled={busy}
+                    placeholder="Ej. Sistema de inventario"
+                    onChange={event => updateContext("name", event.target.value)}/>
+                </div>
+                <div className="cs-project-context-field">
+                  <label htmlFor="cs-project-type">¿Qué tipo de aplicación es?</label>
+                  <select id="cs-project-type" value={context.project_type} disabled={busy}
+                    onChange={event => updateContext("project_type", event.target.value as ProjectContext["project_type"])}>
+                    <option value="unspecified">No especificado</option>
+                    <option value="web">Aplicación web</option>
+                    <option value="api">API / backend</option>
+                    <option value="mobile">Aplicación móvil</option>
+                    <option value="desktop">Aplicación de escritorio</option>
+                    <option value="automation">Automatización / script</option>
+                    <option value="other">Otro proyecto</option>
+                  </select>
+                </div>
+                <div className="cs-project-context-field is-wide">
+                  <label htmlFor="cs-project-description">¿Para qué sirve y quién lo utiliza?</label>
+                  <textarea id="cs-project-description" rows={4} maxLength={1500}
+                    placeholder="Ej. Aplicación web para controlar préstamos de equipos. Los empleados entran con usuario y contraseña y pueden consultar datos de clientes."
+                    disabled={busy} value={context.description}
+                    onChange={event => updateContext("description", event.target.value)}/>
+                </div>
+              </div>
+
+              <div className="cs-project-context-checks" role="group" aria-label="Características que declaras sobre la aplicación">
+                <strong>Selecciona solamente las características que conoces:</strong>
+                <label><input type="checkbox" checked={context.internet_exposed} disabled={busy}
+                  onChange={event => updateContext("internet_exposed", event.target.checked)}/>
+                  La aplicación está disponible desde internet</label>
+                <label><input type="checkbox" checked={context.uses_authentication} disabled={busy}
+                  onChange={event => updateContext("uses_authentication", event.target.checked)}/>
+                  Tiene usuarios, inicio de sesión o diferentes roles</label>
+                <label><input type="checkbox" checked={context.handles_sensitive_data} disabled={busy}
+                  onChange={event => updateContext("handles_sensitive_data", event.target.checked)}/>
+                  Maneja datos personales, financieros u otra información sensible</label>
+              </div>
+              <p className="cs-project-context-warning"><LockKeyhole size={15}/>
+                No incluyas contraseñas, tokens ni información confidencial en esta descripción.
+                CyberShield analizará el código que elijas y distinguirá los indicios técnicos
+                de las necesidades que indiques manualmente.</p>
+            </section>
+
             <div className="cs-audit-ai-option">
               <div className="cs-audit-ai-icon"><BrainCircuit size={21}/></div>
-              <div className="cs-audit-ai-copy"><strong>Explicación adicional con IA</strong>
+              <div className="cs-audit-ai-copy"><strong>IA externa opcional (no utiliza Ollama)</strong>
                 <span>{mode === "zip"
                   ? "Al activarla autorizas enviar al proveedor externo fragmentos limitados de código del ZIP (hasta 16 archivos). Podrían contener datos confidenciales: elimínalos antes. Sin activar, el análisis local por reglas sigue siendo real."
-                  : "Opcional. Si hay un modelo configurado, enviará únicamente metadatos y resúmenes de los hallazgos, nunca el código fuente."}</span>
+                  : "Opcional. Si hay un proveedor externo configurado, enviará metadatos y resúmenes de los hallazgos. Desactivado por defecto."}</span>
               </div>
               <label className="cs-audit-switch">
                 <input type="checkbox" checked={ai} disabled={busy} onChange={event => setAi(event.target.checked)}
@@ -346,6 +419,8 @@ export default function CodeSecurityReviewPage() {
               <p className="cs-audit-muted">{result.note}</p>
               {typeof result.ai_files_sampled === "number" && <p className="cs-audit-muted">IA: {result.ai_files_sampled} archivos examinados parcialmente mediante fragmentos. Los resultados son hipótesis y requieren validación.</p>}
             </section>
+
+            {result.project_advice && <ProjectRecommendationReport report={result.project_advice}/>} 
 
             <section className="cs-audit-card">
               <header className="cs-audit-card-heading"><span className="cs-audit-icon"><Layers3 size={22}/></span>
