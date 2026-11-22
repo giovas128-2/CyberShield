@@ -109,3 +109,20 @@ refrescar `http://localhost:8001/#/catalog` (la ruta usa HashRouter).
 El backend de pruebas sirve su propio `frontend/dist`. Para usar este puerto
 no hace falta editar `vite.config.ts`, cuyo proxy del modo de desarrollo sigue
 apuntando a 8000. Mantener el servidor de producción independiente.
+
+
+## Rediseño visual azul (22 de noviembre de 2026)
+
+- `CatalogPage.tsx`: encabezado azul marino, etiquetas de fuentes, paneles con
+  conteos consultados a `GET /intelligence/summary` y aviso explícito de
+  consulta documental; sin números simulados.
+- `catalog-blue.css`: gradientes azules, tarjetas y filtros más contrastados,
+  secciones MITRE/CISA y vigilancia oficial con estilos exclusivos de Catálogo;
+  diseño adaptable a pantallas pequeñas.
+- `enterprise-light.css`: refuerzo azul de fondo, cabecera y héroes
+  operativos únicamente con el tema claro. No cambia rutas ni datos.
+
+**Validación pendiente de ejecutar en WSL:** `git pull --ff-only`,
+`cd frontend && npm run build`, luego abrir
+`http://localhost:8001/#/catalog` con FastAPI de pruebas levantado
+desde el mismo worktree. No modificar el servicio principal del puerto 8000.
