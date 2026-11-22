@@ -199,3 +199,85 @@ La integración de IA generativa genuina queda para un paso aparte, con
 revisión de costos, autorización explícita, controles de datos públicos,
 limitaciones y validación humana. La IA opcional existente para versiones
 oficiales no cambia y no se activa por este informe.
+
+
+## Fase 2C — Integración preparada para IA local Ollama (no activada)
+
+El modelo local queda **DESACTIVADO POR DEFECTO**. No se ha descargado
+ni instalado Ollama, no se han abierto puertos y no se ha activado el endpoint
+de generación. No usar el backend principal antes de completar pruebas.
+
+### Código nuevo
+
+- `backend/app/services/intelligence/local_ollama.py`: conexión únicamente
+  a `http://127.0.0.1:11434`, sin proxies externos, sin escritura en BD.
+- `GET /intelligence/local-ai/status`: estado Ollama, modelo y disponibilidad.
+- `POST /intelligence/local-ai/techniques/{attack_id}/interpret`: genera
+  interpretación en español SOLO tras clic del ingeniero.
+- Endpoints protegidos por autenticación y rol `admin` o `engineer`.
+- `LocalAIInterpretation.tsx`: control opcional dentro de una técnica MITRE.
+  Si está desactivada, muestra un aviso sin enviar solicitudes de generación.
+- `backend/tests/test_local_ollama.py`: comprueba desactivación,
+  modelos permitidos y aislamiento de red.
+
+### Seguridad y privacidad
+
+1. El único destino de solicitudes del backend es el servicio local de Ollama.
+2. Solo se admiten los modelos `qwen3:0.6b`, `qwen3:1.7b` y `qwen3:4b`,
+   instalados localmente. No se admiten modelos `:cloud`.
+3. Únicamente se envían datos públicos MITRE ya importados, con límites
+   de longitud. NO se envían IPs de servidores, incidentes o credenciales.
+4. No hay llamadas automáticas de generación. `stream=false`;
+   `keep_alive=0` para descargar el modelo al terminar de responder.
+5. La respuesta se marca como texto generado por IA que puede equivocarse.
+   Requiere revisión humana; nunca ejecuta protecciones ni cambia tablas.
+6. Una IA pequeña no garantiza precisión ni traducción exacta; contrastar
+   siempre con la documentación oficial.
+
+### Revisión previa de hardware en WSL (solo lectura)
+
+```bash
+echo "=== RAM EN WSL ==="
+free -h
+echo "=== CPU ==="
+nproc
+echo "=== ESPACIO DISPONIBLE ==="
+df -h ~ | tail -n 1
+echo "=== GPU NVIDIA (si existe) ==="
+command -v nvidia-smi >/dev/null && nvidia-smi --query-gpu=name,memory.total --format=csv,noheader || echo "No se detectó nvidia-smi"
+echo "=== OLLAMA INSTALADO ==="
+command -v ollama || echo "Ollama todavía no está instalado en WSL"
+```
+
+**No instalar ni descargar** hasta valorar RAM/CPU/espacio. Ollama usa
+recursos que pueden afectar Wazuh/PostgreSQL. Tampoco activar modelos con
+nombres `:cloud` si se desea mantener todo local y sin costo por uso.
+
+### Habilitación futura (solo cuando el usuario autorice)
+
+En el entorno del proceso **de pruebas**, y solo tras instalar Ollama
+y descargar un modelo local compatible:
+
+```bash
+export CYBERSHIELD_LOCAL_AI_ENABLED=1
+export CYBERSHIELD_LOCAL_AI_MODEL=qwen3:0.6b
+```
+
+Estas variables **no tienen efecto sobre un proceso ya iniciado**.
+Para aplicarlas, iniciar nuevamente SOLO FastAPI de pruebas en puerto 8001
+con su misma configuración de base de datos, sin tocar
+`cybershield-api.service` del puerto 8000.
+
+### Pruebas de código local
+
+```bash
+cd /mnt/c/Users/Giovas128/downloads/CyberShield-ThreatCatalog
+git pull --ff-only
+PYTHONPATH=backend /mnt/c/Users/Giovas128/downloads/CyberSHield/backend/venv-wsl/bin/python \
+  -m unittest discover -s backend/tests -p 'test_local_ollama.py' -v
+cd frontend
+npm run build
+```
+
+El conjunto anterior solo prueba llamadas simuladas. La generación real con
+Ollama queda pendiente de la evaluación del equipo y una prueba aislada.
