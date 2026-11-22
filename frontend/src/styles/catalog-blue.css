@@ -184,3 +184,49 @@
 .cs-catalog .cs-threat-mitigations-caution{
   font-size:10px;color:#38658e;line-height:1.5;margin:0;
 }
+
+
+/* Fichas sin alturas igualadas cuando una técnica está desplegada. */
+.cs-catalog .cs-threat-grid{align-items:start}
+.cs-catalog .cs-threat-mitigation-more,
+.cs-catalog .cs-threat-mitigation-showall,
+.cs-catalog .cs-threat-report-button{
+  cursor:pointer;border:1px solid #86b7ed;border-radius:9px;
+  background:#e5f2ff;color:#0d559a;font-size:11px;font-weight:850;
+  padding:9px 12px;
+}
+.cs-catalog .cs-threat-mitigation-more{justify-self:start}
+.cs-catalog .cs-threat-mitigation-showall{width:100%}
+.cs-catalog .cs-threat-mitigation-more:hover,
+.cs-catalog .cs-threat-mitigation-showall:hover{background:#cde7ff}
+.cs-catalog .cs-threat-report{display:grid;gap:9px;margin-top:5px}
+.cs-catalog .cs-threat-report-button{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;background:#0b3e7b;color:#eaf5ff;border-color:#377ac1;
+}
+.cs-catalog .cs-threat-report-button:hover{background:#145da2}
+.cs-catalog .cs-threat-report-content{
+  display:grid;gap:12px;padding:14px;border-radius:12px;
+  background:linear-gradient(150deg,#f4faff,#d4eaff);
+  border:1px solid #a5cdf6;color:#234d79;
+  overflow-wrap:anywhere;
+}
+.cs-catalog .cs-threat-report-heading{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.cs-catalog .cs-threat-report-heading strong{font-size:13px;color:#0a3a72}
+.cs-catalog .cs-threat-report-heading>span{
+  color:#145a97;background:#cce6ff;border-radius:7px;
+  padding:4px 7px;font-size:10px;font-weight:800;
+}
+.cs-catalog .cs-threat-report-content p{color:#345f89;font-size:12px;line-height:1.7;margin:0}
+.cs-catalog .cs-threat-report-content p[role="status"]{display:flex;align-items:center;gap:8px}
+.cs-catalog .cs-threat-report-content .cs-threat-report-error{display:flex;align-items:center;gap:8px;color:#9b3131}
+.cs-catalog .cs-threat-report-content h4{color:#11477f;font-size:12px;margin:6px 0 0}
+.cs-catalog .cs-threat-report-tags{display:flex;flex-wrap:wrap;gap:6px}
+.cs-catalog .cs-threat-report-tags span{
+  color:#13538f;background:#eaf5ff;border:1px solid #b9dafa;
+  padding:6px 8px;border-radius:7px;font-size:10px;font-weight:750;
+}
+.cs-catalog .cs-threat-report-content ol{margin:0;padding-left:21px;color:#345f89;font-size:11px;line-height:1.7}
+.cs-catalog .cs-threat-report-content li+li{margin-top:7px}
+.cs-catalog .cs-threat-report-content a{display:flex;align-items:center;gap:6px;color:#085baa;font-weight:850;font-size:11px}
+.cs-catalog .cs-threat-report-content small{font-size:10px;color:#456e98;line-height:1.5}
