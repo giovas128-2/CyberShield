@@ -286,20 +286,20 @@ export default function CodeSecurityReviewPage() {
                 <div className="cs-audit-field">
                   <label htmlFor="cs-audit-owner">Propietario o URL de GitHub</label>
                   <input id="cs-audit-owner" value={owner} disabled={busy} autoComplete="off"
-                    onChange={event => setOwner(event.target.value)}
+                    onChange={event => {setOwner(event.target.value);setResult(null);}}
                     placeholder="usuario o https://github.com/usuario/repositorio"/>
                 </div>
                 <div className="cs-audit-field-grid">
                   <div className="cs-audit-field">
                     <label htmlFor="cs-audit-repo">Repositorio</label>
                     <input id="cs-audit-repo" value={repo} disabled={busy}
-                      onChange={event => setRepo(event.target.value)}
+                      onChange={event => {setRepo(event.target.value);setResult(null);}}
                       placeholder="nombre-repositorio"/>
                   </div>
                   <div className="cs-audit-field">
                     <label htmlFor="cs-audit-branch">Rama <span>(opcional)</span></label>
                     <input id="cs-audit-branch" value={branch} disabled={busy}
-                      onChange={event => setBranch(event.target.value)}
+                      onChange={event => {setBranch(event.target.value);setResult(null);}}
                       placeholder="Rama predeterminada"/>
                   </div>
                 </div>
