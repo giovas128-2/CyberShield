@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import { AlertTriangle, BookOpen, ChevronLeft, ChevronRight, Database, ExternalLink, Search, ShieldAlert } from "lucide-react";
 import { api } from "../api/client";
 import MitreMitigations from "./MitreMitigations";
+import CisaRemediationPanel from "./CisaRemediationPanel";
 import "../styles/threat-catalog.css";
 
 type CatalogKind = "all" | "mitre" | "cisa";
@@ -19,6 +20,8 @@ type ThreatRecord = {
   reference_url: string | null;
   evidence_status: "official_catalog_imported";
   protection_installed: false;
+  cisa_required_action: string | null;
+  cisa_action_origin: string | null;
 };
 type CatalogResponse = {
   kind: CatalogKind;
@@ -143,6 +146,12 @@ export default function ThreatCatalogPanel() {
             <span>Fecha documental: {friendlyDate(item.documented_at)}</span>
           </div>
           {item.kind === "mitre" && <MitreMitigations attackId={item.external_id}/>}
+          {item.kind === "cisa" && <CisaRemediationPanel
+            cveId={item.external_id}
+            requiredAction={item.cisa_required_action}
+            origin={item.cisa_action_origin}
+            referenceUrl={item.reference_url}
+          />}
           {item.reference_url && <a href={item.reference_url} target="_blank" rel="noopener noreferrer">
             Consultar referencia oficial <ExternalLink size={14}/>
           </a>}
