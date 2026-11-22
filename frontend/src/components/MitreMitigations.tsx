@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from "react";
 import { AlertTriangle, BookOpen, ChevronDown, ChevronUp, Loader2, ShieldCheck } from "lucide-react";
 import { api } from "../api/client";
+import TechniqueResearchPanel from "./TechniqueResearchPanel";
 
 type Mitigation = {
   mitigation_id: string;
@@ -24,6 +25,8 @@ export default function MitreMitigations({ attackId }: { attackId: string }) {
   const [detail, setDetail] = useState<TechniqueDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showAll, setShowAll] = useState(false);
+  const [fullText, setFullText] = useState<string[]>([]);
   const detailsId = useId();
 
   useEffect(() => {
@@ -80,12 +83,27 @@ export default function MitreMitigations({ attackId }: { attackId: string }) {
             ? "No hay mitigaciones relacionadas en la base actual."
             : `${detail.mitigations.length} mitigación(es) relacionadas en MITRE ATT&CK.`}
         </p>
-        {detail.mitigations.map(mitigation =>
-          <div className="cs-threat-mitigation" key={mitigation.mitigation_id}>
+        {(showAll ? detail.mitigations : detail.mitigations.slice(0, 3)).map(mitigation => {
+          const description = mitigation.description || "";
+          const isFull = fullText.includes(mitigation.mitigation_id);
+          const clipped = description.length > 340 && !isFull;
+          return <div className="cs-threat-mitigation" key={mitigation.mitigation_id}>
             <div><span>{mitigation.mitigation_id}</span><strong>{mitigation.name}</strong></div>
-            {mitigation.description && <p>{mitigation.description}</p>}
-          </div>
-        )}
+            {description && <p>{clipped ? description.slice(0, 340) + "…" : description}</p>}
+            {description.length > 340 && <button type="button"
+              className="cs-threat-mitigation-more"
+              onClick={() => setFullText(ids => ids.includes(mitigation.mitigation_id)
+                ? ids.filter(id => id !== mitigation.mitigation_id)
+                : [...ids, mitigation.mitigation_id])}>
+              {isFull ? "Ver menos texto" : "Leer descripción completa"}
+            </button>}
+          </div>;
+        })}
+        {detail.mitigations.length > 3 && <button type="button"
+          className="cs-threat-mitigation-showall" onClick={() => setShowAll(value => !value)}>
+          {showAll ? "Mostrar solo tres" : "Ver todas las " + detail.mitigations.length + " mitigaciones"}
+        </button>}
+        <TechniqueResearchPanel attackId={attackId}/>
         <p className="cs-threat-mitigations-caution">
           Esta relación es documental. No confirma que el servidor esté protegido,
           ni propone ejecutar automáticamente una regla.
