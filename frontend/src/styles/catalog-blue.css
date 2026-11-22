@@ -1,0 +1,142 @@
+/* CyberShield 2.0 — paleta azul reforzada en la sección Catálogo.
+   Estilos visuales aislados; no afecta los servicios ni controles. */
+.cs-catalog{
+  --cs-night:#071d3d;--cs-navy:#0b3263;--cs-blue:#126bc5;
+  --cs-cyan:#5dccff;--cs-ice:#eaf5ff;
+  display:grid;gap:20px;
+}
+.cs-catalog .cs-catalog-hero{
+  position:relative;isolation:isolate;overflow:hidden;min-width:0;
+  padding:clamp(25px,3.6vw,46px);
+  border:1px solid #327ac2;border-radius:23px;
+  background:
+    radial-gradient(ellipse at 84% 18%,#2c98fc91 0,transparent 38%),
+    radial-gradient(ellipse at 9% 96%,#165ba98a 0,transparent 49%),
+    linear-gradient(116deg,#061b3c 0%,#10477f 52%,#176fc0 100%);
+  color:#fff;box-shadow:0 22px 43px #0b37672e;
+}
+.cs-catalog .cs-catalog-hero:before{
+  content:"";position:absolute;z-index:-1;inset:0;pointer-events:none;
+  background-image:linear-gradient(#ffffff0e 1px,transparent 1px),linear-gradient(90deg,#ffffff0e 1px,transparent 1px);
+  background-size:36px 36px;mask-image:linear-gradient(90deg,transparent 12%,#000 90%);
+}
+.cs-catalog-hero-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.cs-catalog-eyebrow{display:inline-flex;align-items:center;gap:8px;color:#8ed2ff;font-weight:850;font-size:11px;letter-spacing:1.7px}
+.cs-catalog-hero-mode{display:inline-flex;align-items:center;gap:7px;color:#b9e4ff;border:1px solid #9ad9ff43;border-radius:30px;padding:7px 11px;font-size:10px;font-weight:800;letter-spacing:.5px;background:#ffffff12}
+.cs-catalog-hero-mode>span{width:7px;height:7px;background:#81e8cf;border-radius:50%;box-shadow:0 0 0 4px #80e8cf1e}
+.cs-catalog-hero-content{display:flex;justify-content:space-between;align-items:center;gap:28px;padding-top:27px}
+.cs-catalog-hero-copy{flex:1;min-width:0;max-width:770px}
+.cs-catalog-hero-overline{color:#8bd5ff!important;font-size:11px;font-weight:800;letter-spacing:2px;margin:0 0 10px!important}
+.cs-catalog .cs-catalog-hero h1{color:#fff;font-size:clamp(38px,4.8vw,67px);line-height:1.04;letter-spacing:-2px;font-weight:900;margin:0 0 18px}
+:root[data-cs-theme="light"] .cs > .shell .cs-catalog .cs-catalog-hero h1{color:#fff}
+.cs-catalog .cs-catalog-hero .cs-catalog-lead{max-width:680px;color:#d4eaff;font-size:clamp(12px,1.12vw,15px);line-height:1.8;margin:0}
+.cs-catalog-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:23px}
+.cs-catalog-tags>span{display:inline-flex;align-items:center;gap:7px;color:#eaf6ff;background:#ffffff17;border:1px solid #ffffff38;border-radius:9px;padding:8px 11px;font-size:11px;font-weight:750}
+.cs-catalog-tags svg{color:#78d2ff}
+.cs-catalog-emblem{height:200px;width:220px;position:relative;flex:0 0 220px;display:grid;place-items:center}
+.cs-catalog-orbit{position:absolute;border-radius:100%;border:1px solid #8bd3ff66}
+.cs-catalog-orbit-one{inset:0 13px}
+.cs-catalog-orbit-two{inset:22px 38px;border:1px dashed #a1dfff88}
+.cs-catalog-emblem-core{display:grid;place-items:center;width:122px;height:122px;color:#d7efff;background:linear-gradient(135deg,#42afff3d,#b8eeff14);border:1px solid #a4dfff8a;box-shadow:inset 0 0 28px #70beff30,0 0 55px #64b7ff42;border-radius:29px;transform:rotate(-8deg)}
+.cs-catalog-emblem-core svg{transform:rotate(8deg);filter:drop-shadow(0 0 12px #93deff)}
+.cs-catalog-orbit-point{position:absolute;border-radius:50%;width:9px;height:9px;background:#85e5ff;box-shadow:0 0 18px #85e5ff}
+.cs-catalog-orbit-point.one{top:24px;left:30px}
+.cs-catalog-orbit-point.two{right:22px;bottom:30px}
+.cs-catalog-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;min-width:0}
+.cs-catalog-metric{min-width:0;display:grid;align-content:start;gap:9px;padding:20px 19px;min-height:144px;border-radius:17px;border:1px solid #a6c9f1;box-shadow:0 9px 23px #0a397c16;background:linear-gradient(145deg,#e8f4ff,#cfe7ff)}
+.cs-catalog-metric:nth-child(2){background:linear-gradient(145deg,#d9edff,#eaf6ff)}
+.cs-catalog-metric:nth-child(3){background:linear-gradient(145deg,#d6eaff,#eaf4ff)}
+.cs-catalog-metric:nth-child(4){background:linear-gradient(145deg,#e9f5ff,#cde6ff)}
+.cs-catalog-metric-label{display:flex;align-items:center;gap:9px;min-width:0;color:#245b99;font-size:11px;line-height:1.4;font-weight:850}
+.cs-catalog-metric-label svg{flex:none;color:#0f6fc6}
+.cs-catalog-metric strong{font-size:clamp(26px,2.6vw,38px);font-weight:900;color:#092f62;line-height:1.1;letter-spacing:-1.2px}
+.cs-catalog-metric small{font-size:10px;line-height:1.5;color:#416d98}
+.cs-catalog-notice{display:flex;align-items:flex-start;gap:11px;padding:13px 17px;border:1px solid #abd1f7;border-left:4px solid #1674cf;border-radius:12px;background:linear-gradient(90deg,#dbeeff,#edf7ff);color:#245b8a;font-size:12px;line-height:1.55}
+.cs-catalog-notice svg{color:#176ac1;flex:none;margin-top:1px}
+
+/* Fichas del catálogo y buscador: azules sustanciales, texto accesible. */
+.cs-catalog .cs-threat{
+  background:linear-gradient(180deg,#e5f2ff,#f1f8ff);
+  border:1px solid #b4d5f6;
+  box-shadow:0 14px 29px #08407e15;
+  border-radius:19px;padding:clamp(18px,2vw,28px);
+}
+.cs-catalog .cs-threat-head{background:linear-gradient(108deg,#0c3e77,#1969b9);border-radius:14px;padding:17px 20px}
+.cs-catalog .cs-threat-icon{background:#ffffff18;border-color:#ffffff4d;color:#b7ecff}
+.cs-catalog .cs-threat-heading h2{color:#fff}
+.cs-catalog .cs-threat-heading p{color:#d3e8ff}
+.cs-catalog .cs-threat-head .cs-ops-kicker{color:#8fddff}
+.cs-catalog .cs-threat-count{background:#ffffff1a;border-color:#ffffff38;color:#e2f7ff}
+.cs-catalog .cs-threat-note{background:#d4e9ff;border-color:#a9d0f8;color:#244d77}
+.cs-catalog .cs-threat-tools{padding:12px;background:#d9ecff;border:1px solid #b7d7f5;border-radius:13px}
+.cs-catalog .cs-threat-filters button{color:#1b4d83;background:#eef7ff;border-color:#bdd7f4}
+.cs-catalog .cs-threat-filters button:hover{background:#cee9ff;color:#0a4c91}
+.cs-catalog .cs-threat-filters button.is-active{background:linear-gradient(115deg,#1464bc,#074383);border-color:#104d92;color:#fff;box-shadow:0 4px 13px #0a4a9240}
+.cs-catalog .cs-threat-search{background:#fff;border:1px solid #9cbee5;box-shadow:0 2px 6px #0e488012}
+.cs-catalog .cs-threat-search button{background:#125eae;color:#fff}
+.cs-catalog .cs-threat-search button:hover{background:#0b4484}
+.cs-catalog .cs-threat-grid{gap:14px}
+.cs-catalog .cs-threat-item{background:linear-gradient(145deg,#fbfdff 0%,#e7f3ff 100%);border:1px solid #a9cffa;border-left:4px solid #2f80da;border-radius:14px;box-shadow:0 7px 17px #0d4a8520;padding:20px;transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}
+.cs-catalog .cs-threat-item:nth-child(even){border-left-color:#1b5f9f}
+.cs-catalog .cs-threat-item:hover{transform:translateY(-2px);border-color:#438ee0;box-shadow:0 11px 24px #0b488b2a}
+.cs-catalog .cs-threat-tag.is-mitre{background:#cee7ff;color:#084d99}
+.cs-catalog .cs-threat-tag.is-cisa{background:#ffe8b8;color:#81500c}
+.cs-catalog .cs-threat-id{color:#0b529e}
+.cs-catalog .cs-threat-item h3{color:#0b3264;font-weight:850;font-size:16px}
+.cs-catalog .cs-threat-description{color:#42658a;font-size:12px}
+.cs-catalog .cs-threat-metadata{border-top:1px solid #c8e0fa;padding-top:10px;color:#3d6895;font-size:11px}
+.cs-catalog .cs-threat-item a{color:#0b5da9;font-weight:850}
+.cs-catalog .cs-threat-item a:hover{color:#063b75}
+.cs-catalog .cs-threat-pagination{border-top:1px solid #b2d4f8;padding-top:15px;color:#2b5886}
+.cs-catalog .cs-threat-pagination button{background:#d4eaff;border-color:#a4c9ed;color:#174f8b}
+.cs-catalog .cs-threat-pagination button:not(:disabled):hover{background:#b4dafc}
+
+/* Investigación de fuentes: azules ricos y contrastados. */
+.cs-catalog .cs-official{background:linear-gradient(180deg,#e4f1ff,#eff7ff);border:1px solid #b2d2f5;box-shadow:0 14px 29px #08407e15;padding:clamp(18px,2vw,28px);border-radius:19px}
+.cs-catalog .cs-official-head{padding:17px 20px;border-radius:14px;background:linear-gradient(111deg,#0b3c75,#1768b7)}
+.cs-catalog .cs-official-icon{background:#ffffff19;border-color:#ffffff4d;color:#bbebff}
+.cs-catalog .cs-official-heading h2{color:#fff}
+.cs-catalog .cs-official-heading p{color:#d2e6ff}
+.cs-catalog .cs-official-head .cs-ops-kicker{color:#90d8ff}
+.cs-catalog .cs-official-refresh{background:#d7ecff;border-color:#96c9f7;color:#0b5095}
+.cs-catalog .cs-official-refresh:hover:not(:disabled){background:#fff}
+.cs-catalog .cs-official-disclaimer{background:#d3e8ff;border-color:#a7d0f7;color:#245379}
+.cs-catalog .cs-official-counters>div{background:linear-gradient(135deg,#d0e7ff,#eff8ff);border-color:#a9ccf3}
+.cs-catalog .cs-official-counters strong{color:#105ca8}
+.cs-catalog .cs-official-counters span{color:#3d6a96}
+.cs-catalog .cs-official-source{background:linear-gradient(160deg,#f9fcff,#dfedff);border:1px solid #adcff2;border-top:3px solid #2d84db;box-shadow:0 6px 14px #0e4a8510}
+.cs-catalog .cs-official-source h3{color:#09386f}
+.cs-catalog .cs-official-source-version{color:#285e91}
+.cs-catalog .cs-official-source small,.cs-catalog .cs-official-source-count{color:#4b769e}
+.cs-catalog .cs-official-control{background:linear-gradient(160deg,#f8fcff,#dfedff);border:1px solid #b6d6f5}
+.cs-catalog .cs-official-control h4{color:#0e396e}
+.cs-catalog .cs-official-section-title{padding:13px 16px;border-left:4px solid #2781dc;background:#d7ecff;border-radius:10px}
+.cs-catalog .cs-official-section-title h3{color:#0d427f}
+.cs-catalog .cs-official-section-title p{color:#3b6992}
+.cs-catalog .cs-official-ai{background:linear-gradient(105deg,#c9e3ff,#eaf5ff);border-color:#a5cff8}
+.cs-catalog .cs-official-ai strong{color:#0b509a}
+.cs-catalog .cs-official-ai p{color:#3c6895}
+.cs-catalog .cs-official-ai button{background:#125faf;border-color:#1466ba;color:#fff}
+.cs-catalog .cs-official-ai button:hover:not(:disabled){background:#0a4b8a}
+.cs-catalog .cs-official-ai .cs-official-ai-result{background:#f1f8ff;color:#214d78;border-color:#accff0}
+
+@media(max-width:1320px){
+  .cs-catalog-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:840px){
+  .cs-catalog-emblem{display:none}
+  .cs-catalog .cs-threat-tools{align-items:stretch}
+  .cs-catalog .cs-threat-search{max-width:none}
+}
+@media(max-width:600px){
+  .cs-catalog .cs-catalog-hero{padding:24px 20px}
+  .cs-catalog-hero-content{padding-top:20px}
+  .cs-catalog-metrics{grid-template-columns:1fr 1fr;gap:9px}
+  .cs-catalog-metric{padding:15px;min-height:140px}
+  .cs-catalog-metric strong{font-size:27px}
+  .cs-catalog .cs-threat-head,.cs-catalog .cs-official-head{padding:16px}
+}
+@media(max-width:400px){
+  .cs-catalog-metrics{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){.cs-catalog .cs-threat-item{transition:none}.cs-catalog .cs-threat-item:hover{transform:none}}
