@@ -1,0 +1,38 @@
+/* CyberShield · catálogo documental unificado: estilos aislados. */
+.cs-threat{display:grid;gap:18px;min-width:0;padding:24px;border:1px solid #dae8f7;border-radius:17px;background:#fff;box-shadow:0 10px 30px #164f810c;color:#173b68}
+.cs-threat-head{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.cs-threat-icon{display:grid;place-items:center;flex:0 0 48px;height:48px;border:1px solid #d2e7ff;background:#e9f4ff;border-radius:14px;color:#2378c9}
+.cs-threat-heading{flex:1;min-width:min(100%,270px)}
+.cs-threat-heading h2{font-size:21px;line-height:1.3;margin:5px 0 7px;color:#173b69}
+.cs-threat-heading p{font-size:12px;line-height:1.6;margin:0;color:#6e86a2}
+.cs-threat-count{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:800;color:#206fb9;background:#edf6ff;border:1px solid #d2e7ff;padding:9px 12px;border-radius:10px;white-space:nowrap}
+.cs-threat-note{display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid #d7e8fa;background:#f1f8ff;border-radius:10px;color:#476a8b;font-size:11px;line-height:1.6}
+.cs-threat-note svg{flex:none;margin-top:2px}
+.cs-threat-tools{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.cs-threat-filters{display:flex;flex-wrap:wrap;gap:8px}
+.cs-threat-filters button,.cs-threat-pagination button{display:flex;align-items:center;justify-content:center;gap:5px;padding:9px 12px;background:#f8fbff;color:#3b709f;border:1px solid #d4e6fa;border-radius:9px;font-size:11px;font-weight:750}
+.cs-threat-filters button.is-active{background:#2575ce;color:#fff;border-color:#2575ce}
+.cs-threat button:disabled{opacity:.48;cursor:not-allowed}
+.cs-threat-search{display:flex;align-items:center;gap:8px;padding-left:11px;border:1px solid #cedff0;border-radius:10px;min-width:230px;flex:1;max-width:500px;background:#fff;color:#7390aa}
+.cs-threat-search input{flex:1;min-width:90px;width:100%;padding:10px 0;border:0;background:transparent;font-size:12px;color:#194672;outline:none}
+.cs-threat-search button{align-self:stretch;padding:0 14px;border:none;border-radius:0 9px 9px 0;background:#e8f3ff;color:#1b70c3;font-size:11px;font-weight:800}
+.cs-threat-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+.cs-threat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.cs-threat-item{display:flex;flex-direction:column;gap:10px;min-width:0;padding:17px;border:1px solid #dce8f7;border-radius:13px;background:#fcfdff}
+.cs-threat-item-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:7px}
+.cs-threat-tag{font-size:10px;padding:5px 7px;border-radius:7px;font-weight:800}
+.cs-threat-tag.is-mitre{background:#e8f3ff;color:#1c68b7}
+.cs-threat-tag.is-cisa{background:#fff3e1;color:#915b1d}
+.cs-threat-id{font-size:11px;font-weight:850;color:#235b95;overflow-wrap:anywhere}
+.cs-threat-item h3{font-size:15px;line-height:1.4;margin:0;color:#163c69;overflow-wrap:anywhere}
+.cs-threat-description{font-size:11px;line-height:1.6;color:#607d99;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;margin:0;white-space:pre-line;overflow-wrap:anywhere}
+.cs-threat-metadata{display:grid;gap:4px;font-size:10px;color:#8298ac;margin-top:auto}
+.cs-threat-item a{display:inline-flex;align-items:center;gap:6px;color:#176ab8;font-size:11px;font-weight:800;text-decoration:none}
+.cs-threat-item a:hover{text-decoration:underline}
+.cs-threat-status{font-size:12px;color:#687f9a;padding:16px;margin:0;background:#f8fbff;border:1px solid #e0e9f5;border-radius:11px}
+.cs-threat-error{display:flex;gap:8px;align-items:flex-start;padding:13px;color:#a33e3e;background:#fff3f3;border:1px solid #efc6c6;border-radius:11px;font-size:12px;line-height:1.5}
+.cs-threat-error svg{flex:none}
+.cs-threat-pagination{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:11px;color:#6883a0}
+.cs-threat-pagination>div{display:flex;align-items:center;gap:11px;flex-wrap:wrap}
+.cs-threat button:focus-visible,.cs-threat input:focus-visible,.cs-threat a:focus-visible{outline:3px solid #84baf4;outline-offset:2px}
+@media(max-width:940px){.cs-threat-grid{grid-template-columns:1fr}.cs-threat{padding:17px}.cs-threat-search{max-width:none}}
