@@ -110,7 +110,7 @@ export default function ThreatCatalogPanel() {
         {modes.map(option => <button key={option.key} type="button"
           className={kind === option.key ? "is-active" : ""}
           aria-pressed={kind === option.key}
-          onClick={() => { setKind(option.key); setPage(1); }}>
+          onClick={() => { setKind(option.key); setDraft(""); setTerm(""); setPage(1); }}>
           {option.label}
         </button>)}
       </div>
