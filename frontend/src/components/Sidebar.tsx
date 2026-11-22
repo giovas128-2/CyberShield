@@ -20,7 +20,7 @@ export const NAV: { sec: string; items: [string, string, LucideIcon][] }[] = [
     ["/catalog", "Catálogo", BookOpen],
     ["/protections", "Protecciones", ShieldCheck],
     ["/protection-proposals", "Propuestas", ClipboardList],
-    ["/code-review", "Auditoría de código", ClipboardList],
+    ["/code-review", "Análisis de proyectos", ClipboardList],
     ["/lab", "Laboratorio", FlaskConical],
   ] },
   { sec: "SISTEMA", items: [
