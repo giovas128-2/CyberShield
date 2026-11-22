@@ -230,3 +230,42 @@
 .cs-catalog .cs-threat-report-content li+li{margin-top:7px}
 .cs-catalog .cs-threat-report-content a{display:flex;align-items:center;gap:6px;color:#085baa;font-weight:850;font-size:11px}
 .cs-catalog .cs-threat-report-content small{font-size:10px;color:#456e98;line-height:1.5}
+
+
+/* IA local opcional: inactiva sin configurar Ollama en loopback. */
+.cs-catalog .cs-local-ai{
+  display:grid;gap:10px;padding:14px;border-radius:12px;
+  border:1px solid #99c4f3;background:linear-gradient(135deg,#e5f3ff,#cde6ff);
+}
+.cs-catalog .cs-local-ai-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:#0d4c8e}
+.cs-catalog .cs-local-ai-head strong{font-size:13px}
+.cs-catalog .cs-local-ai-head>span{
+  font-size:10px;padding:5px 8px;border-radius:7px;background:#c4e3ff;
+  color:#195a98;font-weight:800;
+}
+.cs-catalog .cs-local-ai-status{
+  display:flex;align-items:flex-start;gap:7px;line-height:1.6;font-size:11px;
+  color:#315e8e;margin:0;
+}
+.cs-catalog .cs-local-ai-status svg{flex:none}
+.cs-catalog .cs-local-ai small{font-size:10px;line-height:1.6;color:#496d93}
+.cs-catalog .cs-local-ai-button{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:12px;border-radius:9px;border:1px solid #2166ae;
+  background:linear-gradient(110deg,#0b4d91,#146ebd);color:#fff;
+  font-size:11px;font-weight:850;
+}
+.cs-catalog .cs-local-ai-button:disabled{opacity:.55;cursor:not-allowed}
+.cs-catalog .cs-local-ai-button:hover:not(:disabled){background:#083c73}
+.cs-catalog .cs-local-ai-error{
+  color:#993838;font-size:11px;line-height:1.5;margin:0;
+}
+.cs-catalog .cs-local-ai-result{
+  padding:12px;display:grid;gap:8px;background:#f5faff;
+  border-radius:10px;border:1px solid #acd1f8;
+}
+.cs-catalog .cs-local-ai-result strong{font-size:12px;color:#124d88}
+.cs-catalog .cs-local-ai-result p{
+  margin:0;white-space:pre-line;overflow-wrap:anywhere;font-size:12px;
+  line-height:1.75;color:#214b75;
+}
