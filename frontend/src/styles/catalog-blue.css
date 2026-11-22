@@ -269,3 +269,40 @@
   margin:0;white-space:pre-line;overflow-wrap:anywhere;font-size:12px;
   line-height:1.75;color:#214b75;
 }
+
+
+/* CISA KEV: requerimiento oficial importado, distinto de protección instalada. */
+.cs-catalog .cs-cisa-remediation{display:grid;gap:9px;border-top:1px solid #c0dbf7;padding-top:12px}
+.cs-catalog .cs-cisa-action-toggle{
+ display:flex;align-items:center;gap:9px;width:100%;padding:12px;
+ border-radius:10px;background:linear-gradient(105deg,#0a477e,#1776bd);
+ border:1px solid #468fd1;color:#fff;font-size:11px;font-weight:850;
+ cursor:pointer;text-align:left;
+}
+.cs-catalog .cs-cisa-action-toggle:hover{background:#1266a6}
+.cs-catalog .cs-cisa-action-toggle svg:last-child{margin-left:auto;flex:none}
+.cs-catalog .cs-cisa-action-body{
+ display:grid;gap:11px;background:linear-gradient(155deg,#e0f0ff,#f6faff);
+ border-radius:12px;border:1px solid #a2c9f0;padding:14px;
+}
+.cs-catalog .cs-cisa-action-body>strong{font-size:12px;color:#0b4d86}
+.cs-catalog .cs-cisa-action-body p{
+ font-size:12px;line-height:1.7;color:#315e89;margin:0;
+ white-space:pre-line;overflow-wrap:anywhere;
+}
+.cs-catalog .cs-cisa-action-body .cs-cisa-action-text{
+ color:#173f70;background:#fbfdff;border:1px solid #b4d8f8;
+ border-left:3px solid #2380d0;padding:12px;border-radius:9px;
+ font-weight:650;
+}
+.cs-catalog .cs-cisa-action-body small{
+ display:flex;align-items:flex-start;gap:7px;color:#336a9b;
+ line-height:1.6;font-size:10px;
+}
+.cs-catalog .cs-cisa-action-body .cs-cisa-action-warning{
+ font-size:11px;color:#345f89;
+}
+.cs-catalog .cs-cisa-action-body a{
+ display:flex;align-items:center;gap:6px;color:#075fa6;
+ font-weight:850;font-size:11px;
+}
