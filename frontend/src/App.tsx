@@ -16,6 +16,7 @@ import DevicesPage from "./pages/DevicesPage";
 import SessionsPage from "./pages/SessionsPage";
 import ActionsPage from "./pages/ActionsPage";
 import ProtectionsPage from "./pages/ProtectionsPage";
+import CatalogPage from "./pages/CatalogPage";
 import ProtectionProposalsPage from "./pages/ProtectionProposalsPage";
 import CodeSecurityReviewPage from "./pages/CodeSecurityReviewPage";
 import LabPage from "./pages/LabPage";
@@ -140,6 +141,7 @@ const guard = (el: JSX.Element) =>
             <Route path="/devices" element={<DevicesPage />} />
             <Route path="/sessions" element={<SessionsPage />} />
             <Route path="/actions" element={<ActionsPage />} />
+            <Route path="/catalog" element={<CatalogPage />} />
             <Route path="/protections" element={<ProtectionsPage />} />
             <Route path="/protection-proposals" element={<ProtectionProposalsPage />} />
             <Route path="/code-review" element={<CodeSecurityReviewPage />} />
