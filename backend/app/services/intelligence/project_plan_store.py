@@ -2,10 +2,18 @@
 import json
 from sqlalchemy import text
 
-from app.api.protections import list_protections
 from app.services.intelligence.project_protection_comparison import (
     compare_recommendations_to_catalog,
 )
+
+def list_protections(db):
+    """Consulta real solo cuando se crea un plan, no durante un import de pruebas.
+
+    Se conserva esta función como punto de sustitución para pruebas aisladas.
+    """
+    from app.api.protections import list_protections as read_protections
+    return read_protections(db)
+
 
 TABLE = "cybershield_project_review_plans"
 ALLOWED_NEXT = {
