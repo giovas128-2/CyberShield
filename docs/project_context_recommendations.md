@@ -89,3 +89,57 @@ ejecutar y revisar el bloque **Diagnóstico contextual del proyecto**.
 - Motor de dependencias y versiones con fuentes oficiales comprobables;
   actualmente el escáner no determina CVE aplicables por solo observar
   un lenguaje de programación.
+
+
+
+## Fase posterior — Interpretación del diagnóstico con Ollama local (opcional)
+
+La página **Análisis de proyectos** mantiene el diagnóstico por reglas y
+añade un panel **Interpretar diagnóstico con IA local** dentro del informe.
+No se sustituye ni modifica el escáner previo: la IA recibe un resumen
+suministrado por el navegador, no vuelve a auditar el ZIP.
+
+- Servicio: `backend/app/services/intelligence/local_project_ai.py`.
+- Endpoint: `POST /intelligence/local-ai/projects/interpret`, JWT +
+  rol `engineer` o `admin`, solo tras pulsar el botón.
+- Vista: `frontend/src/components/ProjectLocalAIInterpretation.tsx`.
+- Ollama utiliza el mismo conector existente y puerto loopback fijo
+  `127.0.0.1:11434`; modelos permitidos `qwen3:0.6b`,
+  `qwen3:1.7b`, `qwen3:4b`.
+- Permanece apagado si `CYBERSHIELD_LOCAL_AI_ENABLED` no es `1`.
+- No se envían ZIP, código, archivos, rutas, líneas ni muestras al
+  modelo. Solo tipo, descripción acotada del usuario (máximo 600
+  caracteres), características declaradas, lenguajes por extensión
+  y códigos de recomendaciones admitidos por el motor.
+- La descripción se trata como **dato no confiable**. Se redactan
+  patrones comunes de tokens, correos, URLs e IPs; esta redacción
+  es parcial, no garantiza anonimización. No introducir secretos.
+- El servicio reconstruye razones y medidas de un catálogo permitido;
+  no acepta texto arbitrario del cliente como instrucciones de defensa.
+- La respuesta se marca como `ollama_local_project` con
+  `automatic_application=false` y `human_review_required=true`.
+  No modifica PostgreSQL, incidentes ni controles. La narración puede
+  equivocarse y requiere contraste con la evidencia del escáner.
+- El bloque de **IA externa opcional** sigue siendo una función separada
+  y no utiliza Ollama; mantenerlo apagado para no enviar fragmentos a
+  proveedores externos.
+
+### Pruebas locales sin inferencia real
+
+```bash
+cd /mnt/c/Users/Giovas128/downloads/CyberShield-ThreatCatalog
+git pull --ff-only
+
+PYTHONPATH=backend /mnt/c/Users/Giovas128/downloads/CyberSHield/backend/venv-wsl/bin/python \
+  -m unittest discover -s backend/tests -p 'test_local_project_ai.py' -v
+
+cd frontend
+npm run build
+```
+
+La prueba end-to-end necesita reiniciar **solo el Uvicorn de pruebas**
+en puerto 8001 para registrar la nueva ruta, sin tocar el servidor
+principal 8000 ni reinstalar Ollama. Confirmar antes que la ruta
+`/intelligence/local-ai/projects/interpret` esté en
+`http://127.0.0.1:8001/openapi.json`. Luego volver a analizar el ZIP
+y pulsar **Interpretar con IA local** bajo el diagnóstico.
