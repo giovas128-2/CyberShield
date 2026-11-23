@@ -18,6 +18,7 @@ from app.api.device_trust import router as device_trust_router
 from app.api.protections import router as protections_router
 from app.api.lab import router as lab_router
 from app.api.intelligence import router as intelligence_router
+from app.api.project_plans import router as project_plans_router
 
 from app.core.config import FRONTEND_URL
 from app.database.connection import check_database_connection
@@ -61,6 +62,7 @@ app.include_router(device_trust_router)
 app.include_router(protections_router)
 app.include_router(lab_router)
 app.include_router(intelligence_router)
+app.include_router(project_plans_router)
 
 
 # ============================================================
