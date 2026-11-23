@@ -148,7 +148,7 @@ export default function ProjectCatalogComparison({ report }: { report: ProjectAd
           </article>
         )}
       </div>
-      <ProjectSecurityPlanDraft key={fingerprint} plan={comparison.project_plan}/>
+      <ProjectSecurityPlanDraft key={fingerprint} plan={comparison.project_plan} projectName={report.project.name}/>
       <p className="cs-project-comparison-disclosure">
         <CheckCircle2 size={17}/>
         <span>{comparison.note}</span>
