@@ -611,3 +611,49 @@ def local_ai_interpret_technique(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except LocalAIUnavailable as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+
+# ============================================================
+# IA LOCAL PARA PROYECTOS: resumen mínimo del diagnóstico
+# Sin ZIP, código, credenciales, rutas ni instalación de protecciones.
+# ============================================================
+
+class ProjectAIRecommendationInput(BaseModel):
+    id: str = Field(min_length=1, max_length=55)
+    matches: int = Field(default=0, ge=0, le=150)
+
+
+class ProjectAIInterpretPayload(BaseModel):
+    project_type: Literal[
+        "unspecified", "web", "api", "mobile", "desktop", "automation", "other"
+    ] = "unspecified"
+    description: str = Field(default="", max_length=600)
+    declared_characteristics: list[Literal[
+        "internet_exposed", "uses_authentication", "handles_sensitive_data"
+    ]] = Field(default_factory=list, max_length=3)
+    languages: list[Literal[
+        "Python", "PHP", "TypeScript", "TypeScript/TSX", "JavaScript",
+        "JavaScript/JSX", "Java", "Go", "Ruby", "SQL"
+    ]] = Field(default_factory=list, max_length=10)
+    recommendations: list[ProjectAIRecommendationInput] = Field(
+        default_factory=list, max_length=12
+    )
+
+
+@router.post("/local-ai/projects/interpret")
+def interpret_project_local_ai(
+    payload: ProjectAIInterpretPayload,
+    _reviewer = Depends(require_roles("admin", "engineer")),
+):
+    """Invocación manual a Ollama loopback, con datos acotados y sin persistencia."""
+    from app.services.intelligence.local_ollama import LocalAIUnavailable
+    from app.services.intelligence.local_project_ai import (
+        interpret_project_with_local_ai,
+    )
+    try:
+        return interpret_project_with_local_ai(payload.model_dump())
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except LocalAIUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
