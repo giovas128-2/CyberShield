@@ -1,5 +1,6 @@
 import { BookOpen, CheckCircle2, ClipboardCheck, FileCode2, Info, Layers3, ShieldCheck } from "lucide-react";
 import "../styles/project-recommendations.css";
+import ProjectLocalAIInterpretation from "./ProjectLocalAIInterpretation";
 
 export type ProjectContext = {
   name: string;
@@ -101,6 +102,8 @@ export default function ProjectRecommendationReport({ report }: { report: Projec
         )}
       </div>
     </div>}
+
+    <ProjectLocalAIInterpretation report={report}/>
 
     <div className="cs-project-report-subtitle">
       <ShieldCheck size={20}/>
