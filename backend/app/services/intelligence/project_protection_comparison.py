@@ -80,7 +80,10 @@ def compare_recommendations_to_catalog(
             "related_controls": candidates,
             "missing_action": NO_DIRECT_NOTE,
         })
+    from app.services.intelligence.project_security_plan import build_security_plan
+    project_plan = build_security_plan(output)
     return {
+        "project_plan": project_plan,
         "source": "CyberShield / catálogo de ocho protecciones históricas",
         "catalog_controls_total": len(available),
         "items": output,
