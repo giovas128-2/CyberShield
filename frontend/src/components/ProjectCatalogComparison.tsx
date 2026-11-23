@@ -5,6 +5,8 @@ import {
 } from "lucide-react";
 import { api, ApiError } from "../api/client";
 import type { ProjectAdvice } from "./ProjectRecommendationReport";
+import ProjectSecurityPlanDraft from "./ProjectSecurityPlanDraft";
+import type { SecurityPlan } from "./ProjectSecurityPlanDraft";
 
 type Related = {
   id: string;
@@ -33,6 +35,7 @@ type Comparison = {
   automatic_application: false;
   project_controls_verified: false;
   note: string;
+  project_plan: SecurityPlan;
 };
 
 const modeLabels: Record<Related["catalog_mode"], string> = {
@@ -76,7 +79,10 @@ export default function ProjectCatalogComparison({ report }: { report: ProjectAd
     }).then(data => {
       if (!data.read_only || data.automatic_application !== false ||
           data.project_controls_verified !== false ||
-          !Array.isArray(data.items)) {
+          !Array.isArray(data.items) ||
+          data.project_plan?.mode !== "local_review_draft" ||
+          data.project_plan.stored_in_database !== false ||
+          data.project_plan.automatic_application !== false) {
         throw new Error("La API devolvió una comparación inválida.");
       }
       if (active) setComparison(data);
@@ -142,6 +148,7 @@ export default function ProjectCatalogComparison({ report }: { report: ProjectAd
           </article>
         )}
       </div>
+      <ProjectSecurityPlanDraft key={fingerprint} plan={comparison.project_plan}/>
       <p className="cs-project-comparison-disclosure">
         <CheckCircle2 size={17}/>
         <span>{comparison.note}</span>
