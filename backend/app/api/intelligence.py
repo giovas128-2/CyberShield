@@ -657,3 +657,32 @@ def interpret_project_local_ai(
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except LocalAIUnavailable as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+
+# ============================================================
+# COMPARACIÓN ORIENTATIVA: RECOMENDACIONES VS OCHO CONTROLES
+# Solo consulta el catálogo; no reescanea ni ejecuta defensas.
+# ============================================================
+
+class ProjectProtectionComparisonRequest(BaseModel):
+    recommendation_ids: list[str] = Field(min_length=1, max_length=12)
+
+
+@router.post("/projects/compare-protections")
+def compare_project_protections(
+    payload: ProjectProtectionComparisonRequest,
+    db: Session = Depends(get_db),
+    _reviewer = Depends(require_roles("admin", "engineer")),
+):
+    from app.api.protections import list_protections
+    from app.services.intelligence.project_protection_comparison import (
+        compare_recommendations_to_catalog,
+    )
+    try:
+        return compare_recommendations_to_catalog(
+            payload.recommendation_ids,
+            list_protections(db),
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
