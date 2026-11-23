@@ -143,3 +143,47 @@ principal 8000 ni reinstalar Ollama. Confirmar antes que la ruta
 `/intelligence/local-ai/projects/interpret` esté en
 `http://127.0.0.1:8001/openapi.json`. Luego volver a analizar el ZIP
 y pulsar **Interpretar con IA local** bajo el diagnóstico.
+
+
+## Fase de comparación — Recomendaciones contra ocho controles históricos
+
+El informe contextual ahora incorpora una comparación orientativa al final:
+**Comparación con las ocho protecciones de CyberShield**.
+
+- Endpoint autenticado: `POST /intelligence/projects/compare-protections`
+  para usuarios `admin` o `engineer`.
+- Entrada: solo lista validada de IDs de recomendaciones, sin ZIP, texto libre,
+  evidencia de archivos, claves ni datos de servidores.
+- Consulta el catálogo real con `list_protections(db)` y utiliza únicamente
+  los controles históricos `c1` a `c8`; no presume que las propuestas
+  pendientes ya sean instalables.
+- Motor: `project_protection_comparison.py`. Relaciones conservadoras:
+  inicio de sesión ↔ c1 (monitoreo de fuerza bruta);
+  información sensible ↔ c5 (telemetría de conexiones externas)
+  y c6 (escenario **simulado** de posible exfiltración).
+  Son **controles complementarios**, no correcciones directas.
+- Las coincidencias de consultas SQL, TLS, depuración, contraseñas incrustadas
+  y otras medidas que requieren cambios de aplicación NO se presentan como
+  resueltas por las protecciones históricas.
+- Cada ficha muestra límites de aplicabilidad y la advertencia
+  `verified_for_project=false`. Incluso si c1 figura como integrado y
+  ejecutado/verificado en el catálogo, NO acredita protección para el ZIP.
+- No se ejecutan controles, no se crean propuestas y no se escriben tablas.
+- Esta etapa no necesita Ollama: ofrece una comparación verificable del
+  catálogo y evita depender de textos generados para afirmar cobertura.
+
+Prueba:
+
+```bash
+cd /mnt/c/Users/Giovas128/downloads/CyberShield-ThreatCatalog
+git pull --ff-only
+PYTHONPATH=backend /mnt/c/Users/Giovas128/downloads/CyberSHield/backend/venv-wsl/bin/python \
+  -m unittest discover -s backend/tests -p 'test_project_protection_comparison.py' -v
+cd frontend && npm run build
+```
+
+Para probar desde `http://localhost:8001/#/code-review`:
+- Reiniciar únicamente el uvicorn de pruebas después de verificar su PID
+  y directorio de trabajo.
+- Volver a analizar el ZIP para que aparezca el bloque de comparación.
+- No modificar el servicio `cybershield-api.service` del puerto 8000.
