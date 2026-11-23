@@ -25,6 +25,9 @@ class ProjectProtectionComparisonTests(unittest.TestCase):
         self.assertFalse(entry["direct_solution_in_catalog"])
         self.assertFalse(report["project_controls_verified"])
         self.assertFalse(report["automatic_application"])
+        self.assertEqual(report["project_plan"]["mode"], "local_review_draft")
+        self.assertFalse(report["project_plan"]["stored_in_database"])
+        self.assertFalse(report["project_plan"]["automatic_application"])
 
     def test_login_monitoring_is_complementary_not_authorization(self):
         entry = compare_recommendations_to_catalog(
