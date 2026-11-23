@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
+import { api, ApiError } from "../api/client";
 import {
   CheckCircle2, ClipboardList, Download, FileCode2, Info,
   LockKeyhole, ShieldCheck, Wrench,
@@ -51,15 +53,48 @@ const priorityNames: Record<SecurityPlanTask["priority"], string> = {
 };
 
 /** El archivo exportado es un borrador, no un documento aprobado ni un cambio de controles. */
-export default function ProjectSecurityPlanDraft({ plan }: { plan: SecurityPlan }) {
+export default function ProjectSecurityPlanDraft({ plan, projectName }: { plan: SecurityPlan; projectName: string }) {
   const [selected, setSelected] = useState<string[]>(() => plan.tasks.map(t => t.task_id));
   const [downloaded, setDownloaded] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [savedPlanId, setSavedPlanId] = useState<number | null>(null);
+  const [saveError, setSaveError] = useState("");
 
   const selectedTasks = plan.tasks.filter(task => selected.includes(task.task_id));
 
   function toggle(id: string, checked: boolean) {
     setSelected(old => checked ? [...old, id] : old.filter(value => value !== id));
     setDownloaded(false);
+  }
+
+  async function sendForReview() {
+    if (!selectedTasks.length || submitting) return;
+    setSubmitting(true);
+    setSavedPlanId(null);
+    setSaveError("");
+    try {
+      const data = await api<{ id: number; stored_in_database: true; execution_allowed: false }>(
+        "/intelligence/project-plans", "POST", {
+          project_name: (projectName.trim() || "Proyecto sin nombre").slice(0, 100),
+          recommendation_ids: selectedTasks.map(task => task.task_id),
+        }
+      );
+      if (!Number.isInteger(data.id) || !data.stored_in_database ||
+          data.execution_allowed !== false) {
+        throw new Error("El servidor no confirmó el registro seguro del plan.");
+      }
+      setSavedPlanId(data.id);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 503) {
+        setSaveError("La bandeja todavía no está habilitada en PostgreSQL de pruebas. El borrador se puede descargar sin guardar.");
+      } else if (err instanceof ApiError && err.status === 403) {
+        setSaveError("Se requiere una cuenta con rol de ingeniero o administrador.");
+      } else {
+        setSaveError(err instanceof Error ? err.message : "No se pudo registrar el plan.");
+      }
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function downloadDraft() {
@@ -156,10 +191,19 @@ export default function ProjectSecurityPlanDraft({ plan }: { plan: SecurityPlan 
         <span>{selectedTasks.length} de {plan.tasks.length} tareas seleccionadas</span>
       </div>
       <button type="button" className="cs-project-plan-export"
+        disabled={selectedTasks.length === 0 || submitting} onClick={sendForReview}>
+        <ClipboardList size={17}/> {submitting ? "Guardando en la bandeja…" : "Enviar a revisión"}
+      </button>
+      <button type="button" className="cs-project-plan-export"
         disabled={selectedTasks.length === 0} onClick={downloadDraft}>
         <Download size={17}/> Descargar borrador para revisión
       </button>
     </div>
+    {savedPlanId !== null && <p role="status" className="cs-project-plan-feedback">
+      <CheckCircle2 size={16}/> Plan #{savedPlanId} guardado sin activar defensas.
+      <Link to="/project-plans">Abrir bandeja de planes</Link>
+    </p>}
+    {saveError && <p className="cs-project-plan-save-error" role="alert">{saveError}</p>}
     {downloaded && <p role="status" className="cs-project-plan-feedback">
       <CheckCircle2 size={16}/> Borrador preparado para revisión humana. No se registró ninguna aprobación.
     </p>}
@@ -169,7 +213,7 @@ export default function ProjectSecurityPlanDraft({ plan }: { plan: SecurityPlan 
     </p>
     <p className="cs-project-plan-extra">
       <Info size={15}/>
-      La bandeja actual de propuestas MITRE permanece separada. Las decisiones persistentes del ingeniero requerirán un flujo específico y controlado.
+      La bandeja de planes del proyecto es independiente de las propuestas MITRE. Las decisiones solo afectan la revisión documental, nunca las protecciones instaladas.
     </p>
   </section>;
 }
