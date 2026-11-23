@@ -187,3 +187,61 @@ Para probar desde `http://localhost:8001/#/code-review`:
   y directorio de trabajo.
 - Volver a analizar el ZIP para que aparezca el bloque de comparación.
 - No modificar el servicio `cybershield-api.service` del puerto 8000.
+
+
+## Fase siguiente — Plan preliminar de seguridad por proyecto (sin persistencia)
+
+Se genera un plan estructurado al comparar un diagnóstico con las ocho
+protecciones históricas. No se deben convertir tareas de código en propuestas
+MITRE falsas; la bandeja MITRE existente se conserva sin cambios.
+
+### Flujo
+
+1. `POST /intelligence/projects/compare-protections` sigue siendo una
+   consulta autenticada de solo lectura y ahora devuelve
+   `project_plan`, adicional a los campos anteriores.
+2. `backend/app/services/intelligence/project_security_plan.py` transforma
+   identificadores de recomendaciones válidos en tres tipos de tareas:
+   - `code_correction`: corrección de archivos de aplicación, por ejemplo
+     SQL parametrizado; responsable sugerido: desarrollador.
+   - `control_evaluation`: evaluar controles complementarios del catálogo,
+     sin afirmar que se instalaron, para autenticación o datos sensibles.
+   - `environment_review`: revisión de exposición de servicios,
+     configuración y alcance.
+3. `frontend/src/components/ProjectSecurityPlanDraft.tsx` ofrece seleccionar
+   tareas y descargar un archivo `cybershield-plan-seguridad-borrador.json`
+   con acciones, responsables, prioridades y verificaciones.
+4. El JSON se genera en el navegador tras pulsar el botón. No contiene
+   proyecto ZIP, archivos, rutas, líneas, descripción libre ni claves.
+   NO se envía ni se guarda en el servidor, y NO es una aprobación.
+   Las selecciones se pierden al recargar la página.
+
+### Limitaciones y seguridad
+
+- Todas las tareas usan `draft_for_human_review` y
+  `implementation_approved=false`, `execution_allowed=false`.
+- `project_deployment_verified=false` para cada tarea.
+- La tabla de propuestas MITRE conserva su semántica y estados;
+  las tareas de corrección SQL NO reciben un ID MITRE inventado.
+- Sin migraciones SQL, POST persistente, activación de Wazuh/Suricata,
+  cambio en protección de dispositivos ni instalación de reglas.
+- Una fase posterior necesitará una tabla propia de planes y una bandeja
+  para que las decisiones del ingeniero se guarden y auditen.
+  **No hay aprobaciones persistentes en esta fase.**
+
+### Validación en WSL, solo rama de pruebas
+
+```bash
+cd /mnt/c/Users/Giovas128/downloads/CyberShield-ThreatCatalog
+git pull --ff-only
+PYTHONPATH=backend /mnt/c/Users/Giovas128/downloads/CyberSHield/backend/venv-wsl/bin/python \
+  -m unittest discover -s backend/tests -p 'test_project_security_plan.py' -v
+PYTHONPATH=backend /mnt/c/Users/Giovas128/downloads/CyberSHield/backend/venv-wsl/bin/python \
+  -m unittest discover -s backend/tests -p 'test_project_protection_comparison.py' -v
+cd frontend && npm run build
+```
+
+Si se completa, reiniciar **solo** el Uvicorn de pruebas 8001
+tras comprobar PID y directorio de trabajo. No tocar 8000 ni migrar BD.
+Volver a analizar el ZIP de ejemplo en `/#/code-review` y comprobar
+el plan bajo la comparación C1–C8, desmarcar tareas y descargar el JSON.
