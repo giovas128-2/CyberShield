@@ -183,3 +183,79 @@
   .cs-audit .cs-project-comparison-numbers{grid-template-columns:1fr}
   .cs-audit .cs-project-comparison{padding:13px}
 }
+
+
+/* Plan documental del proyecto: selección/exportación, sin registro ni ejecución. */
+.cs-audit .cs-project-plan{
+  display:grid;gap:14px;padding:19px;border-radius:14px;
+  background:linear-gradient(145deg,#d9ebfd,#f7fbff);
+  border:1px solid #91bee9;
+}
+.cs-audit .cs-project-plan-heading{display:flex;align-items:flex-start;gap:10px;color:#0e5697}
+.cs-audit .cs-project-plan-heading>svg{flex:none;margin-top:3px}
+.cs-audit .cs-project-plan-heading>div{min-width:0;flex:1}
+.cs-audit .cs-project-plan-heading h3{font-size:16px;color:#0e3f78;margin:0}
+.cs-audit .cs-project-plan-heading p{font-size:11px;line-height:1.6;margin:5px 0 0;color:#426f99}
+.cs-audit .cs-project-plan-heading>span{
+  color:#125b98;background:#c5e3ff;padding:6px 9px;border-radius:8px;
+  font-size:10px;font-weight:900;letter-spacing:.04em
+}
+.cs-audit .cs-project-plan-metrics{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px
+}
+.cs-audit .cs-project-plan-metrics>div{
+  display:grid;gap:5px;padding:12px;border:1px solid #abd1f4;
+  border-radius:10px;background:#f9fcff
+}
+.cs-audit .cs-project-plan-metrics strong{font-size:22px;color:#0b4e8b}
+.cs-audit .cs-project-plan-metrics span{font-size:10px;line-height:1.5;color:#3c6b97}
+.cs-audit .cs-project-plan-lede{margin:0;color:#346592;font-size:12px;line-height:1.6}
+.cs-audit .cs-project-plan-tasks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;align-items:start}
+.cs-audit .cs-project-plan-task{
+  display:grid;gap:11px;padding:13px;background:#fbfdff;border:1px solid #b6d5f1;
+  border-left:3px solid #2577bc;border-radius:11px;min-width:0
+}
+.cs-audit .cs-project-plan-task-head{
+  display:flex;align-items:flex-start;gap:10px;cursor:pointer;
+}
+.cs-audit .cs-project-plan-task-head input{margin-top:3px;accent-color:#1269b1;flex:none}
+.cs-audit .cs-project-plan-task-label{display:grid;gap:8px;min-width:0}
+.cs-audit .cs-project-plan-task-label>strong{color:#14497f;font-size:12px;line-height:1.5}
+.cs-audit .cs-project-plan-tags{display:flex;flex-wrap:wrap;gap:6px}
+.cs-audit .cs-project-plan-tags span{
+  padding:5px 7px;background:#dbeefe;color:#27608f;
+  border-radius:7px;font-size:10px;font-weight:800
+}
+.cs-audit .cs-project-plan-task-detail{display:grid;gap:9px}
+.cs-audit .cs-project-plan-task-detail p{color:#3c6e9a;font-size:11px;line-height:1.6;margin:0}
+.cs-audit .cs-project-plan-task-detail>div{display:flex;gap:8px;color:#345f8a;font-size:11px;line-height:1.6}
+.cs-audit .cs-project-plan-task-detail>div svg{flex:none;color:#1f70b2}
+.cs-audit .cs-project-plan-task-detail>div b{color:#144f88}
+.cs-audit .cs-project-plan-task-detail a{font-size:11px;color:#115eaa;font-weight:800}
+.cs-audit .cs-project-plan-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.cs-audit .cs-project-plan-selection{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11px;color:#2e6392}
+.cs-audit .cs-project-plan-selection label{display:flex;align-items:center;gap:7px;font-weight:850;cursor:pointer}
+.cs-audit .cs-project-plan-selection input{accent-color:#1269b1}
+.cs-audit .cs-project-plan-export{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:12px 14px;border-radius:10px;border:1px solid #236cb6;
+  background:linear-gradient(110deg,#124d91,#156fbd);
+  color:#fff;font-size:12px;font-weight:850;cursor:pointer
+}
+.cs-audit .cs-project-plan-export:disabled{opacity:.55;cursor:not-allowed}
+.cs-audit .cs-project-plan-export:hover:not(:disabled){background:#0b4f94}
+.cs-audit .cs-project-plan-feedback,.cs-audit .cs-project-plan-warning,.cs-audit .cs-project-plan-extra{
+  margin:0;display:flex;gap:8px;align-items:flex-start;font-size:11px;line-height:1.65
+}
+.cs-audit .cs-project-plan-feedback{color:#126a4c}
+.cs-audit .cs-project-plan-warning{color:#355f89;background:#e5f2ff;border-radius:10px;padding:12px}
+.cs-audit .cs-project-plan-extra{color:#446e97}
+.cs-audit .cs-project-plan-feedback svg,.cs-audit .cs-project-plan-warning svg,.cs-audit .cs-project-plan-extra svg{flex:none}
+@media(max-width:1040px){
+  .cs-audit .cs-project-plan-tasks{grid-template-columns:1fr}
+}
+@media(max-width:620px){
+  .cs-audit .cs-project-plan{padding:13px}
+  .cs-audit .cs-project-plan-metrics{grid-template-columns:1fr}
+  .cs-audit .cs-project-plan-export{width:100%}
+}
