@@ -1,6 +1,7 @@
 import { BookOpen, CheckCircle2, ClipboardCheck, FileCode2, Info, Layers3, ShieldCheck } from "lucide-react";
 import "../styles/project-recommendations.css";
 import ProjectLocalAIInterpretation from "./ProjectLocalAIInterpretation";
+import ProjectCatalogComparison from "./ProjectCatalogComparison";
 
 export type ProjectContext = {
   name: string;
@@ -155,6 +156,7 @@ export default function ProjectRecommendationReport({ report }: { report: Projec
           </article>
         )}
       </div>}
+    <ProjectCatalogComparison report={report}/>
     <p className="cs-project-report-note"><Info size={16}/>{report.note}</p>
   </section>;
 }
