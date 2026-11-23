@@ -242,14 +242,28 @@ export async function login(
 
     if (status === 403) {
       throw new Error(
-        detail ||
-          "Acceso bloqueado: origen no autorizado."
+        typeof detail === "string"
+          ? detail
+          : "Acceso bloqueado: origen no autorizado."
       );
     }
 
     if (status === 401) {
       throw new Error(
         "Correo o contraseña incorrectos."
+      );
+    }
+
+    if (status === 422) {
+      const errors = Array.isArray(detail) ? detail : [];
+      const invalidEmail = errors.some(
+        (item: any) =>
+          Array.isArray(item?.loc) && item.loc.includes("email")
+      );
+      throw new Error(
+        invalidEmail
+          ? "El correo no es válido. Usa una dirección con dominio de correo válido, no .local."
+          : "Los datos de acceso no tienen el formato requerido."
       );
     }
 
@@ -260,8 +274,9 @@ export async function login(
     }
 
     throw new Error(
-      detail ||
-        "No fue posible iniciar sesión."
+      typeof detail === "string"
+        ? detail
+        : "No fue posible iniciar sesión."
     );
   }
 }
